@@ -1,6 +1,8 @@
 Kuber.Hex
 =================
 
+[![CircleCI](https://circleci.com/bb/aviabird/kuber_hex/tree/master.svg?style=svg)](https://circleci.com/bb/aviabird/kuber_hex/tree/master)
+
 Payment processing library for Elixir. Based on [Shopify's](http://shopify.com) [ActiveMerchant](http://github.com/Shopify/active_merchant) ruby gem
 
 An open source initiative of [Aviabird Technologies](https://aviabird.com)
