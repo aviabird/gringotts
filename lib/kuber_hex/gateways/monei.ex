@@ -33,7 +33,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     "Z" => {"fail", "pass"},
     "N" => {"fail", "fail"},
     "U" => {"error", "error"},
-    "X" => {"absent", "absent"} # custom response code added by ananyab (this is never returned by MONEI
+    nil => {nil, nil}
   }
   
   # MONEI supports payment by card, bank account and even something obscure: virtual account
@@ -44,7 +44,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     params = [paymentType: "PA",
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, opts)
+    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
   end
 
   @spec capture(Float, String.t, String.t, Map) :: Response
@@ -52,7 +52,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     params = [paymentType: "CP",
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency]
-    commit(:post, "payments/#{paymentId}", params, opts)
+    commit(:post, "payments/#{paymentId}", params, Keyword.fetch!(opts, :config))
   end
 
   @spec purchase(Float, String.t, CreditCard, Map) :: Response
@@ -60,7 +60,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     params = [paymentType: "DB",
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, opts)
+    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
   end
 
   defp card_params(card) do
@@ -80,7 +80,6 @@ defmodule Kuber.Hex.Gateways.Monei do
                       "authentication.password": password,
                       "authentication.entityId": entityId]
     url = "#{@base_url}/#{@version}/#{endpoint}"
-    IO.inspect body
     method
     |> HTTPoison.request(url, {:form, body}, @default_headers)
     |> respond
@@ -91,13 +90,11 @@ defmodule Kuber.Hex.Gateways.Monei do
 
   def respond({:ok, %{status_code: 200, body: body}}) do
     data = decode!(body)
-    {code, description, _risk_score, cvc_result, avs_result} = verification_result(data)
-    Response.success(authorization: data["id"],
-      cvc_result: cvc_result,
-      avs_result: avs_result,
-      raw: {:json, data},
-      code: code,
-      reason: description)
+    # IO.inspect data
+    case verification_result(data) do
+      {:ok, results} -> {:ok, [{:id, data["id"]} | results] |> Response.success}
+      {:error, errors} -> {:error, [{:id, data["id"]} | errors] |> Response.error}
+    end
   end
 
   @doc"""
@@ -107,22 +104,21 @@ defmodule Kuber.Hex.Gateways.Monei do
     Response.error(code: status_code, raw: {:html, body})
   end
 
-  defp verification_result(%{"result" => result, "risk" => risk}) do
-    IO.inspect result
-    cvc_result = @cvc_code_translator[result["cvvResponse"]]
-    {address, zip_code} = case result["avsResponse"] do
-      nil -> @avs_code_translator["X"] # custom response code added by ananyab (this is never returned by MONEI
-      avs -> @avs_code_translator[avs]
-    end
-    {result["code"],
-     result["description"],
-     risk["score"],
-     cvc_result,
-     %{address: address, zip_code: zip_code}}
-  end
+  defp verification_result(data = %{"result" => result}) do
+    {address, zip_code} = @avs_code_translator[result["avsResponse"]]
+    code = result["code"]
+    results = [code: code,
+               description: result["description"],
+               risk: data["risk"]["score"],
+               cvc_result: @cvc_code_translator[result["cvvResponse"]],
+               avs_result: [address: address, zip_code: zip_code],
+               raw: data]
 
-  defp verification_result(_), do: {nil, nil, nil, nil, nil}
-      
+    cond do
+      String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) -> {:ok, results}
+      true -> {:error, results}
+    end
+  end      
 end
 
 """
@@ -143,9 +139,11 @@ expiration: {2011, 12},
 cvc:  "123"
 }
 
-  opts = %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e", default_currency: "EUR"}
+opts = [config: %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e", default_currency: "EUR"}]
 
 url = "https://test.monei-api.net/v1/payments"
 headers = ["Content-Type": "application/x-www-form-urlencoded"]
-Monei.authorize(92, cc, opts)
+{:ok, res} = Monei.authorize(92.0, cc, opts)
+Monei.capture(12.0, res.authorization, opts)
+Monei.purchase(92.0, cc, opts)
 """
