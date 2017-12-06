@@ -1,11 +1,12 @@
 defmodule Kuber.Hex.Gateway.AuthorizeNet do
-  import Poison
-
+  import XmlBuilder
+  
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
   @transaction_type %{
     purchase: "authCaptureTransaction"
   }
+  @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
   alias Kuber.Hex.{
     CreditCard,
@@ -14,10 +15,12 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   }
 
   def authenticate(opts) do
-    {:ok, config} = Keyword.fetch(opts, :config)
-    merchantAuth = Map.put_new(%{}, :merchantAuthentication, config)
-    {:ok, auth} = Map.put_new(%{}, :authenticateTestRequest, merchantAuth) |> Poison.encode
-    commit(:post, auth)
+    case Keyword.fetch(opts, :config) do
+      {:ok, config} -> 
+        data = add_auth_request(config)
+        commit(:post, data)
+      {:error, _} -> {:error, "config not found"}
+    end
   end
   
   def purchase(amount, payment, opts) do
@@ -31,8 +34,17 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
 
   defp commit(method, payload) do
     path = @test_url
-    headers = [{"Content-Type", "application/json"}]
+    headers = [{"Content-Type", "text/xml"}]
     HTTPoison.request(method, path, payload, headers)
   end
 
+  defp add_auth_request(opts) do
+    element(:authenticateTestRequest, %{xmlns: @aut_net_namespace} , [
+      element(:merchantAuthentication, [
+        element(:name, opts.name),
+        element(:transactionKey, opts.transactionKey)
+      ])
+     ]) 
+     |> generate
+  end
 end
