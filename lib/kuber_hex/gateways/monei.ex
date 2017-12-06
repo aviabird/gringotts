@@ -70,7 +70,7 @@ defmodule Kuber.Hex.Gateways.Monei do
      "card.expiryMonth": expiration_month |> Integer.to_string |> String.pad_leading(2, "0"),
      "card.expiryYear": expiration_year |> Integer.to_string,
      "card.cvv": card.cvc,
-     "paymentBrand": "VISA"] # DANGER!
+     "paymentBrand": card.brand]
   end
 
   def commit(method, endpoint, params, %{userId: userId,
@@ -151,14 +151,16 @@ cc = %CreditCard{
 name: "Jo Doe",
 number: "4200000000000000",
 expiration: {2019, 12},
-cvc:  "123"
+cvc:  "123",
+brand: "VISA"
 }
 
 bad_cc = %CreditCard{
 name: "Jo Doe",
 number: "4200000000000000",
 expiration: {2011, 12},
-cvc:  "123"
+cvc:  "123",
+brand: "VISA"
 }
 
 opts = [config: %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e", default_currency: "EUR"}]

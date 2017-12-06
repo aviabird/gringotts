@@ -13,7 +13,8 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     name: "Jo Doe",
     number: "4200000000000000",
     expiration: {2099, 12},
-    cvc:  "123"
+    cvc:  "123",
+    brand: "VISA"
   }
 
   setup do
