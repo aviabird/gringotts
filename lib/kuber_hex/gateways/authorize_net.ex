@@ -17,7 +17,6 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     {:ok, config} = Keyword.fetch(opts, :config)
     merchantAuth = Map.put_new(%{}, :merchantAuthentication, config)
     {:ok, auth} = Map.put_new(%{}, :authenticateTestRequest, merchantAuth) |> Poison.encode
-    IO.inspect auth
     commit(:post, auth)
   end
   
