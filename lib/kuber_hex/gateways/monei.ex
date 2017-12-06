@@ -101,7 +101,7 @@ defmodule Kuber.Hex.Gateways.Monei do
   MONEI will respond with an HTML message if status code is not 200.
   """
   def respond({:ok, %{status_code: status_code, body: body}}) do
-    Response.error(code: status_code, raw: {:html, body})
+    {:error, Response.error(code: status_code, raw: {:html, body})}
   end
 
   defp verification_result(data = %{"result" => result}) do
@@ -116,7 +116,29 @@ defmodule Kuber.Hex.Gateways.Monei do
 
     cond do
       String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) -> {:ok, results}
-      true -> {:error, results}
+      true -> {:error, [{:reason, result["description"]} | results]}
+      # String.match?(code, ~r{^(000\.400\.0|000\.400\.100)}) -> :review
+      # String.match?(code, ~r{^(000\.200)}) -> :session_active
+      # String.match?(code, ~r{^(800\.400\.5|100\.400\.500)}) -> :pending
+      # String.match?(code, ~r{^(000\.400\.[1][0-9][1-9]|000\.400\.2)}) -> :reject # risk check
+      # String.match?(code, ~r{^(800\.[17]00|800\.800\.[123]}) -> :reject # bank or external
+      # String.match?(code, ~r{^(900\.[1234]00}) -> :reject # comms failed
+      # String.match?(code, ~r{^(800\.5|999\.|600\.1|800\.800\.8}) -> :reject # sys error
+      # String.match?(code, ~r{^(800\.1[123456]0}) -> :reject # risk validation
+      # String.match?(code, ~r{^(100\.400|100\.38|100\.370\.100|100\.370\.11}) -> :fail # external risk sys
+      # String.match?(code, ~r{^(800\.400\.1}) -> :fail # avs
+      # String.match?(code, ~r{^(800\.400\.2|100\.380\.4|100\.390}) -> :fail # 3ds
+      # String.match?(code, ~r{^(100\.100\.701|800\.[32]}) -> :fail # blacklisted (possibly temporary)
+      # String.match?(code, ~r{^(600\.[23]|500\.[12]|800\.121}) -> :invalid_config
+      # String.match?(code, ~r{^(100\.[13]50}) -> :invalid # registration
+      # String.match?(code, ~r{^(100\.[13]50}) -> :reject # job related
+      # String.match?(code, ~r{^(700\.[1345][05]0}) -> :reject # refference related
+      # String.match?(code, ~r{^(200\.[123]|100\.[53][07]|800\.900|100\.[69]00\.500}) -> :reject # bad format
+      # String.match?(code, ~r{^(100\.800}) -> :reject # address validation
+      # String.match?(code, ~r{^(100\.[97]00}) -> :reject # contact validation
+      # String.match?(code, ~r{^(100\.100|100.2[01]}) -> :reject # account validation
+      # String.match?(code, ~r{^(100\.55}) -> :reject # amount validation
+      # String.match?(code, ~r{^(000\.100\.2}) -> :reject # chargebacks!!
     end
   end      
 end
