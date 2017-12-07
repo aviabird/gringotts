@@ -74,8 +74,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
   #   order_id: 1,
   #   billing_address: address,
   #   description: 'Wirecard remote test purchase',
-  #   email: 'soleone@example.com',
-  #   ip: '127.0.0.1'
+  #   email: "soleone@example.com",
+  #   ip: "127.0.0.1"
   # }
   def authorize(money, payment_method, options \\ %{}) do
     options = options |> Map.put(:credit_card, payment_method)
@@ -118,20 +118,37 @@ defmodule Kuber.Hex.Gateways.WireCard do
       element(:CC_TRANSACTION, [
         element(:TransactionID, options[:order_id]),
         element(:CommerceType, (if options[:commerce_type], do: options[:commerce_type]))      
-      ] ++ add_action_data(action, money, options))
-    ])
+      ] ++ add_action_data(action, money, options) ++ add_customer_data(options)
+      )])
+  end
+
+
+  # Includes the IP address of the customer to the transaction-xml
+  def add_customer_data(options) do
+    if options[:ip] do
+      [
+        element(:CONTACT_DATA, [ element(:IPAddress, options[:ip]) ])
+      ]
+    end
   end
 
   def add_action_data(action, money, options) do
     case options[:action] do
       # returns array of elements
-      action when(action in [:preauthorization, :purchase, :authorization_check]) -> create_elems_for_preauth_or_purchase_or_auth_check(action, money, options)
+      action when(action in [:preauthorization, :purchase, :authorization_check]) -> create_elems_for_preauth_or_purchase_or_auth_check(money, options)
+      action when(action in [:capture, :bookback]) -> create_elems_for_capture_or_bookback(money, options)
+      action when(action in [:reversal, :bookback]) -> add_guwid(options[:preauthorization])
     end
+  end
+
+  # Creates xml request elements if action is capture, bookback
+  def create_elems_for_capture_or_bookback(money, options) do
+    add_guwid(options[:preauthorization]) ++ [add_amount(money, options)]
   end
 
   # Creates xml request elements if action is preauth, purchase ir auth_check 
   # TODO: handle nil values if array not generated
-  defp create_elems_for_preauth_or_purchase_or_auth_check(action, money, options) do
+  defp create_elems_for_preauth_or_purchase_or_auth_check(money, options) do
     # TODO: setup_recurring_flag
     add_invoice(money, options) ++ element_for_credit_card_or_guwid(options) ++ add_address(options[:billing_address])
   end
@@ -142,22 +159,39 @@ defmodule Kuber.Hex.Gateways.WireCard do
         element(:CORPTRUSTCENTER_DATA, [
           element(:ADDRESS, [
             element(:Address1, address[:address1]),
-            element(:Address2, (if address[:address2], do: address[:address2]))
+            element(:Address2, (if address[:address2], do: address[:address2])),
+            element(:City, address[:city]),
+            element(:Zip, address[:zip]), 
+            add_state(address),
+            element(:Country,address[:country]),
+            element(:Phone, (if regex_match(@valid_phone_format ,address[:phone]), do: address[:phone])),
+            element(:Email, address[:email])
           ])
         ])
       ]
     end
   end
 
+  defp add_state(address) do
+    if ( regex_match(~r/[A-Za-z]{2}/, address[:state]) && regex_match(~r/^(us|ca)$/i, address[:country]) 
+    ) do
+     element(:State, (String.upcase(address[:state])))
+    end
+  end
 
   defp element_for_credit_card_or_guwid(options) do
     if options[:credit_card] do
       add_creditcard(options[:credit_card])
     else
-      [element(:GuWID, options[:preauthorization])]
+      add_guwid(options[:preauthorization])
     end
   end
   
+  # Includes Guwid data to transaction-xml
+  defp add_guwid(preauth) do
+    [element(:GuWID, preauth)]
+  end
+
   # Includes the credit-card data to the transaction-xml
   # TODO: Format Credit Card month, ref AM
   defp add_creditcard(creditcard) do
@@ -205,4 +239,10 @@ defmodule Kuber.Hex.Gateways.WireCard do
   defp join_string(list_of_words, joiner) do
     Enum.join(list_of_words, joiner)
   end
+
+  defp regex_match(regex, string) do
+    Regex.match?(regex, string)
+  end
+
+
 end
