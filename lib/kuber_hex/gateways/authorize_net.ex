@@ -16,7 +16,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
 
   def authenticate(opts) do
     case Keyword.fetch(opts, :config) do
-      {:ok, config} -> 
+      {:ok, config} ->
         data = add_auth_request(config)
         commit(:post, data)
       {:error, _} -> {:error, "config not found"}
@@ -34,7 +34,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     HTTPoison.request(method, path, payload, headers)
   end
 
-  def add_auth_purchase(amount, payment, opts) do
+  defp add_auth_purchase(amount, payment, opts) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
@@ -67,7 +67,12 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
       add_transaction_type(transaction_type),
       add_amount(amount),
       add_payment_source(payment),
-      add_invoice(@transaction_type[:purchase], opts)      
+      add_invoice(@transaction_type[:purchase], opts),
+      add_tax_fields(opts),
+      add_duty_fields(opts),
+      add_shipping_fields(opts),
+      add_po_number(opts),
+      add_customer_info(opts)
     ])
   end
 
@@ -112,4 +117,79 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
       ])
     ])
   end
+
+  defp add_tax_fields(opts) do
+    element(:tax, [
+      element(:amount, opts[:tax][:amount]),
+      element(:name, opts[:tax][:amount]),
+      element(:description, opts[:tax][:description]),
+    ])
+  end
+
+  defp add_duty_fields(opts) do
+    element(:duty, [
+      element(:amount, opts[:duty][:amount]),
+      element(:name, opts[:duty][:amount]),
+      element(:description, opts[:duty][:description]),
+    ])
+  end
+
+  defp add_shipping_fields(opts) do
+    element(:shipping, [
+      element(:amount, opts[:shipping][:amount]),
+      element(:name, opts[:shipping][:amount]),
+      element(:description, opts[:shipping][:description]),
+    ])
+  end
+
+  defp add_po_number(opts) do
+    element(:poNumber, opts[:poNumber])
+  end
+
+  defp add_customer_info(opts) do
+    element([
+      add_customer_id(opts),
+      add_billing_info(opts),
+      add_shipping_info(opts),
+      add_customer_ip(opts)
+    ])
+  end
+
+  defp add_customer_id(opts) do
+    element(:customer, [
+      element(:id, opts[:customer][:id])
+    ])
+  end
+
+  defp add_billing_info(opts) do
+    element(:billTo, [
+      element(:firstName, opts[:billTo][:firstName]),
+      element(:lastName, opts[:billTo][:lastName]),
+      element(:company, opts[:billTo][:company]),
+      element(:address, opts[:billTo][:address]),
+      element(:city, opts[:billTo][:city]),
+      element(:state, opts[:billTo][:state]),
+      element(:zip, opts[:billTo][:zip]),
+      element(:country, opts[:billTo][:country])
+    ])
+  end
+
+  defp add_shipping_info(opts) do
+    element(:shipTo, [
+      element(:firstName, opts[:shipTo][:firstName]),
+      element(:lastName, opts[:shipTo][:lastName]),
+      element(:company, opts[:shipTo][:company]),
+      element(:address, opts[:shipTo][:address]),
+      element(:city, opts[:shipTo][:city]),
+      element(:state, opts[:shipTo][:state]),
+      element(:zip, opts[:shipTo][:zip]),
+      element(:country, opts[:shipTo][:country])      
+    ])
+  end
+
+  defp add_customer_ip(opts) do
+    element(:customerIP, opts[:customerIP])
+  end
+
+
 end
