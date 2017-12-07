@@ -47,8 +47,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # ================================================
   # E.g: => 
   # creditcard = %{
-  #   number: "4242424242424242",
-  #   month: 9,
+  #   number: "4200000000000000",
+  #   month: 12,
   #   year: 2018,
   #   first_name: "Longbob",
   #   last_name: "Longsen",
@@ -91,6 +91,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     
     headers = %{ "Content-Type" => "text/xml",
     "Authorization" => encoded_credentials(options[:login], options[:password]) }
+    response = HTTPoison.request(:post, @test_url , request, headers)
+    IO.puts "===============#{inspect response}==================="
   end
   
   # Generates the complete xml-message, that gets sent to the gateway
@@ -101,18 +103,19 @@ defmodule Kuber.Hex.Gateways.WireCard do
         element(:W_REQUEST, [
           element(:W_JOB, [
             element(:JobID, ''),
-            element(:BusinessCaseSignature, "12121212121212"),
+            element(:BusinessCaseSignature, options[:signature]),
             add_transaction_data(action, money, options)
           ])
         ])
       ]))
-    File.write!("./xml_out.xml", request, [:write])
+
+    request
   end
 
   # Includes the whole transaction data (payment, creditcard, address)
   # TODO: Add order_id to options if not present, see AM
   # TOOD: Clean description before passing it to FunctionID, replace dummy
-  def add_transaction_data(action, money, options) do
+  defp add_transaction_data(action, money, options) do
     element("FNC_CC_#{options[:action] |> atom_to_upcase_string}", [
       element(:FunctionID, "dummy_description"),
       element(:CC_TRANSACTION, [
@@ -124,7 +127,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
 
 
   # Includes the IP address of the customer to the transaction-xml
-  def add_customer_data(options) do
+  defp add_customer_data(options) do
     if options[:ip] do
       [
         element(:CONTACT_DATA, [ element(:IPAddress, options[:ip]) ])
@@ -142,7 +145,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   end
 
   # Creates xml request elements if action is capture, bookback
-  def create_elems_for_capture_or_bookback(money, options) do
+  defp create_elems_for_capture_or_bookback(money, options) do
     add_guwid(options[:preauthorization]) ++ [add_amount(money, options)]
   end
 
