@@ -46,6 +46,15 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # TODO: change it so it can also have GuWID
   # ================================================
   # E.g: => 
+  # creditcard = %{
+  #   number: "4242424242424242",
+  #   month: 9,
+  #   year: 2018,
+  #   first_name: "Longbob",
+  #   last_name: "Longsen",
+  #   verification_value: "123",
+  #   brand: "visa"
+  # }
   # address = %{
   #   name:     "Jim Smith",
   #   address1: "456 My Street",
@@ -121,11 +130,26 @@ defmodule Kuber.Hex.Gateways.WireCard do
   end
 
   # Creates xml request elements if action is preauth, purchase ir auth_check 
+  # TODO: handle nil values if array not generated
   defp create_elems_for_preauth_or_purchase_or_auth_check(action, money, options) do
     # TODO: setup_recurring_flag
-    [add_invoice(money, options) | element_for_credit_card_or_guwid(options)]
+    add_invoice(money, options) ++ element_for_credit_card_or_guwid(options) ++ add_address(options[:billing_address])
   end
   
+  defp add_address(address) do
+    if address do
+      [
+        element(:CORPTRUSTCENTER_DATA, [
+          element(:ADDRESS, [
+            element(:Address1, address[:address1]),
+            element(:Address2, (if address[:address2], do: address[:address2]))
+          ])
+        ])
+      ]
+    end
+  end
+
+
   defp element_for_credit_card_or_guwid(options) do
     if options[:credit_card] do
       add_creditcard(options[:credit_card])
