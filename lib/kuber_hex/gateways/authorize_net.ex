@@ -13,7 +13,10 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     Address,
     Response
   }
-
+  @doc """
+    function to authorize the merchant using merchant name 
+    and transactionKey
+  """
   def authenticate(opts) do
     case Keyword.fetch(opts, :config) do
       {:ok, config} ->
@@ -23,17 +26,23 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     end
   end
   
+  @doc """
+    function to charge a user credit card for the specified amount,
+    according to the payment method provided(e.g. credit card, apple pay etc.)
+  """
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts)
     commit(:post, request_data)
   end
 
+  # method to make the api request with params
   defp commit(method, payload) do
     path = @test_url
     headers = [{"Content-Type", "text/xml"}]
     HTTPoison.request(method, path, payload, headers)
   end
 
+  # function for formatting the request as an xml for purchase method
   defp add_auth_purchase(amount, payment, opts) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
@@ -44,6 +53,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
 
   end
 
+  # function to format the request as an xml for the authenticate method
   defp add_auth_request(opts) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts)
@@ -190,6 +200,5 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   defp add_customer_ip(opts) do
     element(:customerIP, opts[:customerIP])
   end
-
 
 end
