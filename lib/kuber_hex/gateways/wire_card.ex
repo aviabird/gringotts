@@ -46,7 +46,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # TODO: change it so it can also have GuWID
   # ================================================
   # E.g: => 
-  # creditcard = %{
+  # creditcard = %CreditCard{
   #   number: "4200000000000000",
   #   month: 12,
   #   year: 2018,
@@ -78,10 +78,76 @@ defmodule Kuber.Hex.Gateways.WireCard do
   #   ip: "127.0.0.1"
   # }
   def authorize(money, payment_method, options \\ %{}) do
-    options = options |> Map.put(:credit_card, payment_method)
-    commit(:preauthorization, money, options)
+    case payment_method do
+      %CreditCard{}  ->
+        options = options |> Map.put(:credit_card, payment_method)
+      _             -> 
+      options = options |> Map.put(:preauthorization, payment_method)
+    end
+
+    response = commit(:preauthorization, money, options)
+    response
   end
 
+  # def capture(money, authorization, options \\ %{}) do
+  #   options[:preauthorization] = authorization
+  #   commit(:capture, money, options)
+  # end
+
+  # Purchase - the second parameter may be a CreditCard or
+  # a String which represents a GuWID reference to an earlier
+  # transaction.  If a GuWID is given, rather than a CreditCard,
+  # then then the :recurring option will be forced to "Repeated"
+  # def purchase(money, payment_method, options \\ %{}) do
+  #   commit(:purchase, money, options)  
+  # end
+ 
+  # def void(identification, options = {}) do
+  #   options[:preauthorization] = identification
+  #   commit(:reversal, nil, options)
+  # end
+ 
+  # def refund(money, identification, options = {}) do
+  #   options[:preauthorization] = identification
+  #   commit(:bookback, money, options)
+  # end
+ 
+  # Store card - Wirecard supports the notion of "Recurring
+  # Transactions" by allowing the merchant to provide a reference
+  # to an earlier transaction (the GuWID) rather than a credit
+  # card.  A reusable reference (GuWID) can be obtained by sending
+  # a purchase or authorization transaction with the element
+  # "RECURRING_TRANSACTION/Type" set to "Initial".  Subsequent
+  # transactions can then use the GuWID in place of a credit
+  # card by setting "RECURRING_TRANSACTION/Type" to "Repeated".
+  #
+  # This implementation of card store utilizes a Wirecard
+  # "Authorization Check" (a Preauthorization that is automatically
+  # reversed).  It defaults to a check amount of "100" (i.e.
+  # $1.00) but this can be overriden (see below).
+  #
+  # IMPORTANT: In order to reuse the stored reference, the
+  # +authorization+ from the response should be saved by
+  # your application code.
+  #
+  # ==== Options specific to +store+
+  #
+  # * <tt>:amount</tt> -- The amount, in cents, that should be
+  #   "validated" by the Authorization Check.  This amount will
+  #   be reserved and then reversed.  Default is 100.
+  #
+  # Note: This is not the only way to achieve a card store
+  # operation at Wirecard.  Any +purchase+ or +authorize+
+  # can be sent with +options[:recurring] = 'Initial'+ to make
+  # the returned authorization/GuWID usable in later transactions
+  # with +options[:recurring] = 'Repeated'+.
+  # def store(creditcard, options = {}) do
+  #   options[:credit_card] = creditcard
+  #   options[:recurring] = 'Initial'
+
+  # end
+
+ 
   # =================== Private Methods =================== 
   # Contact WireCard, make the XML request, and parse the
   # reply into a Response object
@@ -91,10 +157,23 @@ defmodule Kuber.Hex.Gateways.WireCard do
     
     headers = %{ "Content-Type" => "text/xml",
     "Authorization" => encoded_credentials(options[:login], options[:password]) }
-    response = HTTPoison.request(:post, @test_url , request, headers)
-    IO.puts "===============#{inspect response}==================="
+    HTTPoison.request(:post, @test_url , request, headers)
+      |> respond
   end
   
+  defp respond({:ok, %{status_code: 200, body: body}}) do
+    response = parse_xml(body)
+    {:ok, response}
+  end
+
+  defp respond({:ok, %{body: body, status_code: status_code}}) do
+    {:error, "Some Error Occurred"}
+  end
+
+  defp parse_xml(data) do
+    :xmerl_scan.string(String.to_char_list(data))
+  end
+
   # Generates the complete xml-message, that gets sent to the gateway
   defp build_request(action, money, options) do
     options = options |> Map.put(:action, action)
@@ -246,6 +325,4 @@ defmodule Kuber.Hex.Gateways.WireCard do
   defp regex_match(regex, string) do
     Regex.match?(regex, string)
   end
-
-
 end

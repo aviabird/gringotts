@@ -1,3 +1,3 @@
 defmodule Kuber.Hex.CreditCard do
-  defstruct [:name, :number, :expiration, :cvc]
+  defstruct [:number, :month, :year, :first_name, :last_name, :verification_value, :brand]
 end
