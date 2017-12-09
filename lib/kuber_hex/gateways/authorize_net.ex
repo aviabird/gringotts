@@ -4,7 +4,8 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
   @transaction_type %{
-    purchase: "authCaptureTransaction"
+    purchase: "authCaptureTransaction",
+    authorize: "authOnlyTransaction"
   }
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
@@ -31,7 +32,16 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     according to the payment method provided(e.g. credit card, apple pay etc.)
   """
   def purchase(amount, payment, opts) do
-    request_data = add_auth_purchase(amount, payment, opts)
+    request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
+    commit(:post, request_data)
+  end
+
+  @doc """
+    use this method to authorize a card payment. To actually charge funds a follow up with 
+    capture method needs to be done.
+  """
+  def authorize(amount, payment, opts) do
+    request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     commit(:post, request_data)
   end
 
@@ -43,11 +53,11 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
 
   # function for formatting the request as an xml for purchase method
-  defp add_auth_purchase(amount, payment, opts) do
+  defp add_auth_purchase(amount, payment, opts, transaction_type) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
-      add_transaction_request(amount, @transaction_type[:purchase], payment, opts),
+      add_transaction_request(amount, transaction_type, payment, opts),
     ])
     |> generate
 
