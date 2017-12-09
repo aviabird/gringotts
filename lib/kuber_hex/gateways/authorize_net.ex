@@ -14,6 +14,11 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     Address,
     Response
   }
+
+
+  # ---------------Interface functions to be used by developer for 
+  #----------------making requests to gateway
+
   @doc """
     function to authorize the merchant using merchant name 
     and transactionKey
@@ -52,7 +57,10 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     HTTPoison.request(method, path, payload, headers)
   end
 
-  # function for formatting the request as an xml for purchase method
+
+  #------------------- Helper functions for the interface functions------------------- 
+
+  # function for formatting the request as an xml for purchase and authorize method
   defp add_auth_purchase(amount, payment, opts, transaction_type) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
@@ -70,6 +78,9 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     ]) 
     |> generate
   end
+
+  #--------------- XMl Builder functions for helper functions to assist 
+  #---------------in attaching different tags for request
 
   defp add_merchant_auth(opts) do
     element(:merchantAuthentication, [
