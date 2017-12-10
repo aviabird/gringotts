@@ -1,5 +1,5 @@
 defmodule Kuber.Hex.Integration.Gateways.MoneiTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Kuber.Hex.{
     CreditCard,

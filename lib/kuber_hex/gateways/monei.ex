@@ -96,7 +96,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     body = params ++ ["authentication.userId": userId,
                       "authentication.password": password,
                       "authentication.entityId": entityId]
-    url = "#{@base_url}/#{version(opts)}/#{endpoint}"
+    url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
     method
     |> HTTPoison.request(url, {:form, body}, @default_headers)
     |> respond
@@ -167,6 +167,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     end
   end
 
+  defp base_url(opts), do: opts[:test_url] || @base_url
   defp currency(opts), do: opts[:currency] || @default_currency
   defp version(opts), do: opts[:api_version] || @version
 end
