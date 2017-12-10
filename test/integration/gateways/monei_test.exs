@@ -1,14 +1,14 @@
-defmodule Kuber.Hex.Gateways.MoneiTest do
+defmodule Kuber.Hex.Integration.Gateways.MoneiTest do
   use ExUnit.Case, async: false
 
   alias Kuber.Hex.{
     CreditCard,
-    Address,
-    Response,
     Worker
   }
   alias Kuber.Hex.Gateways.Monei, as: Gateway
 
+  @moduletag :integration
+  
   @card %CreditCard{
     name: "Jo Doe",
     number: "4200000000000000",
@@ -17,7 +17,7 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     brand: "VISA"
   }
 
-  setup do
+  setup_all do
     auth = %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e"}
     {:ok, worker} = Worker.start_link(Gateway, auth, name: :monei_gateway)
     {:ok, worker: worker} # note that `worker` is just a PID
@@ -26,23 +26,35 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     # :sys.trace(worker, true)
   end
 
-  test "monei authorize test", %{worker: worker} do
-    case Kuber.Hex.authorize(:monei_gateway, 32.00, @card) do
+  test "authorize." do
+    case Kuber.Hex.authorize(:monei_gateway, 3.1, @card, currency: "USD") do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
         assert String.length(response.id) == 32
-      {:error, _} -> assert false
+      {:error, _err} -> flunk()
     end
   end
 
-  test "monei purchase test", %{worker: worker} do
-    case Kuber.Hex.purchase(:monei_gateway, 32, @card) do
+  # test "capture." do
+  #   case Kuber.Hex.capture(:monei_gateway, 32.00, :ets.lookup(table, :auth_id) do
+  #     {:ok, response} ->
+  #       assert response.code == "000.100.110"
+  #       assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
+  #       assert String.length(response.id) == 32
+        
+  #     {:error, _err} -> flunk()
+  #   end
+  # end
+
+  
+  test "purchase." do
+    case Kuber.Hex.authorize(:monei_gateway, 32, @card) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
         assert String.length(response.id) == 32
-      {:error, _} -> assert false
+      {:error, _err} -> flunk()
     end
   end
 

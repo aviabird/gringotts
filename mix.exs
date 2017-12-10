@@ -35,6 +35,7 @@ defmodule Kuber.Hex.Mixfile do
     [{:poison, "~> 3.1.0"},
      {:httpoison, "~> 0.13.0"},
      {:ex_doc, ">= 0.6.0", only: :dev},
-     {:mock, ">= 0.1.0", only: :test}]
+     {:mock, ">= 0.1.0", only: :test},
+     {:bypass, "~> 0.8", only: :test}]
   end
 end
