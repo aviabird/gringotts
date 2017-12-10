@@ -12,11 +12,13 @@ defmodule Kuber.Hex.Gateways.Monei do
   
   use Kuber.Hex.Gateways.Base
   import Poison, only: [decode!: 1]
-  alias Kuber.Hex.{CreditCard, Address, Response}
+  alias Kuber.Hex.{CreditCard, Response}
   
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded",
                     "charset": "UTF-8"]
+  @default_currency "EUR"
+  
   @version "v1"
 
   @cvc_code_translator %{
@@ -39,28 +41,43 @@ defmodule Kuber.Hex.Gateways.Monei do
   # MONEI supports payment by card, bank account and even something obscure: virtual account
   # opts has the auth keys.
 
-  @spec authorize(Float, String.t, CreditCard, Map) :: Response
-  def authorize(amount, currency \\ "EUR", card, opts) do # not just card, also bank!
+  @spec authorize(number, CreditCard, Keyword) :: Response
+  def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
+    authorize(amount / 1, card, opts)
+  end
+  
+  def authorize(amount, card = %CreditCard{}, opts) when is_float(amount) do
     params = [paymentType: "PA",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)] ++ card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments", params, auth_info)
   end
 
-  @spec capture(Float, String.t, String.t, Map) :: Response
-  def capture(amount, currency \\ "EUR", <<paymentId::bytes-size(32)>>, opts) do
+  @spec capture(number, String.t, Keyword) :: Response
+  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
+    capture(amount / 1, paymentId, opts)
+  end
+  
+  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_float(amount) do
     params = [paymentType: "CP",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency]
-    commit(:post, "payments/#{paymentId}", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec purchase(Float, String.t, CreditCard, Map) :: Response
-  def purchase(amount, currency \\ "EUR", card, opts) do
+  @spec purchase(number, CreditCard, Keyword) :: Response
+  def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do
+    purchase(amount / 1, card, opts)
+  end
+  
+  def purchase(amount, card = %CreditCard{}, opts) when is_float(amount) do
     params = [paymentType: "DB",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)] ++ card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments", params, auth_info)
   end
 
   defp card_params(card) do
@@ -73,19 +90,23 @@ defmodule Kuber.Hex.Gateways.Monei do
      "paymentBrand": card.brand]
   end
 
-  def commit(method, endpoint, params, %{userId: userId,
-                                         password: password,
-                                         entityId: entityId}) do
+  def commit(method, endpoint, params, opts = %{userId: userId,
+                                                password: password,
+                                                entityId: entityId}) do
     body = params ++ ["authentication.userId": userId,
                       "authentication.password": password,
                       "authentication.entityId": entityId]
-    url = "#{@base_url}/#{@version}/#{endpoint}"
+    url = "#{@base_url}/#{version(opts)}/#{endpoint}"
     method
     |> HTTPoison.request(url, {:form, body}, @default_headers)
     |> respond
   end
+
+  @doc """
+  This needs to be deprecated, and we should throw a nice BadConfig error instead of this clause.
+  """
   def commit(_method, _endpoint, _params, _opts) do
-    Response.error(reason: "Authorization fields missing")
+    {:error, Response.error(reason: "Authorization fields missing", description: "Check if the application is correctly configured")}
   end
 
   def respond({:ok, %{status_code: 200, body: body}}) do
@@ -102,6 +123,10 @@ defmodule Kuber.Hex.Gateways.Monei do
   """
   def respond({:ok, %{status_code: status_code, body: body}}) do
     {:error, Response.error(code: status_code, raw: {:html, body})}
+  end
+
+  def respond({:error, %HTTPoison.Error{} = error}) do
+    {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
   end
 
   defp verification_result(data = %{"result" => result}) do
@@ -140,7 +165,10 @@ defmodule Kuber.Hex.Gateways.Monei do
       # String.match?(code, ~r{^(100\.55}) -> :reject # amount validation
       # String.match?(code, ~r{^(000\.100\.2}) -> :reject # chargebacks!!
     end
-  end      
+  end
+
+  defp currency(opts), do: opts[:currency] || @default_currency
+  defp version(opts), do: opts[:api_version] || @version
 end
 
 """
@@ -168,6 +196,6 @@ opts = [config: %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMG
 url = "https://test.monei-api.net/v1/payments"
 headers = ["Content-Type": "application/x-www-form-urlencoded"]
 {:ok, res} = Monei.authorize(92.0, cc, opts)
-Monei.capture(12.0, res.authorization, opts)
+Monei.capture(12.0, res.id, opts)
 Monei.purchase(92.0, cc, opts)
 """

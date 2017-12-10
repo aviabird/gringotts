@@ -35,4 +35,15 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
       {:error, _} -> assert false
     end
   end
+
+  test "monei purchase test", %{worker: worker} do
+    case Kuber.Hex.purchase(:monei_gateway, 32, @card) do
+      {:ok, response} ->
+        assert response.code == "000.100.110"
+        assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
+        assert String.length(response.id) == 32
+      {:error, _} -> assert false
+    end
+  end
+
 end
