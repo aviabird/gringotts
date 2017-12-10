@@ -33,9 +33,9 @@ defmodule Kuber.Hex.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [{:poison, "~> 3.1.0"},
-     {:httpoison, "~> 0.13.0"},
-     {:ex_doc, ">= 0.6.0", only: :dev},
-     {:mock, ">= 0.1.0", only: :test},
+     {:httpoison, "~> 0.13"},
+     {:ex_doc, "~> 0.16", only: :dev, runtime: false},
+     {:mock, "~> 0.3.0", only: :test},
      {:bypass, "~> 0.8", only: :test}]
   end
 end

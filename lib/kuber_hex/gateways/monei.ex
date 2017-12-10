@@ -1,13 +1,8 @@
 defmodule Kuber.Hex.Gateways.Monei do
   @moduledoc """
-  Issues:
-  
-  commerce_billing and kuber_hex have some issues with their deps. `mix deps.get` throws a million warnings.
-  Can't use Kuber.Hex.Gateways.Base.http as it is specifically tailored for stripe!
-  There's no validation for opts, ie some required keys might be missing.
-    this will allow me to fail-fast, currently errors are caught in `commit` which is too late.
-  Why don't we `use HTTPoison.Base`.
-  Need a card brand field in CreditCard struct
+  An API client for the MONEI gateway.
+
+  For reference see [MONEI's API (v1) documentation](https://docs.monei.net).
   """
   
   use Kuber.Hex.Gateways.Base
@@ -172,31 +167,3 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp version(opts), do: opts[:api_version] || @version
 end
 
-"""
-alias Kuber.Hex.Gateways.Monei
-alias Kuber.Hex.{CreditCard, Address, Response}
-
-cc = %CreditCard{
-name: "Jo Doe",
-number: "4200000000000000",
-expiration: {2019, 12},
-cvc:  "123",
-brand: "VISA"
-}
-
-bad_cc = %CreditCard{
-name: "Jo Doe",
-number: "4200000000000000",
-expiration: {2011, 12},
-cvc:  "123",
-brand: "VISA"
-}
-
-opts = [config: %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e", default_currency: "EUR"}]
-
-url = "https://test.monei-api.net/v1/payments"
-headers = ["Content-Type": "application/x-www-form-urlencoded"]
-{:ok, res} = Monei.authorize(92.0, cc, opts)
-Monei.capture(12.0, res.id, opts)
-Monei.purchase(92.0, cc, opts)
-"""

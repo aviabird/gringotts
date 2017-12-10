@@ -101,3 +101,13 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
   end
 
 end
+
+defmodule Kuber.Hex.Gateways.MoneiDocTest do
+  use ExUnit.Case, async: true
+  alias Kuber.Hex.{
+    CreditCard,
+    Gateways.Monei
+  }
+
+  doctest Kuber.Hex.Gateways.Monei
+end
