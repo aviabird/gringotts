@@ -1,24 +1,11 @@
 defmodule Kuber.Hex do
-  use Application
-
   import GenServer, only: [call: 2]
 
-  # See http://elixir-lang.org/docs/stable/elixir/Application.html
-  # for more information on OTP Applications
-  def start(_type, _args) do
-    import Supervisor.Spec, warn: false
+  @doc """
+  Public API authorize method
 
-    children = [
-      # Define workers and child supervisors to be supervised
-      # worker(Kuber.Hex.Worker, [arg1, arg2, arg3])
-    ]
-
-    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Kuber.Hex.Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-
+  Makes an asynchronous authorize call to the Genserver
+  """
   def authorize(worker, amount, card, opts \\ []),
     do: call(worker, {:authorize, amount, card, opts})
 

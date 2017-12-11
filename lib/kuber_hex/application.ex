@@ -16,11 +16,11 @@ defmodule Kuber.Hex.Application do
       worker(
         Kuber.Hex.Worker,
         [
-          Application.get_env(:kuber_hex, Kuber.Hex)[:adapter], # gateway 
-          Application.get_env(:kuber_hex, Kuber.Hex) # options
+          Application.get_env(:kuber_hex, Kuber.Hex)[:adapter], # gateway
+          Application.get_env(:kuber_hex, Kuber.Hex),           # options(config from application)
           # Experimental
           # TODO: This is exposed from the config and is later used to call methods of the lib.
-          # [name: Application.get_env(:kuber_hex, Kuber.Hex)[:worker_process_name]]
+          [name: Application.get_env(:kuber_hex, Kuber.Hex)[:worker_process_name]]
         ])
     ]
 
