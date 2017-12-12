@@ -1,12 +1,45 @@
 defmodule Kuber.Hex.Gateways.Monei do
-  @moduledoc """
-  An API client for the MONEI gateway.
+  @moduledoc ~S"""
+  An API client for the [MONEI](https://www.monei.net) gateway.
 
   For reference see [MONEI's API (v1) documentation](https://docs.monei.net).
+
+  The following features of MONEI are implemented:
+  
+  * `PA` **Pre-Authorize**\
+  In `authorize/3`.
+
+  * `CP` **Capture**\
+  In `capture/3`.
+
+  * `RF` **Refund**\
+  In `refund/3` and ~~also `void/2`~~.
+
+  * `RV` **Reversal**\
+  In `void/2`.
+
+  * `DB` **Debit**\
+  In `purchase/3`.
+  
+  * **Tokenization** and **Registrations**\
+  In `store/2` ~~and `unstore/2`~~.
+
+  ## Caveats
+
+  Although MONEI supports payments from [various cards](https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods), banks and virtual accounts (like some wallets), this library only accepts payments by (supported) cards.
+
+  ## TODO
+
+  * [Backoffice operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+    - Credit
+    - Rebill
+  * [Recurring payments](https://docs.monei.net/recurring)
+  * [Reporting](https://docs.monei.net/tutorials/reporting)
+  
   """
   
   use Kuber.Hex.Gateways.Base
-  import Poison, only: [decode!: 1]
+  import Poison, only: [decode: 1]
   alias Kuber.Hex.{CreditCard, Response}
   
   @base_url "https://test.monei-api.net"
@@ -36,7 +69,7 @@ defmodule Kuber.Hex.Gateways.Monei do
   # MONEI supports payment by card, bank account and even something obscure: virtual account
   # opts has the auth keys.
 
-  @spec authorize(number, CreditCard, Keyword) :: Response
+  @spec authorize(Integer | Float, CreditCard, Keyword) :: Response
   def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
     authorize(amount / 1, card, opts)
   end
@@ -49,7 +82,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments", params, auth_info)
   end
 
-  @spec capture(number, String.t, Keyword) :: Response
+  @spec capture(Integer | Float, String.t, Keyword) :: Response
   def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
     capture(amount / 1, paymentId, opts)
   end
@@ -62,7 +95,7 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec purchase(number, CreditCard, Keyword) :: Response
+  @spec purchase(Integer | Float, CreditCard, Keyword) :: Response
   def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do
     purchase(amount / 1, card, opts)
   end
@@ -75,6 +108,42 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments", params, auth_info)
   end
 
+  @spec void(String.t, Keyword) :: Response
+  def void(<<paymentId::bytes-size(32)>>, opts) do
+    params = [paymentType: "RV"]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
+  end
+
+  @spec refund(Integer | Float, String.t, Keyword) :: Response
+  def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
+    params = [paymentType: "RF",
+              amount: :erlang.float_to_binary(amount, decimals: 2),
+              currency: currency(opts)]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
+  end
+
+  @spec store(CreditCard, Keyword) :: Response
+  def store(card = %CreditCard{}, opts) do
+    params = card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "registrations", params, auth_info)
+  end
+
+  @doc """
+  WIP
+
+  MONEI unstore does not seem to work. MONEI always returns a `403`
+  """
+  @spec unstore(String.t, Keyword) :: Response
+  def unstore(<<registrationId::bytes-size(32)>>, opts) do
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:delete, "registrations/#{registrationId}", [], auth_info)
+  end
+
+
+  
   defp card_params(card) do
     {expiration_year, expiration_month} = card.expiration
     ["card.number": card.number,
@@ -88,36 +157,33 @@ defmodule Kuber.Hex.Gateways.Monei do
   def commit(method, endpoint, params, opts = %{userId: userId,
                                                 password: password,
                                                 entityId: entityId}) do
-    body = params ++ ["authentication.userId": userId,
-                      "authentication.password": password,
-                      "authentication.entityId": entityId]
+    auth_params = ["authentication.userId": userId,
+                   "authentication.password": password,
+                   "authentication.entityId": entityId]
+    body = params ++ auth_params
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
-    method
-    |> HTTPoison.request(url, {:form, body}, @default_headers)
-    |> respond
+    case method do
+      :post -> HTTPoison.post(url, {:form, body}, @default_headers) |> respond
+      :delete -> HTTPoison.delete(url  <> "?" <> URI.encode_query(auth_params)) |> respond
+    end
   end
 
-  @doc """
-  This needs to be deprecated, and we should throw a nice BadConfig error instead of this clause.
-  """
   def commit(_method, _endpoint, _params, _opts) do
     {:error, Response.error(reason: "Authorization fields missing", description: "Check if the application is correctly configured")}
   end
 
   def respond({:ok, %{status_code: 200, body: body}}) do
-    data = decode!(body)
-    # IO.inspect data
-    case verification_result(data) do
-      {:ok, results} -> {:ok, [{:id, data["id"]} | results] |> Response.success}
-      {:error, errors} -> {:error, [{:id, data["id"]} | errors] |> Response.error}
+    case decode(body) do
+      {:ok, decoded_json} -> case verification_result(decoded_json) do
+                               {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
+                               {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
+                             end
+      {:error, _} -> {:error, Response.error(raw: body, code: :undefined_response_from_monei)}
     end
   end
 
-  @doc"""
-  MONEI will respond with an HTML message if status code is not 200.
-  """
   def respond({:ok, %{status_code: status_code, body: body}}) do
-    {:error, Response.error(code: status_code, raw: {:html, body})}
+    {:error, Response.error(code: status_code, raw: body)}
   end
 
   def respond({:error, %HTTPoison.Error{} = error}) do

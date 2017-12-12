@@ -1,8 +1,9 @@
 defmodule Kuber.Hex.Gateways.MoneiTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Kuber.Hex.{
     CreditCard,
+    Response
   }
   alias Kuber.Hex.Gateways.Monei, as: Gateway
 
@@ -26,8 +27,21 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     {"id": "8a82944a603b12d001603c1a1c2d5d90",
      "result": {
        "code": "000.100.110",
-       "description": "Request successfully processed in 'Merchant in
-       Integrator Test Mode'"}
+       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
+    }]
+
+  @store_success ~s[
+    {"result":{
+        "code":"000.100.110",
+        "description":"Request successfully processed in 'Merchant in Integrator Test Mode'"
+     },
+     "card":{
+       "bin":"420000",
+       "last4Digits":"0000",
+       "holder":"Jo Doe",
+       "expiryMonth":"12",
+       "expiryYear":"2099"
+     }
     }]
 
   # A new Bypass instance is needed per test, so that we can do parallel tests
@@ -100,6 +114,37 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     assert response.code == "000.100.110"
   end
 
+  test "store     | when all is good.", %{bypass: bypass, auth: auth} do
+    Bypass.expect_once bypass, "POST", "/v1/registrations", fn conn ->
+      Plug.Conn.resp(conn, 200, @store_success)
+    end
+    {:ok, response} = Gateway.store(@card, [config: auth])
+    assert response.code == "000.100.110"
+    assert response.raw["card"]["holder"] == "Jo Doe"
+  end
+
+  @tag :skip
+  test "unstore   | when all is good.", %{bypass: bypass, auth: auth} do
+    Bypass.expect_once(
+      bypass,
+      "DELETE",
+      "/v1/registrations/7214344252e11af79c0b9e7b4f3f6234",
+      fn conn ->
+        Plug.Conn.resp(conn, 200, "<html></html>")
+      end)
+    {:error, response} = Gateway.unstore("7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+    assert response.code == :undefined_response_from_monei
+  end
+
+  test "respond   | various scenarios." do
+    json_200 = %HTTPoison.Response{body: @auth_success, status_code: 200}
+    json_not_200 = %HTTPoison.Response{body: @auth_success, status_code: 300}
+    html_200 = %HTTPoison.Response{body: ~s[<html></html>\n], status_code: 200}
+    html_not_200 = %HTTPoison.Response{body: ~s[<html></html?], status_code: 300}
+    all = [json_200, json_not_200, html_200, html_not_200]
+    then = Enum.map(all, &Gateway.respond({:ok, &1}))
+    assert Keyword.keys(then) == [:ok, :error, :error, :error]
+  end
 end
 
 defmodule Kuber.Hex.Gateways.MoneiDocTest do
