@@ -1,66 +1,10 @@
 defmodule Kuber.Hex.Gateways.Stripe do
   @base_url "https://api.stripe.com/v1"
 
-  @cvc_code_translator %{
-    "pass" => "M",
-    "fail" => "N",
-    "unchecked" => "P"
-  }
-
-  @avs_code_translator %{
-    {"pass", "pass"} => "Y",
-    {"pass", "fail"} => "A",
-    {"pass", "unchecked"} => "B",
-    {"fail", "pass"} => "Z",
-    {"fail", "fail"} => "N",
-    {"unchecked", "pass"} => "P",
-    {"unchecked", "unchecked"} => "I"
-  }
-
-  @supported_countries ~w(AT AU BE BR CA CH DE DK ES FI FR GB HK IE IT JP LU MX NL NO NZ PT SE SG US)
   @default_currency "USD"
-  @money_format :cents
-  @supported_cardtypes ~w(visa, master, american_express, discover, jcb, diners_club, maestro)a
 
   @homepage_url 'https://stripe.com/'
   @display_name 'Stripe'
-
-  @standard_error_code_mapping %{
-    "incorrect_number" => "incorrect_number",
-    "invalid_number" => "invalid_number",
-    "invalid_expiry_month" => "invalid_expiry_date",
-    "invalid_expiry_year" => "invalid_expiry_date",
-    "invalid_cvc" => "invalid_cvc",
-    "expired_card" => "expired_card",
-    "incorrect_cvc" => "incorrect_cvc",
-    "incorrect_zip" => "incorrect_zip",
-    "card_declined" => "card_declined",
-    "call_issuer" => "call_issuer",
-    "processing_error" => "processing_error",
-    "incorrect_pin" => "incorrect_pin",
-    "test_mode_live_card" => "test_mode_live_card"
-  }
-
-  @bank_account_holder_type_mapping %{
-    "personal" => "individual",
-    "business" => "company",
-  }
-
-  @minimum_authorize_amounts %{
-    "USD" => 100,
-    "CAD" => 100,
-    "GBP" => 60,
-    "EUR" => 100,
-    "DKK" => 500,
-    "NOK" => 600,
-    "SEK" => 600,
-    "CHF" => 100,
-    "AUD" => 100,
-    "JPY" => 100,
-    "MXN" => 2000,
-    "SGD" => 100,
-    "HKD" => 800
-  }
 
   use Kuber.Hex.Gateways.Base
 
@@ -87,11 +31,33 @@ defmodule Kuber.Hex.Gateways.Stripe do
     commit(:post, "charges/#{id}/capture", params)
   end
 
+  def void(id, opts \\ %{}) do
+    params = Enum.into(opts, [])
+    commit(:post, "charges/#{id}/refund", params)
+  end
+
+  def refund(id, amount, opts \\ %{}) do
+    params = Enum.into(opts, [])
+      ++ amount_params(amount)
+
+    commit(:post, "charges/#{id}/refund", params)
+  end
+
+  def store(card, opts \\ %{}) do
+    params = Enum.into(opts,[])  
+      ++ source_params(card)
+    
+    commit(:post, "customers", params)
+  end
+
+  def unstore(id), do: commit(:delete, "customers/#{id}")
+
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     Enum.into(opts, [])
       ++ [capture: capture]
       ++ amount_params(amount)
       ++ source_params(payment)
+      # ++ customer_params(payment)
   end
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
@@ -112,6 +78,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   end
 
   defp source_params(token), do: [source: token]
+
+  # defp customer_params(customer_id), do: [customer: customer_id]
 
   defp address_params(%{} = address) do
     ["source[address_line1]": address.street1,
@@ -134,30 +102,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
     HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
   end
-
-  # def void(id, opts),
-  #   do: commit(:post, "charges/#{id}/refund", [], opts)
-
-  # def refund(amount, id, opts) do
-  #   params = amount_params(amount)
-
-  #   commit(:post, "charges/#{id}/refund", params, opts)
-  # end
-
-  # def store(card=%CreditCard{}, opts) do
-  #   customer_id = Keyword.get(opts, :customer_id)
-  #   params = card_params(card)
-
-  #   path = if customer_id, do: "customers/#{customer_id}/card", else: "customers"
-
-  #   commit(:post, path, params, opts)
-  # end
-
-  # def unstore(customer_id, nil, opts),
-  #   do: commit(:delete, "customers/#{customer_id}", [], opts)
-
-  # def unstore(customer_id, card_id, opts),
-  #   do: commit(:delete, "customers/#{customer_id}/#{card_id}", [], opts)
 
   # defp respond({:ok, %{status_code: 200, body: body}}) do
   #   data = decode!(body)
