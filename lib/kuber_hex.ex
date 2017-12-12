@@ -16,9 +16,9 @@ defmodule Kuber.Hex do
     call(worker, {:purchase, amount, card, opts})
   end
 
-  def capture(worker, id, opts \\ []) do 
+  def capture(worker, id, amount, opts \\ []) do 
     validate_config()
-    call(worker, {:capture, id, opts})
+    call(worker, {:capture, id, amount, opts})
   end
 
   def void(worker, id, opts \\ []) do 

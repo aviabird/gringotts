@@ -3,9 +3,7 @@ defmodule Kuber.Hex.Application do
   Has the supervision tree which monitors all the workers
   that are handling the payments.
   """
-
   use Application
-
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
@@ -27,9 +25,7 @@ defmodule Kuber.Hex.Application do
           # ref: https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc
           # ref: https://medium.com/elixirlabs/registry-in-elixir-1-4-0-d6750fb5aeb
           # ref: http://codeloveandboards.com/blog/2016/03/20/supervising-multiple-genserver-processes/
-          
           [name: Application.get_env(:kuber_hex, Kuber.Hex)[:worker_process_name]]
-
         ])
     ]
 
@@ -38,5 +34,4 @@ defmodule Kuber.Hex.Application do
     opts = [strategy: :one_for_one, name: Kuber.Hex.Supervisor]
     Supervisor.start_link(children, opts)
   end
-
 end
