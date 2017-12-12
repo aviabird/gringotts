@@ -18,6 +18,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   }
 
   use Kuber.Hex.Gateways.Base
+  use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency, :worker_process_name]
 
   alias Kuber.Hex.{
     CreditCard,
@@ -30,13 +31,17 @@ defmodule Kuber.Hex.Gateways.Stripe do
   def purchase(amount, card_or_id, opts),
     do: authorize(amount, card_or_id, [{:capture, true} | opts])
 
+
   def authorize(amount, card_or_id, opts) do
     config      = Keyword.fetch!(opts, :config)
+    # TODO: Verify if params passed in requests are merged to config 
+    # for description, address, customer_id, capture
     description = Keyword.get(opts, :description)
     address     = Keyword.get(opts, :billing_address)
     customer_id = Keyword.get(opts, :customer_id)
-    currency    = Keyword.get(opts, :currency, config.default_currency)
     capture     = Keyword.get(opts, :capture, false)
+    # Picking from adapter config 
+    currency    = config[:default_currency]
 
     params = [capture: capture, description: description,
               currency: currency, customer: customer_id] ++
@@ -111,9 +116,10 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
   defp commit(method, path, params, opts) do
     config = Keyword.fetch!(opts, :config)
-
+    # TODO: credentials should be investigated why it is {api_key, ""}
+    # Did to mimic the earlier behavior.
     method
-      |> http("#{@base_url}/#{path}", params, credentials: config.credentials)
+      |> http("#{@base_url}/#{path}", params, credentials: {config[:api_key], ""})
       |> respond
   end
 
