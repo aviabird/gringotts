@@ -54,10 +54,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   end
 
   def capture(id, amount, opts) do
-    params = opts
-      |> amount  # Legacy Previously using opts Keyword.get(:amount)
-      |> amount_params
-
+    params = amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
   end
 
