@@ -18,7 +18,7 @@ defmodule Kuber.Hex.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:httpoison, :hackney],
+    [applications: [:httpoison, :hackney, :elixir_xml_to_map],
      mod: {Kuber.Hex, []}]
   end
 
@@ -36,6 +36,7 @@ defmodule Kuber.Hex.Mixfile do
      {:httpoison, "~> 0.13.0"},
      {:ex_doc, ">= 0.6.0", only: :dev},
      {:mock, ">= 0.1.0", only: :test},
-     {:xml_builder, "~> 0.1.1"}]
+     {:xml_builder, "~> 0.1.1"},
+     {:elixir_xml_to_map, "~> 0.1"}]
   end
 end

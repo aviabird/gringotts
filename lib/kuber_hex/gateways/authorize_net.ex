@@ -3,6 +3,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
+  
   @transaction_type %{
     purchase: "authCaptureTransaction",
     authorize: "authOnlyTransaction",
@@ -35,7 +36,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
   
   @doc """
-    function to charge a user credit card for the specified amount,
+    Function to charge a user credit card for the specified amount,
     according to the payment method provided(e.g. credit card, apple pay etc.)
   """
   def purchase(amount, payment, opts) do
@@ -44,7 +45,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
 
   @doc """
-    use this method to authorize a card payment. To actually charge funds, a follow up with 
+    Use this method to authorize a card payment. To actually charge funds, a follow up with 
     capture method needs to be done.
   """
   def authorize(amount, payment, opts) do
@@ -63,7 +64,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
 
   @doc """
-    use this method to refund a customer for a transaction that was already settled
+    Use this method to refund a customer for a transaction that was already settled
   """
   def refund(amount, payment, opts) do
     request_data = normal_refund(amount, payment, opts, @transaction_type[:refund])
