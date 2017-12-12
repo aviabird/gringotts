@@ -27,13 +27,12 @@ defmodule Kuber.Hex.Gateways.WireCard do
   @money_format      :cents
 
   use Kuber.Hex.Gateways.Base
-  
   alias Kuber.Hex.{
     CreditCard,
     Address,
     Response
   }
-  
+
   import Poison, only: [decode!: 1]
 
   # Authorization - the second parameter may be a CreditCard or
@@ -162,16 +161,37 @@ defmodule Kuber.Hex.Gateways.WireCard do
   end
   
   defp respond({:ok, %{status_code: 200, body: body}}) do
-    response = parse_xml(body)
+    response = parse(body)
     {:ok, response}
   end
 
   defp respond({:ok, %{body: body, status_code: status_code}}) do
-    {:error, "Some Error Occurred"}
+    { :error, "Some Error Occurred" }
   end
 
-  defp parse_xml(data) do
-    :xmerl_scan.string(String.to_char_list(data))
+  # Read the XML message from the gateway and check if it was successful,
+  # and also extract required return values from the response.
+  # For Error => 
+  # {:GuWID=>"C663288151298675530735",
+  #  :AuthorizationCode=>"",
+  #  :StatusType=>"INFO",
+  #  :FunctionResult=>"NOK",
+  #  :ERROR_Type=>"DATA_ERROR",
+  #  :ERROR_Number=>"20080",
+  #  :ERROR_Message=>"Could not find referenced transaction for GuWID C428094138244444404448.",
+  #  :TimeStamp=>"2017-12-11 11:05:55",
+  #  "ErrorCode"=>"20080",
+  #  :Message=>"Could not find referenced transaction for GuWID C428094138244444404448."}
+  # =================================================
+  # For Response
+  # 
+  defp parse(data) do
+    
+    # File.write!('xml_out.xml', data, [:write])
+    data 
+      |> XmlToMap.naive_map
+      |>
+      # |> XmlParser.scan_text
   end
 
   # Generates the complete xml-message, that gets sent to the gateway
