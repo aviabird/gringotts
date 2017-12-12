@@ -19,8 +19,17 @@ defmodule Kuber.Hex.Application do
           Application.get_env(:kuber_hex, Kuber.Hex)[:adapter], # gateway
           Application.get_env(:kuber_hex, Kuber.Hex),           # options(config from application)
           # Experimental
-          # TODO: This is exposed from the config and is later used to call methods of the lib.
+          # Current issue with this is named processes cannot be created for multiple 
+          # requests for example if we want to process multiple requests simultaneously
+          # then named processes is not the way to go.
+          # ref: https://www.amberbit.com/blog/2016/5/13/process-name-registration-in-elixir/
+          # ref: https://github.com/uwiger/gproc
+          # ref: https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc
+          # ref: https://medium.com/elixirlabs/registry-in-elixir-1-4-0-d6750fb5aeb
+          # ref: http://codeloveandboards.com/blog/2016/03/20/supervising-multiple-genserver-processes/
+          
           [name: Application.get_env(:kuber_hex, Kuber.Hex)[:worker_process_name]]
+
         ])
     ]
 

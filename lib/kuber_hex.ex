@@ -1,6 +1,8 @@
 defmodule Kuber.Hex do
   import GenServer, only: [call: 2]
 
+  use Kuber.Hex.Init, otp_app: :kuber_hex
+
   @doc """
   Public API authorize method
 
