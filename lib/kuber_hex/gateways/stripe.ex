@@ -70,14 +70,21 @@ defmodule Kuber.Hex.Gateways.Stripe do
     Response
   }
 
-  def authorize(amount, payment, opts) do
+  def authorize(amount, payment, opts \\ %{}) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params)
   end
 
-  def purchase(amount, payment, opts) do
+  def purchase(amount, payment, opts \\ %{}) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params)
+  end
+
+  def capture(id, amount, opts \\ %{}) do
+    params = Enum.into(opts, [])
+      ++ amount_params(amount)
+
+    commit(:post, "charges/#{id}/capture", params)
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
@@ -94,8 +101,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
       "card[number]": card.number,
       "card[exp_year]": card.exp_year,
       "card[exp_month]": card.exp_month,
-      "card[cvc]": card.cvc,
-      "card[name]": card.name
+      "card[cvc]": card.cvc
     ]
 
     {:ok, %HTTPoison.Response{body: body}} = create_card_token(params)
@@ -128,14 +134,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
     HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
   end
-
-  # def capture(id, opts) do
-  #   params = opts
-  #     |> Keyword.get(:amount)
-  #     |> amount_params
-
-  #   commit(:post, "charges/#{id}/capture", params, opts)
-  # end
 
   # def void(id, opts),
   #   do: commit(:post, "charges/#{id}/refund", [], opts)
