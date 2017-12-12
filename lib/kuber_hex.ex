@@ -1,42 +1,52 @@
 defmodule Kuber.Hex do
-  use Application
-
   import GenServer, only: [call: 2]
 
-  # See http://elixir-lang.org/docs/stable/elixir/Application.html
-  # for more information on OTP Applications
-  def start(_type, _args) do
-    import Supervisor.Spec, warn: false
+  @doc """
+  Public API authorize method
 
-    children = [
-      # Define workers and child supervisors to be supervised
-      # worker(Kuber.Hex.Worker, [arg1, arg2, arg3])
-    ]
-
-    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Kuber.Hex.Supervisor]
-    Supervisor.start_link(children, opts)
+  Makes an asynchronous authorize call to the Genserver
+  """
+  def authorize(worker, amount, card, opts \\ []) do
+    validate_config()
+    call(worker, {:authorize, amount, card, opts})
   end
 
-  def authorize(worker, amount, card, opts \\ []),
-    do: call(worker, {:authorize, amount, card, opts})
+  def purchase(worker, amount, card, opts \\ []) do
+    validate_config()
+    call(worker, {:purchase, amount, card, opts})
+  end
 
-  def purchase(worker, amount, card, opts \\ []),
-    do: call(worker, {:purchase, amount, card, opts})
+  def capture(worker, id, amount, opts \\ []) do 
+    validate_config()
+    call(worker, {:capture, id, amount, opts})
+  end
 
-  def capture(worker, id, opts \\ []),
-    do: call(worker, {:capture, id, opts})
+  def void(worker, id, opts \\ []) do 
+    validate_config()
+    call(worker, {:void, id, opts})
+  end
 
-  def void(worker, id, opts \\ []),
-    do: call(worker, {:void, id, opts})
+  def refund(worker, amount, id, opts \\ []) do 
+    validate_config()
+    call(worker, {:refund, amount, id, opts})
+  end
 
-  def refund(worker, amount, id, opts \\ []),
-    do: call(worker, {:refund, amount, id, opts})
+  def store(worker, card, opts \\ []) do 
+    validate_config()
+    call(worker, {:store, card, opts})
+  end
 
-  def store(worker, card, opts \\ []),
-    do: call(worker, {:store, card, opts})
+  def unstore(worker, customer_id, card_id, opts \\ []) do 
+    validate_config()
+    call(worker, {:unstore, customer_id, card_id, opts})
+  end
 
-  def unstore(worker, customer_id, card_id, opts \\ []),
-    do: call(worker, {:unstore, customer_id, card_id, opts})
+
+  # TODO: This is runtime error reporing fix this to be compile
+  # time error reporting.
+  defp validate_config do
+    config = Application.get_env(:kuber_hex, Kuber.Hex)
+    gateway = config[:adapter]
+    gateway.validate_config(config)
+  end
 end
