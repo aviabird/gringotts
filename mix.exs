@@ -19,7 +19,7 @@ defmodule Kuber.Hex.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [applications: [:httpoison, :hackney],
-     mod: {Kuber.Hex, []}]
+     mod: {Kuber.Hex.Application, []}]
   end
 
   # Dependencies can be hex.pm packages:
