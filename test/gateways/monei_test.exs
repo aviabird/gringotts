@@ -3,7 +3,6 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
 
   alias Kuber.Hex.{
     CreditCard,
-    Response
   }
   alias Kuber.Hex.Gateways.Monei, as: Gateway
 
@@ -44,6 +43,14 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
      }
     }]
 
+  setup_all do
+    Application.put_env(:kuber_hex, Kuber.Hex, [adapter: Kuber.Hex.Gateways.Monei,
+                                                worker_process_name: :monei_gateway,
+                                                userId: "8a8294186003c900016010a285582e0a",
+                                                password: "hMkqf2qbWf",
+                                                entityId: "8a82941760036820016010a28a8337f6"])
+  end
+  
   # A new Bypass instance is needed per test, so that we can do parallel tests
   setup do
     bypass = Bypass.open
@@ -149,10 +156,6 @@ end
 
 defmodule Kuber.Hex.Gateways.MoneiDocTest do
   use ExUnit.Case, async: true
-  alias Kuber.Hex.{
-    CreditCard,
-    Gateways.Monei
-  }
 
   doctest Kuber.Hex.Gateways.Monei
 end

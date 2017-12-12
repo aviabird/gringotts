@@ -38,7 +38,7 @@ defmodule Kuber.Hex.Gateways.Monei do
   
   """
   
-  use Kuber.Hex.Gateways.Base
+  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password, :worker_process_name]
   import Poison, only: [decode: 1]
   alias Kuber.Hex.{CreditCard, Response}
   
