@@ -1,1 +1,1 @@
-ExUnit.start()
+ExUnit.start(trace: true)
