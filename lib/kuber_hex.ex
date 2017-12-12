@@ -41,7 +41,6 @@ defmodule Kuber.Hex do
     call(worker, {:unstore, customer_id, card_id, opts})
   end
 
-
   # TODO: This is runtime error reporing fix this to be compile
   # time error reporting.
   defp validate_config do
