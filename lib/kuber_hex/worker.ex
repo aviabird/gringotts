@@ -19,8 +19,8 @@ defmodule Kuber.Hex.Worker do
     {:reply, response, state}
   end
 
-  def handle_call({:capture, id, opts}, _from, state) do
-    response = state.gateway.capture(id, [{:config, state.config} | opts])
+  def handle_call({:capture, id, amount, opts}, _from, state) do
+    response = state.gateway.capture(id, amount, [{:config, state.config} | opts])
     {:reply, response, state}
   end
 
