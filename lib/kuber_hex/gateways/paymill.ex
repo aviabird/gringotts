@@ -37,6 +37,10 @@ defmodule Kuber.Hex.Gateways.Paymill do
     action_with_token(:authorize, amount, card, options)
   end
 
+  def purchase(amount, card, options) do
+    action_with_token(:purchase, amount, card, options)
+  end
+
   defp action_with_token(action, amount, card, options) do
     Keyword.put(options, :money, amount)
     {:ok, response} = save_card(123, options)
@@ -49,7 +53,14 @@ defmodule Kuber.Hex.Gateways.Paymill do
     post =
     add_amount([], money, options)++[{"token", card_token}]
 
-    commit(:post, "preauthorizations/", post)
+    commit(:post, "preauthorizations", post)
+  end
+
+  def purchase_with_token(money, card_token, options) do
+    post =
+    add_amount([], money, options)++[{"token", card_token}]
+
+    commit(:post, "transactions", post)
   end
 
   defp add_amount(post, money, options) do
