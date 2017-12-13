@@ -11,7 +11,7 @@ defmodule Kuber.Hex.Gateways.Paymill do
   @home_page "https://paymill.com"
   @money_format :cents
   @default_currency "EUR"
-  @live_url "https://api.paymill.com/v2/"
+  @live_url "https://api.paymill.com/v2.1/"
 
 
   @private_key "8f16b021d4fb1f8d9263cbe346f32688"
@@ -26,18 +26,34 @@ defmodule Kuber.Hex.Gateways.Paymill do
 
   def save_card(card, options) do
     {:ok, %HTTPoison.Response{body: response}} =
-    :get
-    |> HTTPoison.request("https://test-token.paymill.com/","",get_headers(), [params: get_save_card_params()])
+    :get |> HTTPoison.request(get_save_card_url(),"",get_headers(), [params: get_save_card_params()])
 
     response |> parse_card_response
   end
+
+  defp get_save_card_url(), do: "https://test-token.paymill.com/"
 
   def authorize(amount, card, options) do
     action_with_token(:authorize, amount, card, options)
   end
 
-  def action_with_token(action, amount, card, options) do
-    
+  defp action_with_token(action, amount, card, options) do
+    Keyword.put(options, :money, amount)
+    {:ok, response} = save_card(123, options)
+    card_token = response |> get_token
+
+    apply( __MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token, options])
+  end
+
+  def authorize_with_token(money, card_token, options) do
+    post =
+    add_amount([], money, options)++[{"token", card_token}]
+
+    commit(:post, "preauthorizations/", post)
+  end
+
+  defp add_amount(post, money, options) do
+    post ++ [{"amount", money}, {"currency", @default_currency}]
   end
 
   defp set_username do
@@ -45,7 +61,7 @@ defmodule Kuber.Hex.Gateways.Paymill do
   end
 
   def get_headers() do
-    [] ++ set_username
+    [{"Content-Type", "application/x-www-form-urlencoded"}] ++ set_username
   end
 
   def get_save_card_params() do
@@ -69,12 +85,15 @@ defmodule Kuber.Hex.Gateways.Paymill do
     |> Poison.decode
   end
 
-  def get_token(repsonse) do
+  def get_token(response) do
     response |> Kernel.get_in(["transaction", "identification", "uniqueId"])
   end
 
-  defp commit(method, action, parameters) do
+  defp commit(method, action, parameters \\ nil) do
+    body = [{"amount", "120"},{"currency" , "EUR"}, {"token", "tok_26bce989967d20e7061ff37c8410"}]
 
+    method
+    |> HTTPoison.request(@live_url <> action, {:form, parameters }, get_headers, [])
   end
 
 end
