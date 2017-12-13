@@ -1,11 +1,6 @@
 defmodule Kuber.Hex.Gateways.Stripe do
   @base_url "https://api.stripe.com/v1"
 
-  @default_currency "USD"
-
-  @homepage_url 'https://stripe.com/'
-  @display_name 'Stripe'
-
   use Kuber.Hex.Gateways.Base
   use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency]
 
@@ -103,37 +98,5 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
     HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
   end
-
-  # defp respond({:ok, %{status_code: 200, body: body}}) do
-  #   data = decode!(body)
-  #   {cvc_result, avs_result} = verification_result(data)
-
-  #   {:ok, Response.success(authorization: data["id"], raw: data, cvc_result: cvc_result, avs_result: avs_result)}
-  # end
-
-  # defp respond({:ok, %{body: body, status_code: status_code}}) do
-  #   data = decode!(body)
-  #   {code, reason} = error(status_code, data["error"])
-  #   {cvc_result, avs_result} = verification_result(data)
-
-  #   {:error, Response.error(code: code, reason: reason, raw: data, cvc_result: cvc_result, avs_result: avs_result)}
-  # end
-
-  # defp verification_result(%{"card" => card}) do
-  #   cvc_result = @cvc_code_translator[card["cvc_check"]]
-  #   avs_result = @avs_code_translator[{card["address_line1_check"], card["address_zip_check"]}]
-
-  #   {cvc_result, avs_result}
-  # end
-
-  # defp verification_result(_), do: {"N","N"}
-
-  # defp error(status, _) when status >= 500,            do: {:server_error, nil}
-  # defp error(_, %{"type" => "invalid_request_error"}), do: {:invalid_request, nil}
-  # defp error(_, %{"code" => "incorrect_number"}),      do: {:declined, :invalid_number}
-  # defp error(_, %{"code" => "invalid_expiry_year"}),   do: {:declined, :invalid_expiration}
-  # defp error(_, %{"code" => "invalid_expiry_month"}),  do: {:declined, :invalid_expiration}
-  # defp error(_, %{"code" => "invalid_cvc"}),           do: {:declined, :invalid_cvc}
-  # defp error(_, %{"code" => "rate_limit"}),            do: {:rate_limit, nil}
-  # defp error(_, _), do: {:declined, :unknown}
+  
 end
