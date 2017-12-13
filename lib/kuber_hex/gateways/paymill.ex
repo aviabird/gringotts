@@ -24,9 +24,20 @@ defmodule Kuber.Hex.Gateways.Paymill do
     cvc: 123
   }
 
+  def save_card(card, options) do
+    {:ok, %HTTPoison.Response{body: response}} =
+    :get
+    |> HTTPoison.request("https://test-token.paymill.com/","",get_headers(), [params: get_save_card_params()])
+
+    response |> parse_card_response
+  end
+
   def authorize(amount, card, options) do
-    :post
-    |> HTTPoison.request()
+    action_with_token(:authorize, amount, card, options)
+  end
+
+  def action_with_token(action, amount, card, options) do
+    
   end
 
   defp set_username do
@@ -51,9 +62,15 @@ defmodule Kuber.Hex.Gateways.Paymill do
     ]
   end
 
-  def save_card(card, options) do
-    :get
-    |> HTTPoison.request("https://test-token.paymill.com/","",get_headers(), [params: get_save_card_params()])
+  def parse_card_response(response) do
+    response
+    |> String.replace(~r/jsonPFunction\(/,"")
+    |> String.replace(~r/\)/, "")
+    |> Poison.decode
+  end
+
+  def get_token(repsonse) do
+    response |> Kernel.get_in(["transaction", "identification", "uniqueId"])
   end
 
   defp commit(method, action, parameters) do
