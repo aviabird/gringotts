@@ -26,7 +26,7 @@ defmodule Kuber.Hex.Gateways.Paymill do
 
   def save_card(card, options) do
     {:ok, %HTTPoison.Response{body: response}} =
-    :get |> HTTPoison.request(get_save_card_url(),"",get_headers(), [params: get_save_card_params()])
+    :get |> HTTPoison.request(get_save_card_url(),"",get_headers(), [params: get_save_card_params(card, options)])
 
     response |> parse_card_response
   end
@@ -51,9 +51,13 @@ defmodule Kuber.Hex.Gateways.Paymill do
     commit(:delete, "preauthorizations/#{authorization}", options)
   end
 
+  def save(card, options) do
+    save_card(@credit_card, options)
+  end
+
   defp action_with_token(action, amount, card, options) do
     Keyword.put(options, :money, amount)
-    {:ok, response} = save_card(123, options)
+    {:ok, response} = save_card(@credit_card, options)
     card_token = response |> get_token
 
     apply( __MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token, options])
@@ -85,15 +89,17 @@ defmodule Kuber.Hex.Gateways.Paymill do
     [{"Content-Type", "application/x-www-form-urlencoded"}] ++ set_username
   end
 
-  def get_save_card_params() do
+  def get_save_card_params(card, options) do
+    {month, year} = card.expiration
+
     [ {"transaction.mode" , "CONNECTOR_TEST"},
       {"channel.id" , "72294854039fcf7fd55eaeeb594577e7"},
       {"jsonPFunction" , "jsonPFunction"},
-      {"account.number" , "4111111111111111"},
-      {"account.expiry.month" , "12"},
-      {"account.expiry.year" , "2018"},
-      {"account.verification" , "123"},
-      {"account.holder" , "Sagar Karwande"},
+      {"account.number" , card.number},
+      {"account.expiry.month" , month},
+      {"account.expiry.year" , year},
+      {"account.verification" , card.cvc},
+      {"account.holder" , card.name},
       {"presentation.amount3D" , "120"},
       {"presentation.currency3D" , "EUR"}
     ]
