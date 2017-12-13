@@ -49,7 +49,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
     opts ++ [capture: capture]
       ++ amount_params(amount)
       ++ source_params(payment)
-      # ++ customer_params(payment)
   end
 
   defp create_card_token(params) do
@@ -70,9 +69,13 @@ defmodule Kuber.Hex.Gateways.Stripe do
       |> source_params
   end
 
-  defp source_params(token), do: [source: token]
-
-  # defp customer_params(customer_id), do: [customer: customer_id]
+  defp source_params(token_or_customer) do
+    [head, _] = String.split(token_or_customer, "_")
+    case head do
+      "tok" -> [source: token_or_customer]
+      "cus" -> [customer: token_or_customer]
+    end
+  end
 
   defp card_params(%{} = card) do
     {exp_year, exp_month} = card[:expiration]
