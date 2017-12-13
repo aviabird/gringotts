@@ -1,3 +1,4 @@
+# call => Kuber.Hex.Gateways.WireCard.authorize(100, creditcard, options)
 import XmlBuilder
 defmodule Kuber.Hex.Gateways.WireCard do
   @test_url "https://c3-test.wirecard.com/secure/ssl-gateway"
@@ -11,13 +12,15 @@ defmodule Kuber.Hex.Gateways.WireCard do
   @permited_transactions ~w[ PREAUTHORIZATION CAPTURE PURCHASE ]
 
   @return_codes ~w[ ACK NOK ]
-  # Wirecard only allows phone numbers with a format like this: +xxx(yyy)zzz-zzzz-ppp, where:
-  #   xxx = Country code
-  #   yyy = Area or city code
-  #   zzz-zzzz = Local number
-  #   ppp = PBX extension
-  # For example, a typical U.S. or Canadian number would be "+1(202)555-1234-739" indicating PBX extension 739 at phone
-  # number 5551234 within area code 202 (country code 1).
+  @doc """
+    Wirecard only allows phone numbers with a format like this: +xxx(yyy)zzz-zzzz-ppp, where:
+      xxx = Country code
+      yyy = Area or city code
+      zzz-zzzz = Local number
+      ppp = PBX extension
+    For example, a typical U.S. or Canadian number would be "+1(202)555-1234-739" indicating PBX extension 739 at phone
+    number 5551234 within area code 202 (country code 1).
+  """
   @valid_phone_format ~r/\+\d{1,3}(\(?\d{3}\)?)?\d{3}-\d{4}-\d{3}/
 
   @supported_cardtypes [ :visa, :master, :american_express, :diners_club, :jcb, :switch ]
@@ -35,129 +38,159 @@ defmodule Kuber.Hex.Gateways.WireCard do
 
   import Poison, only: [decode!: 1]
 
-  # Authorization - the second parameter may be a CreditCard or
-  # a String which represents a GuWID reference to an earlier
-  # transaction.  If a GuWID is given, rather than a CreditCard,
-  # then then the :recurring option will be forced to "Repeated"
-  # ===========================================================
-  # TODO: Mandatorily check for :login,:password, :signature in options
-  # Note: payment_menthod for now is only credit_card and 
-  # TODO: change it so it can also have GuWID
-  # ================================================
-  # E.g: => 
-  # creditcard = %CreditCard{
-  #   number: "4200000000000000",
-  #   month: 12,
-  #   year: 2018,
-  #   first_name: "Longbob",
-  #   last_name: "Longsen",
-  #   verification_value: "123",
-  #   brand: "visa"
-  # }
-  # address = %{
-  #   name:     "Jim Smith",
-  #   address1: "456 My Street",
-  #   address2: "Apt 1",
-  #   company:  "Widgets Inc",
-  #   city:     "Ottawa",
-  #   state:    "ON",
-  #   zip:      "K1C2N6",
-  #   country:  "CA",
-  #   phone:    "(555)555-5555",
-  #   fax:      "(555)555-6666"
-  # }
-  # options = %{
-  #   login: "00000031629CA9FA",
-  #   password: "TestXAPTER",
-  #   signature: "00000031629CAFD5",
-  #   order_id: 1,
-  #   billing_address: address,
-  #   description: 'Wirecard remote test purchase',
-  #   email: "soleone@example.com",
-  #   ip: "127.0.0.1"
-  # }
-  def authorize(money, payment_method, options \\ %{}) do
-    case payment_method do
-      %CreditCard{}  ->
-        options = options |> Map.put(:credit_card, payment_method)
-      _             -> 
-      options = options |> Map.put(:preauthorization, payment_method)
-    end
+  @doc """
+    Authorization - the second parameter may be a CreditCard or
+    a String which represents a GuWID reference to an earlier
+    transaction.  If a GuWID is given, rather than a CreditCard,
+    then then the :recurring option will be forced to "Repeated"
+    ===========================================================
+    TODO: Mandatorily check for :login,:password, :signature in options
+    Note: payment_menthod for now is only credit_card and 
+    TODO: change it so it can also have GuWID
+    ================================================
+    E.g: => 
+    creditcard = %CreditCard{
+      number: "4200000000000000",
+      month: 12,
+      year: 2018,
+      first_name: "Longbob",
+      last_name: "Longsen",
+      verification_value: "123",
+      brand: "visa"
+    }
+    address = %{
+      name:     "Jim Smith",
+      address1: "456 My Street",
+      address2: "Apt 1",
+      company:  "Widgets Inc",
+      city:     "Ottawa",
+      state:    "ON",
+      zip:      "K1C2N6",
+      country:  "CA",
+      phone:    "(555)555-5555",
+      fax:      "(555)555-6666"
+    }
+    options = [
+      config: %{
+        login: "00000031629CA9FA", 
+        password: "TestXAPTER",
+        signature: "00000031629CAFD5",
+      },   
+      order_id: 1,
+      billing_address: address,
+      description: 'Wirecard remote test purchase',
+      email: "soleone@example.com",
+      ip: "127.0.0.1"
+    ] 
+  """
+  def authorize(money, payment_method, options \\ []) do
+    options = options 
+                |> check_and_return_payment_method(payment_method)
 
-    response = commit(:preauthorization, money, options)
+    response = commit(:post, :preauthorization, money, options)
     response
   end
 
-  # def capture(money, authorization, options \\ %{}) do
-  #   options[:preauthorization] = authorization
-  #   commit(:capture, money, options)
-  # end
+  def capture(money, authorization, options \\ []) do
+    options = options |> Keyword.put(:preauthorization, authorization)
+    commit(:post, :capture, money, options)
+  end
 
-  # Purchase - the second parameter may be a CreditCard or
-  # a String which represents a GuWID reference to an earlier
-  # transaction.  If a GuWID is given, rather than a CreditCard,
-  # then then the :recurring option will be forced to "Repeated"
-  # def purchase(money, payment_method, options \\ %{}) do
-  #   commit(:purchase, money, options)  
-  # end
+  @doc """
+    Purchase - the second parameter may be a CreditCard or
+    a String which represents a GuWID reference to an earlier
+    transaction.  If a GuWID is given, rather than a CreditCard,
+    then then the :recurring option will be forced to "Repeated"
+  """
+  def purchase(money, payment_method, options \\ []) do
+    options = options 
+                |> check_and_return_payment_method(payment_method)
+    commit(:post, :purchase, money, options)
+  end
  
-  # def void(identification, options = {}) do
-  #   options[:preauthorization] = identification
-  #   commit(:reversal, nil, options)
-  # end
+  def void(identification, options \\ []) do
+    options = options 
+                |> Keyword.put(:preauthorization, identification)
+    commit(:post, :reversal, nil, options)
+  end
  
-  # def refund(money, identification, options = {}) do
-  #   options[:preauthorization] = identification
-  #   commit(:bookback, money, options)
-  # end
- 
-  # Store card - Wirecard supports the notion of "Recurring
-  # Transactions" by allowing the merchant to provide a reference
-  # to an earlier transaction (the GuWID) rather than a credit
-  # card.  A reusable reference (GuWID) can be obtained by sending
-  # a purchase or authorization transaction with the element
-  # "RECURRING_TRANSACTION/Type" set to "Initial".  Subsequent
-  # transactions can then use the GuWID in place of a credit
-  # card by setting "RECURRING_TRANSACTION/Type" to "Repeated".
-  #
-  # This implementation of card store utilizes a Wirecard
-  # "Authorization Check" (a Preauthorization that is automatically
-  # reversed).  It defaults to a check amount of "100" (i.e.
-  # $1.00) but this can be overriden (see below).
-  #
-  # IMPORTANT: In order to reuse the stored reference, the
-  # +authorization+ from the response should be saved by
-  # your application code.
-  #
-  # ==== Options specific to +store+
-  #
-  # * <tt>:amount</tt> -- The amount, in cents, that should be
-  #   "validated" by the Authorization Check.  This amount will
-  #   be reserved and then reversed.  Default is 100.
-  #
-  # Note: This is not the only way to achieve a card store
-  # operation at Wirecard.  Any +purchase+ or +authorize+
-  # can be sent with +options[:recurring] = 'Initial'+ to make
-  # the returned authorization/GuWID usable in later transactions
-  # with +options[:recurring] = 'Repeated'+.
-  # def store(creditcard, options = {}) do
-  #   options[:credit_card] = creditcard
-  #   options[:recurring] = 'Initial'
+  def refund(money, identification, options \\ []) do
+    options = options
+                |> Keyword.put(:preauthorization, identification)
+    commit(:post, :bookback, money, options)
+  end
 
-  # end
+  @doc """
+    Store card - Wirecard supports the notion of "Recurring
+    Transactions" by allowing the merchant to provide a reference
+    to an earlier transaction (the GuWID) rather than a credit
+    card.  A reusable reference (GuWID) can be obtained by sending
+    a purchase or authorization transaction with the element
+    "RECURRING_TRANSACTION/Type" set to "Initial".  Subsequent
+    transactions can then use the GuWID in place of a credit
+    card by setting "RECURRING_TRANSACTION/Type" to "Repeated".
+    
+    This implementation of card store utilizes a Wirecard
+    "Authorization Check" (a Preauthorization that is automatically
+    reversed).  It defaults to a check amount of "100" (i.e.
+    $1.00) but this can be overriden (see below).
+    
+    IMPORTANT: In order to reuse the stored reference, the
+    +authorization+ from the response should be saved by
+    your application code.
+    
+    ==== Options specific to +store+
+    
+    * <tt>:amount</tt> -- The amount, in cents, that should be
+      "validated" by the Authorization Check.  This amount will
+      be reserved and then reversed.  Default is 100.
+    
+    Note: This is not the only way to achieve a card store
+    operation at Wirecard.  Any +purchase+ or +authorize+
+    can be sent with +options[:recurring] = 'Initial'+ to make
+    the returned authorization/GuWID usable in later transactions
+    with +options[:recurring] = 'Repeated'+.
+  """
+  def store(creditcard, options \\ []) do
+    options = options 
+                |> Keyword.put(:credit_card, creditcard) 
+                |> Keyword.put(:recurring, "Initial")
+    money = options[:amount] || 100
+    # Amex does not support authorization_check
+    case creditcard.brand do
+      "american_express" -> commit(:post, :preauthorization, money, options)
+      _                 ->  commit(:post, :authorization_check, money, options)
+    end
+  end
 
+
+  def supports_scrubbing do
+    true
+  end
  
   # =================== Private Methods =================== 
+  
+  defp check_and_return_payment_method(options, payment_method) do
+    case payment_method do
+      %CreditCard{}  ->
+        options = options |> Keyword.put(:credit_card, payment_method)
+      _             -> 
+      options = options |> Keyword.put(:preauthorization, payment_method)
+    end
+    options
+  end
+  
+  
+  
   # Contact WireCard, make the XML request, and parse the
-  # reply into a Response object
-  defp commit(action, money, options) do
+  # reply into a Response object.
+  defp commit(method, action, money, options) do
     #TODO: validate and setup address hash as per AM
     request = build_request(action, money, options)
     
     headers = %{ "Content-Type" => "text/xml",
-    "Authorization" => encoded_credentials(options[:login], options[:password]) }
-    HTTPoison.request(:post, @test_url , request, headers)
-      |> respond
+    "Authorization" => encoded_credentials(options[:config][:login], options[:config][:password]) }
+    method |> HTTPoison.request(@test_url , request, headers) |> respond
   end
   
   defp respond({:ok, %{status_code: 200, body: body}}) do
@@ -184,25 +217,21 @@ defmodule Kuber.Hex.Gateways.WireCard do
   #  :Message=>"Could not find referenced transaction for GuWID C428094138244444404448."}
   # =================================================
   # For Response
-  # 
-  defp parse(data) do
-    
-    # File.write!('xml_out.xml', data, [:write])
+  # TODO: parse XML Response
+  defp parse(data) do    
     data 
       |> XmlToMap.naive_map
-      |>
-      # |> XmlParser.scan_text
   end
 
   # Generates the complete xml-message, that gets sent to the gateway
   defp build_request(action, money, options) do
-    options = options |> Map.put(:action, action)
+    options = options |> Keyword.put(:action, action)
 
     request = doc(element(:WIRECARD_BXML, [
         element(:W_REQUEST, [
           element(:W_JOB, [
             element(:JobID, ''),
-            element(:BusinessCaseSignature, options[:signature]),
+            element(:BusinessCaseSignature, options[:config][:signature]),
             add_transaction_data(action, money, options)
           ])
         ])
@@ -211,6 +240,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     request
   end
 
+  
   # Includes the whole transaction data (payment, creditcard, address)
   # TODO: Add order_id to options if not present, see AM
   # TOOD: Clean description before passing it to FunctionID, replace dummy
@@ -308,13 +338,13 @@ defmodule Kuber.Hex.Gateways.WireCard do
 
 
   # Includes the payment (amount, currency, country) to the transaction-xml
-  defp add_invoice(money, options) do
+  def add_invoice(money, options) do
     [
       add_amount(money, options),
       element(:Currency, options[:currency] || @default_currency),
       element(:CountryCode, options[:billing_address][:country]),
       element(:RECURRING_TRANSACTION, [
-        element(:Type, options[:recurring] || "Single")
+        element(:Type, (options[:recurring] || "Single"))
       ])
     ]
   end
