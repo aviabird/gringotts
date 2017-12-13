@@ -47,6 +47,10 @@ defmodule Kuber.Hex.Gateways.Paymill do
     commit(:post, "transactions", post)
   end
 
+  def void(authorization, options) do
+    commit(:delete, "preauthorizations/#{authorization}", options)
+  end
+
   defp action_with_token(action, amount, card, options) do
     Keyword.put(options, :money, amount)
     {:ok, response} = save_card(123, options)
