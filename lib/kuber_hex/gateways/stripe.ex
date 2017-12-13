@@ -18,7 +18,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   }
 
   use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency, :worker_process_name]
+  use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency]
 
   alias Kuber.Hex.{
     CreditCard,
