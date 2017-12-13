@@ -6,47 +6,46 @@ defmodule Kuber.Hex do
 
   Makes an asynchronous authorize call to the Genserver
   """
-  def authorize(worker, amount, card, opts \\ []) do
-    validate_config()
-    call(worker, {:authorize, amount, card, opts})
+  def authorize(worker, gateway, amount, card, opts \\ []) do
+    validate_config(gateway)
+    call(worker, {:authorize, gateway, amount, card, opts})
   end
 
-  def purchase(worker, amount, card, opts \\ []) do
-    validate_config()
-    call(worker, {:purchase, amount, card, opts})
+  def purchase(worker, gateway, amount, card, opts \\ []) do
+    validate_config(gateway)
+    call(worker, {:purchase, gateway, amount, card, opts})
   end
 
-  def capture(worker, id, amount, opts \\ []) do 
-    validate_config()
-    call(worker, {:capture, id, amount, opts})
+  def capture(worker, gateway, id, amount, opts \\ []) do 
+    validate_config(gateway)
+    call(worker, {:capture, gateway, id, amount, opts})
   end
 
-  def void(worker, id, opts \\ []) do 
-    validate_config()
-    call(worker, {:void, id, opts})
+  def void(worker, gateway, id, opts \\ []) do 
+    validate_config(gateway)
+    call(worker, {:void, gateway, id, opts})
   end
 
-  def refund(worker, amount, id, opts \\ []) do 
-    validate_config()
-    call(worker, {:refund, amount, id, opts})
+  def refund(worker, gateway, amount, id, opts \\ []) do 
+    validate_config(gateway)
+    call(worker, {:refund, gateway, amount, id, opts})
   end
 
-  def store(worker, card, opts \\ []) do 
-    validate_config()
-    call(worker, {:store, card, opts})
+  def store(worker, gateway, card, opts \\ []) do 
+    validate_config(gateway)
+    call(worker, {:store, gateway, card, opts})
   end
 
-  def unstore(worker, customer_id, card_id, opts \\ []) do 
-    validate_config()
-    call(worker, {:unstore, customer_id, card_id, opts})
+  def unstore(worker, gateway, customer_id, card_id, opts \\ []) do 
+    validate_config(gateway)
+    call(worker, {:unstore, gateway, customer_id, card_id, opts})
   end
-
 
   # TODO: This is runtime error reporing fix this to be compile
   # time error reporting.
-  defp validate_config do
-    config = Application.get_env(:kuber_hex, Kuber.Hex)
-    gateway = config[:adapter]
+  defp validate_config(gateway) do
+    # Keep the key name and adapter the same in the config in application
+    config = Application.get_env(:kuber_hex, gateway)
     gateway.validate_config(config)
   end
 end
