@@ -91,7 +91,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     response
   end
 
-  def capture(money, authorization, options \\ []) do
+  def capture(authorization, money, options \\ []) do
     options = options |> Keyword.put(:preauthorization, authorization)
     commit(:post, :capture, money, options)
   end
@@ -162,11 +162,6 @@ defmodule Kuber.Hex.Gateways.WireCard do
       _                 ->  commit(:post, :authorization_check, money, options)
     end
   end
-
-
-  def supports_scrubbing do
-    true
-  end
  
   # =================== Private Methods =================== 
   
@@ -179,9 +174,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     end
     options
   end
-  
-  
-  
+
   # Contact WireCard, make the XML request, and parse the
   # reply into a Response object.
   defp commit(method, action, money, options) do
