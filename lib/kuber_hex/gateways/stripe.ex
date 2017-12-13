@@ -58,7 +58,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
 
-  defp source_params(payment) do
+  defp source_params(%{} = payment) do
     params = 
       card_params(payment) ++ 
       address_params(payment)
@@ -75,9 +75,12 @@ defmodule Kuber.Hex.Gateways.Stripe do
   # defp customer_params(customer_id), do: [customer: customer_id]
 
   defp card_params(%{} = card) do
-    [ "card[number]": card[:number],
-      "card[exp_year]": card[:exp_year],
-      "card[exp_month]": card[:exp_month],
+    {exp_year, exp_month} = card[:expiration]
+
+    [ "card[name]": card[:name],
+      "card[number]": card[:number],
+      "card[exp_year]": exp_year,
+      "card[exp_month]": exp_month,
       "card[cvc]": card[:cvc]
     ]    
   end
@@ -99,7 +102,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
   defp commit(method, path, params \\ []) do
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", "Bearer sk_test_vIX41hayC0BKrPWQerLuOMld"}]
     data = params_to_string(params)
-
     HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
   end
 
