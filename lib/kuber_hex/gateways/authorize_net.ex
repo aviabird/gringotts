@@ -1,15 +1,21 @@
 defmodule Kuber.Hex.Gateway.AuthorizeNet do
   import XmlBuilder
-  
+  import XmlToMap
+
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
-  
+
   @transaction_type %{
     purchase: "authCaptureTransaction",
     authorize: "authOnlyTransaction",
     capture: "priorAuthCaptureTransaction",
     refund: "refundTransaction",
     void: "voidTransaction"
+  }
+
+  @response_type %{
+    auth_response: "authenticateTestResponse",
+    transaction_response: "createTransactionResponse"
   }
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
@@ -23,14 +29,15 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   #----------------making requests to gateway
 
   @doc """
-    function to authorize the merchant using merchant name 
+    function to authorize the merchant using merchant name
     and transactionKey
   """
   def authenticate(opts) do
     case Keyword.fetch(opts, :config) do
       {:ok, config} ->
         data = add_auth_request(config)
-        commit(:post, data)
+        response_data = commit(:post, data)
+        respond(@response_type[:auth_response], response_data)
       {:error, _} -> {:error, "config not found"}
     end
   end
@@ -41,7 +48,8 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   """
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
-    commit(:post, request_data)
+    response_data = commit(:post, request_data)
+    respond(@response_type[:transaction_response], response_data)
   end
 
   @doc """
@@ -50,35 +58,39 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   """
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
-    commit(:post, request_data)
+    response_data = commit(:post, request_data)
+    respond(@response_type[:transaction_response], response_data)
   end
 
   @doc """
     Use this method to capture funds for transactions which have been authorized,
-    requires transId of the authorize function response to be passed as refTransId 
-    in opts.
+    requires transId of the authorize function response to be passed as id along with
+    the amount to be captured.
   """
-  def capture(amount, opts) do
-    request_data = normal_capture(amount, opts, @transaction_type[:capture])
-    commit(:post, request_data)
+  def capture(amount, id, opts) do
+    request_data = normal_capture(amount, id,  opts, @transaction_type[:capture])
+    response_data = commit(:post, request_data)
+    respond(@response_type[:transaction_response], response_data)
   end
 
   @doc """
     Use this method to refund a customer for a transaction that was already settled
   """
-  def refund(amount, payment, opts) do
-    request_data = normal_refund(amount, payment, opts, @transaction_type[:refund])
-    commit(:post, request_data)
+  def refund(amount, id, opts) do
+    request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
+    response_data = commit(:post, request_data)
+    respond(@response_type[:transaction_response], response_data)
   end
 
   @doc """
     Use this method to cancel either an original transaction that is not settled or 
     an entire order composed of more than one transaction. It can be submitted against
-    any other transaction type 
+    any other transaction type. Requires the transId of a request passed as id.
   """
-  def void(opts) do
-    request_data = normal_void(opts, @transaction_type[:void])
-    commit(:post, request_data)
+  def void(id, opts) do
+    request_data = normal_void(id, opts, @transaction_type[:void])
+    response_data = commit(:post, request_data)
+    respond(@response_type[:transaction_response], response_data)
   end
 
   # method to make the api request with params
@@ -86,6 +98,28 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     path = @test_url
     headers = [{"Content-Type", "text/xml"}]
     HTTPoison.request(method, path, payload, headers)
+  end
+
+  # function to return a successefull response 
+  defp respond(response_type, {:ok, %{body: body, status_code: 200}}) do
+    raw_response  = naive_map(body)
+    case response_type do
+      "authenticateTestResponse" ->
+        response_check(raw_response["authenticateTestResponse"], raw_response)
+      "createTransactionResponse" -> 
+        response_check(raw_response["createTransactionResponse"], raw_response)
+    end
+  end
+
+  # functions to send successful and error responses for api requests
+  defp response_check( %{"messages" => %{"message" =>
+    %{"code" => "I00001", "text" => "Successful."}, "resultCode" => "Ok"}}, raw_response) do
+        {:ok, Response.success(raw: raw_response)}
+  end
+
+  defp response_check( %{"messages" => %{"message" =>
+  %{"code" => "I00001", "text" => "Successful."}, "resultCode" => "Error"}}, raw_response) do
+      {:ok, Response.error(raw: raw_response)}
   end
 
   #------------------- Helper functions for the interface functions------------------- 
@@ -101,11 +135,11 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
   
   # function for formatting the request for  normal capture
-  defp normal_capture(amount, opts, transaction_type) do
+  defp normal_capture(amount, id, opts, transaction_type) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
-      add_capture_transaction_request(amount, transaction_type, opts),
+      add_capture_transaction_request(amount, id, transaction_type, opts),
     ])
     |> generate
   end
@@ -119,23 +153,23 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
   
   #function to format the request for normal refund
-  defp normal_refund(amount, payment, opts, transaction_type) do
+  defp normal_refund(amount, id, opts, transaction_type) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts),
       add_order_id(opts),
-      add_refund_transaction_request(amount, payment, opts, transaction_type),
+      add_refund_transaction_request(amount, id, opts, transaction_type),
     ])
     |> generate
   end
 
   #function to format the request for normal void operation
-  defp normal_void(opts, transaction_type) do
+  defp normal_void(id, opts, transaction_type) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts),
       add_order_id(opts),
       element(:transactionRequest, [
         add_transaction_type(transaction_type),
-        add_ref_trans_id(opts)
+        add_ref_trans_id(id)
       ])
     ])
     |> generate
@@ -169,31 +203,30 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     ])
   end
 
-  defp add_capture_transaction_request(amount, transaction_type, opts) do
+  defp add_capture_transaction_request(amount, id, transaction_type, opts) do
     element(:transactionRequest, [
       add_transaction_type(transaction_type),
       add_amount(amount),
-      add_ref_trans_id(opts),
-      add_invoice(transaction_type, opts)
+      add_ref_trans_id(id)
     ])
   end
 
-  defp  add_refund_transaction_request(amount, payment, opts, transaction_type) do
+  defp add_refund_transaction_request(amount, id, opts, transaction_type) do
     element(:transactionRequest, [
       add_transaction_type(transaction_type),
       add_amount(amount),
       element(:payment, [
         element(:creditCard, [
-          element(:cardNumber, payment[:number]),
-          element(:expirationDate, payment[:expiration])
+          element(:cardNumber, opts[:payment][:card][:number]),
+          element(:expirationDate, opts[:payment][:card][:expiration])
         ])
       ]),
-      add_ref_trans_id(opts)
+      add_ref_trans_id(id)
     ])
   end
 
-  defp add_ref_trans_id(opts) do
-    element(:refTransId, opts[:refTransId])
+  defp add_ref_trans_id(id) do
+    element(:refTransId, id)
   end
 
   defp add_transaction_type(transaction_type) do
@@ -201,7 +234,11 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   end
 
   defp add_amount(amount) do
-    element(:amount, amount)
+    cond do
+      is_integer(amount) -> element(:amount, amount)
+      is_float(amount) -> element(:amount, amount)
+      true -> element(:amount, 0)
+    end
   end
 
   defp add_payment_source(source) do
@@ -213,7 +250,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   defp add_credit_card(source) do
     element(:payment, [
       element(:creditCard, [
-        element(:number, source[:number]),
+        element(:cardNumber, source[:number]),
         element(:expirationDate, source[:expiration]),
         element(:cardCode, source[:cvc])
       ])
@@ -240,24 +277,24 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
 
   defp add_tax_fields(opts) do
     element(:tax, [
-      element(:amount, opts[:tax][:amount]),
-      element(:name, opts[:tax][:amount]),
+      add_amount(opts[:tax][:amount]),
+      element(:name, opts[:tax][:name]),
       element(:description, opts[:tax][:description]),
     ])
   end
 
   defp add_duty_fields(opts) do
     element(:duty, [
-      element(:amount, opts[:duty][:amount]),
-      element(:name, opts[:duty][:amount]),
+      add_amount(opts[:duty][:amount]),
+      element(:name, opts[:duty][:name]),
       element(:description, opts[:duty][:description]),
     ])
   end
 
   defp add_shipping_fields(opts) do
     element(:shipping, [
-      element(:amount, opts[:shipping][:amount]),
-      element(:name, opts[:shipping][:amount]),
+      add_amount(opts[:shipping][:amount]),
+      element(:name, opts[:shipping][:name]),
       element(:description, opts[:shipping][:description]),
     ])
   end
@@ -303,7 +340,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
       element(:city, opts[:shipTo][:city]),
       element(:state, opts[:shipTo][:state]),
       element(:zip, opts[:shipTo][:zip]),
-      element(:country, opts[:shipTo][:country])      
+      element(:country, opts[:shipTo][:country]) 
     ])
   end
 
