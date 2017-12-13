@@ -4,14 +4,20 @@ defmodule Kuber.Hex.Gateways.WireCard do
   @test_url "https://c3-test.wirecard.com/secure/ssl-gateway"
   @live_url "https://c3.wirecard.com/secure/ssl-gateway"
   @homepage_url "http://www.wirecard.com"
+
+  # The Namespaces are not really needed, because it just tells the System, that there's actually no namespace used.
+  # It's just specified here for completeness.
   @envelope_namespaces %{
     "xmlns:xsi" => "http://www.w3.org/1999/XMLSchema-instance",
     "xsi:noNamespaceSchemaLocation" => "wirecard.xsd"
   }
 
+  # Unused Code, may be required for future reference
   @permited_transactions ~w[ PREAUTHORIZATION CAPTURE PURCHASE ]
 
+  # Unused Code, required for future reference
   @return_codes ~w[ ACK NOK ]
+  
   @doc """
     Wirecard only allows phone numbers with a format like this: +xxx(yyy)zzz-zzzz-ppp, where:
       xxx = Country code
@@ -27,9 +33,14 @@ defmodule Kuber.Hex.Gateways.WireCard do
   @supported_countries ~w(AD CY GI IM MT RO CH AT DK GR IT MC SM TR BE EE HU LV NL SK GB BG FI IS LI NO SI VA FR IL LT PL ES CZ DE IE LU PT SE)
   @display_name      "Wirecard"
   @default_currency  "EUR"
+
+  # Unused Code, required for future reference for 
+  # converting money to cents
   @money_format      :cents
 
   use Kuber.Hex.Gateways.Base
+  use Kuber.Hex.Adapter, required_config: [:login, :password, :signature]
+
   alias Kuber.Hex.{
     CreditCard,
     Address,
@@ -85,12 +96,15 @@ defmodule Kuber.Hex.Gateways.WireCard do
   """
   def authorize(money, payment_method, options \\ []) do
     options = options 
-                |> check_and_return_payment_method(payment_method)
-
+              |> check_and_return_payment_method(payment_method)
     response = commit(:post, :preauthorization, money, options)
     response
   end
 
+  @doc """
+    Capture - the second paramter here should be a GuWid/authorization.
+    Authorization is obtained by authorizing the creditcard. 
+  """
   def capture(authorization, money, options \\ []) do
     options = options |> Keyword.put(:preauthorization, authorization)
     commit(:post, :capture, money, options)
@@ -108,12 +122,33 @@ defmodule Kuber.Hex.Gateways.WireCard do
     commit(:post, :purchase, money, options)
   end
  
+  @doc """
+  Void - A credit card purchase that a seller cancels after it has 
+        been authorized but before it has been settled. 
+        A void transaction does not appear on the customer's 
+        credit card statement, though it might appear in a list
+        of pending transactions when the customer checks their 
+        account online.
+  ==== Parameters ======
+  identification -  The authorization string returned from the
+                    initial authorization or purchase.
+  """
   def void(identification, options \\ []) do
     options = options 
                 |> Keyword.put(:preauthorization, identification)
     commit(:post, :reversal, nil, options)
   end
- 
+  
+  @doc """
+    Performs a credit.
+      
+    This transaction indicates that money 
+    should flow from the merchant to the customer.  
+    ==== Parameters ====
+    money          -- The amount to be credited to the customer 
+                      as an Integer value in cents.
+    identification -- GuWID
+  """
   def refund(money, identification, options \\ []) do
     options = options
                 |> Keyword.put(:preauthorization, identification)
@@ -164,7 +199,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
   end
  
   # =================== Private Methods =================== 
-  
+
+  # Check if paymenth method is creditcard or authorization code
   defp check_and_return_payment_method(options, payment_method) do
     case payment_method do
       %CreditCard{}  ->
@@ -233,7 +269,6 @@ defmodule Kuber.Hex.Gateways.WireCard do
     request
   end
 
-  
   # Includes the whole transaction data (payment, creditcard, address)
   # TODO: Add order_id to options if not present, see AM
   # TOOD: Clean description before passing it to FunctionID, replace dummy
@@ -247,12 +282,11 @@ defmodule Kuber.Hex.Gateways.WireCard do
       )])
   end
 
-
   # Includes the IP address of the customer to the transaction-xml
   defp add_customer_data(options) do
     if options[:ip] do
       [
-        element(:CONTACT_DATA, [ element(:IPAddress, options[:ip]) ])
+        element(:CONTACT_DATA, [element(:IPAddress, options[:ip])])
       ]
     end
   end
@@ -288,7 +322,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
             element(:City, address[:city]),
             element(:Zip, address[:zip]), 
             add_state(address),
-            element(:Country,address[:country]),
+            element(:Country, address[:country]),
             element(:Phone, (if regex_match(@valid_phone_format ,address[:phone]), do: address[:phone])),
             element(:Email, address[:email])
           ])
@@ -328,7 +362,6 @@ defmodule Kuber.Hex.Gateways.WireCard do
       element(:CardHolderName, join_string([creditcard.first_name, creditcard.last_name], " "))
     ])]
   end
-
 
   # Includes the payment (amount, currency, country) to the transaction-xml
   def add_invoice(money, options) do
