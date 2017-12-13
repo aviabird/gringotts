@@ -223,7 +223,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     request = doc(element(:WIRECARD_BXML, [
         element(:W_REQUEST, [
           element(:W_JOB, [
-            element(:JobID, ''),
+            element(:JobID, ""),
             element(:BusinessCaseSignature, options[:config][:signature]),
             add_transaction_data(action, money, options)
           ])
