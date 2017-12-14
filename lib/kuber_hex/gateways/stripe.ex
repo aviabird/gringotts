@@ -1,4 +1,19 @@
 defmodule Kuber.Hex.Gateways.Stripe do
+
+  @moduledoc """
+  Functions for working with Stripe payment gateway. Through this API you can:
+
+  * Authorize payment source and use it later for payment.
+  * Purchase with payment source.
+  * Capture a payment for already authorized payment source.
+  * Void the payment for payment source.
+  * Refund amount to payment source.
+  * Store payment source for making purchases later.
+  * Unstore payment source.
+  
+  Stripe API reference: https://stripe.com/docs/api
+  """
+
   @base_url "https://api.stripe.com/v1"
 
   use Kuber.Hex.Gateways.Base
@@ -9,37 +24,163 @@ defmodule Kuber.Hex.Gateways.Stripe do
     Address
   }
 
+  @doc """
+  Authorize payment source.
+
+  Authorize the payment source for a customer or card using amount and opts.
+  opts must include the default currency.
+
+  ## Examples
+
+    payment = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
+  
+    opts = [currency: "usd"]
+    amount = 5
+
+    Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)
+  """
+  @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params) |> format_response
   end
 
+  @doc """
+  Purchase with payment source.
+
+  Purchase with the payment source using amount and opts.
+  opts must include the default currency.
+
+  ## Examples
+
+    payemnt = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
+  
+    opts = [currency: "usd"]
+    amount = 5
+
+    Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)
+  """
+  @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params)
   end
 
+  @doc """
+  Captures a payment.
+
+  Captures a payment with already authorized payment source.
+  Once the charge is captured, it cannot be captured again.
+  Amount less than or equal to authorized amount can be captured
+  but not more than that.
+  If less amount is captured than the authorized amount, then
+  remaining amount will be refunded back to the authorized 
+  paymet source.
+
+  ## Examples  
+    
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    amount = 5
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)
+  """
+  @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
     params = opts ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params)
   end
 
+  @doc """
+  Voids the payment.
+
+  Returns the captured amount to the authorized payment source.
+
+  ## Examples  
+    
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.void(id, opts)
+  """
+  @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
     params = opts
     commit(:post, "charges/#{id}/refund", params)
   end
 
+  @doc """
+  Refunds the amount.
+
+  Returns the captured amount to the authorized payment source.
+  Less than or equal to the captured amount can be refunded.
+  If the refunded amount is less than the captured amount, then
+  remaining amount can be refunded again.
+
+  ## Examples  
+    
+    amount = 5
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)
+  """
+  @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
     params = opts ++ amount_params(amount)
     commit(:post, "charges/#{id}/refund", params)
   end
 
-  def store(card, opts \\ []) do
-    params = opts ++ source_params(card)
+  @doc """
+  Stores the payment source.
+
+  Store the payment source, so that it can be used
+  for capturing the amount at later stages.
+
+  ## Examples  
+    
+    payment = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
+
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.store(payment, opts)
+  """
+  @spec store(Map, List) :: Map
+  def store(payment, opts \\ []) do
+    params = opts ++ source_params(payment)
     commit(:post, "customers", params)
   end
 
+  @doc """
+  Unstore the stored payment source.
+
+  Unstore the already stored payment source,
+  so that it cannot be used again for capturing
+  payments.
+
+  ## Examples  
+    
+    id = "cus_BwpLX2x4ecEUgD"
+
+    Kuber.Hex.Gateways.Stripe.unstore(id)
+  """
+  @spec unstore(String.t) :: Map
   def unstore(id), do: commit(:delete, "customers/#{id}")
+
+
+  # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     opts ++ [capture: capture]
