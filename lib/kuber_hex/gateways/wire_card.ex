@@ -123,6 +123,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
       ip: "127.0.0.1"
     ] 
   """
+  @spec authorize(Float, CreditCard, Keyword) :: { :ok, Map }
+  @spec authorize(Float, String.t, Keyword) :: { :ok, Map }
   def authorize(money, payment_method, options \\ []) do
     options = options 
               |> check_and_return_payment_method(payment_method)
@@ -131,9 +133,10 @@ defmodule Kuber.Hex.Gateways.WireCard do
   end
 
   @doc """
-    Capture - the second paramter here should be a GuWid/authorization.
+    Capture - the first paramter here should be a GuWid/authorization.
     Authorization is obtained by authorizing the creditcard. 
   """
+  @spec capture(String.t, Float, Keyword) :: { :ok, Map }
   def capture(authorization, money, options \\ []) do
     options = options |> Keyword.put(:preauthorization, authorization)
     commit(:post, :capture, money, options)
@@ -145,6 +148,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
   """
+  @spec purchase(Float, String.t Keyword) :: { :ok, Map }
   def purchase(money, payment_method, options \\ []) do
     options = options 
                 |> check_and_return_payment_method(payment_method)
@@ -162,6 +166,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   identification -  The authorization string returned from the
                     initial authorization or purchase.
   """
+  @spec void(String.t, Keyword) :: { :ok, Map }
   def void(identification, options \\ []) do
     options = options 
                 |> Keyword.put(:preauthorization, identification)
@@ -178,6 +183,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
                       as an Integer value in cents.
     identification -- GuWID
   """
+  @spec refund(Float, String.t, Keyword) :: { :ok, Map }
   def refund(money, identification, options \\ []) do
     options = options
                 |> Keyword.put(:preauthorization, identification)
@@ -215,6 +221,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     the returned authorization/GuWID usable in later transactions
     with +options[:recurring] = 'Repeated'+.
   """
+  @spec store(CreditCard, Keyword) :: { :ok, Map }
   def store(creditcard, options \\ []) do
     options = options 
                 |> Keyword.put(:credit_card, creditcard) 
