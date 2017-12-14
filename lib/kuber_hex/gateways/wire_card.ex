@@ -101,7 +101,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
   """
-  @spec purchase(Float, String.t Keyword) :: { :ok, Map }
+  @spec purchase(Float, String.t, Keyword) :: { :ok, Map }
+  @spec purchase(Float, CreditCard, Keyword) :: { :ok, Map }
   def purchase(money, payment_method, options \\ []) do
     options = options 
                 |> check_and_return_payment_method(payment_method)
