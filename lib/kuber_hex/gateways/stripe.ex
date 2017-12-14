@@ -91,7 +91,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     ["card[number]":    card.number,
      "card[exp_year]":  expiration_year,
      "card[exp_month]": expiration_month,
-     "card[cvc]":       card.cvc,
+     "card[cvc]":       card.verification_code,
      "card[name]":      card.name]
   end
 
@@ -123,7 +123,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
   defp respond({:ok, %{status_code: 200, body: body}}) do
     data = decode!(body)
     {cvc_result, avs_result} = verification_result(data)
-
     {:ok, Response.success(authorization: data["id"], raw: data, cvc_result: cvc_result, avs_result: avs_result)}
   end
 

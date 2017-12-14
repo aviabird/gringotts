@@ -78,7 +78,7 @@ defmodule Kuber.Hex.Gateways.Cams do
           year: 2018,
           first_name: "Longbob",
           last_name: "Longsen",
-          verification_value: "123",
+          verification_code: "123",
           brand: "visa"
         }
         credit_card = %CreditCard{
@@ -87,7 +87,7 @@ defmodule Kuber.Hex.Gateways.Cams do
           year: 2018,
           first_name: "Longbob",
           last_name: "Longsen",
-          verification_value: "123",
+          verification_code: "123",
           brand: "visa"
         }
         address = %{
@@ -177,7 +177,7 @@ defmodule Kuber.Hex.Gateways.Cams do
       post = post 
             |> Keyword.put(:ccnumber, payment.number)
             |> Keyword.put(:ccexp, "#{exp_month}#{exp_year}")
-            |> Keyword.put(:cvv, payment.verification_value)
+            |> Keyword.put(:cvv, payment.verification_code)
       post
     end
   
