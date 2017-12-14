@@ -71,7 +71,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
-    commit(:post, "charges", params, opts)
+    commit(:post, "charges", params, opts) |> format_response
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
-    commit(:post, "charges/#{id}/capture", params, opts)
+    commit(:post, "charges/#{id}/capture", params, opts) |> format_response
   end
 
   @doc """
@@ -114,7 +114,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
     params = optional_params(opts)
-    commit(:post, "charges/#{id}/refund", params, opts)
+    commit(:post, "charges/#{id}/refund", params, opts) |> format_response
   end
 
   @doc """
@@ -136,7 +136,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
-    commit(:post, "charges/#{id}/refund", params, opts)
+    commit(:post, "charges/#{id}/refund", params, opts) |> format_response
   end
 
   @doc """
@@ -159,8 +159,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
-    params = optional_params(opts) ++ source_params(payment)
-    commit(:post, "customers", params, opts)
+    params = optional_params(opts) ++ source_params(payment, opts)
+    commit(:post, "customers", params, opts) |> format_response
   end
 
   @doc """
@@ -177,7 +177,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     Kuber.Hex.Gateways.Stripe.unstore(id)
   """
   @spec unstore(String.t) :: Map
-  def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
+  def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts) |> format_response
 
   # Private methods
 
