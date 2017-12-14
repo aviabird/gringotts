@@ -37,7 +37,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     and transactionKey
   """
   def authenticate(opts) do
-    case Keyword.fetch(opts, :required_config) do
+    case Keyword.fetch(opts, :config) do
       {:ok, config} ->
         data = add_auth_request(config)
         response_data = commit(:post, data)
@@ -130,7 +130,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   # function for formatting the request as an xml for purchase and authorize method
   defp add_auth_purchase(amount, payment, opts, transaction_type) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:required_config]),
+      add_merchant_auth(opts[:config]),
       add_order_id(opts),
       add_purchase_transaction_request(amount, transaction_type, payment, opts),
     ])
@@ -140,7 +140,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   # function for formatting the request for  normal capture
   defp normal_capture(amount, id, opts, transaction_type) do
     element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:required_config]),
+      add_merchant_auth(opts[:config]),
       add_order_id(opts),
       add_capture_transaction_request(amount, id, transaction_type, opts),
     ])
