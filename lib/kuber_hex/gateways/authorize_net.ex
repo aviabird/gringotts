@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Gateway.AuthorizeNet do
+defmodule Kuber.Hex.Gateways.AuthorizeNet do
   import XmlBuilder
   import XmlToMap
 
