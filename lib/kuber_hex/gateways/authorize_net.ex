@@ -4,6 +4,7 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
 
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
+  @header [{"Content-Type", "text/xml"}]
 
   @transaction_type %{
     purchase: "authCaptureTransaction",
@@ -96,11 +97,11 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
   # method to make the api request with params
   defp commit(method, payload) do
     path = @test_url
-    headers = [{"Content-Type", "text/xml"}]
+    headers = @header
     HTTPoison.request(method, path, payload, headers)
   end
 
-  # function to return a successefull response 
+  # Function to return a response 
   defp respond(response_type, {:ok, %{body: body, status_code: 200}}) do
     raw_response  = naive_map(body)
     case response_type do
@@ -111,14 +112,13 @@ defmodule Kuber.Hex.Gateway.AuthorizeNet do
     end
   end
 
-  # functions to send successful and error responses for api requests
-  defp response_check( %{"messages" => %{"message" =>
-    %{"code" => "I00001", "text" => "Successful."}, "resultCode" => "Ok"}}, raw_response) do
+  # Functions to send successful and error responses depending on message received 
+  # from gateway.
+  defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
         {:ok, Response.success(raw: raw_response)}
   end
 
-  defp response_check( %{"messages" => %{"message" =>
-  %{"code" => "I00001", "text" => "Successful."}, "resultCode" => "Error"}}, raw_response) do
+  defp response_check( %{"messages" => %{"resultCode" => "Error"}}, raw_response) do
       {:ok, Response.error(raw: raw_response)}
   end
 
