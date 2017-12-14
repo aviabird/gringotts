@@ -13,7 +13,7 @@ defmodule Kuber.HexTest do
       :purchase_response
     end
 
-    def capture(1234, _) do
+    def capture(1234, 100,_) do
       :capture_response
     end
 
@@ -36,6 +36,14 @@ defmodule Kuber.HexTest do
 
   setup do
     {:ok, worker} = Worker.start_link(FakeGateway, :config)
+    # Setup the config for the application this is required as the 
+    # application is not setting the config
+    Application.put_env(:kuber_hex, Kuber.Hex, [
+      adapter: Kuber.Hex.Gateways.Stripe,
+      api_key: "sk_test_mnrVg6z2G0HeDzwy5gxJfmfP",
+      default_currency: "USD",
+      worker_process_name: :stripe_gateway]
+    )
     {:ok, worker: worker}
   end
 
@@ -48,7 +56,7 @@ defmodule Kuber.HexTest do
   end
 
   test "capture", %{worker: worker} do
-    assert capture(worker, 1234, []) == :capture_response
+    assert capture(worker, 1234, 100,[]) == :capture_response
   end
 
   test "void", %{worker: worker} do

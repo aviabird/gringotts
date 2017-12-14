@@ -147,10 +147,10 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp card_params(card) do
     {expiration_year, expiration_month} = card.expiration
     ["card.number": card.number,
-     "card.holder": card.name,
+     "card.holder": "#{card.first_name} #{card.last_name}",
      "card.expiryMonth": expiration_month |> Integer.to_string |> String.pad_leading(2, "0"),
      "card.expiryYear": expiration_year |> Integer.to_string,
-     "card.cvv": card.cvc,
+     "card.cvv": card.verification_code,
      "paymentBrand": card.brand]
   end
 
@@ -232,4 +232,5 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp currency(opts), do: opts[:currency] || @default_currency
   defp version(opts), do: opts[:api_version] || @version
 end
+
 

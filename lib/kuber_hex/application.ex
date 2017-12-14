@@ -7,6 +7,9 @@ defmodule Kuber.Hex.Application do
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
+    app_config = Application.get_all_env(:kuber_hex)
+    adapters = Enum.filter(app_config, fn({key, klist}) -> klist != [] end)
+                |> Enum.map(fn({key, klist}) -> Keyword.get(klist, :adapter) end)
 
     children = [
       # Define workers and child supervisors to be supervised
@@ -14,18 +17,11 @@ defmodule Kuber.Hex.Application do
       worker(
         Kuber.Hex.Worker,
         [
-          Application.get_env(:kuber_hex, Kuber.Hex)[:adapter], # gateway
-          Application.get_env(:kuber_hex, Kuber.Hex),           # options(config from application)
-          # Experimental
-          # Current issue with this is named processes cannot be created for multiple 
-          # requests for example if we want to process multiple requests simultaneously
-          # then named processes is not the way to go.
-          # ref: https://www.amberbit.com/blog/2016/5/13/process-name-registration-in-elixir/
-          # ref: https://github.com/uwiger/gproc
-          # ref: https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc
-          # ref: https://medium.com/elixirlabs/registry-in-elixir-1-4-0-d6750fb5aeb
-          # ref: http://codeloveandboards.com/blog/2016/03/20/supervising-multiple-genserver-processes/
-          [name: Application.get_env(:kuber_hex, Kuber.Hex)[:worker_process_name]]
+          adapters,       # gateways
+          app_config,     # options(config from application)
+          # Since we just have one worker handling all the incoming 
+          # requests so this name remains fixed
+          [name: :payment_worker]
         ])
     ]
 
