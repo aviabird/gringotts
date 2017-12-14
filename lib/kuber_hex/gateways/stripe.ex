@@ -179,7 +179,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec unstore(String.t) :: Map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
 
-
   # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
