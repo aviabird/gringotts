@@ -10,16 +10,19 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
     first_name: "Jo",
     last_name: "Doe",
     number: "4200000000000000",
-    expiration: {2099, 12},
+    year: 2099,
+    month: 12,
     verification_code: "123",
     brand: "VISA"
   }
 
   @bad_card %CreditCard{
-    name: "Jo Doe",
+    first_name: "Jo",
+    last_name: "Doe",
     number: "4200000000000000",
-    expiration: {2000, 12},
-    cvc:  "123",
+    year: 2000,
+    month: 12,
+    verification_code:  "123",
     brand: "VISA"
   }
 
@@ -60,12 +63,6 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
              entityId: "8a829417539edb400153c1eae6de325e",
              test_url: "http://localhost:#{bypass.port}"}
     {:ok, bypass: bypass, auth: auth}
-  end
-
-
-  test "core      | when config/auth-info is absent." do
-    {:error, response} = Gateway.authorize(52.00, @card, [config: nil])
-    assert response.reason == "Authorization fields missing"
   end
 
   @tag :skip

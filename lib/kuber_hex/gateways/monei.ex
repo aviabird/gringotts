@@ -38,7 +38,7 @@ defmodule Kuber.Hex.Gateways.Monei do
   
   """
   
-  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password, :worker_process_name]
+  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password]
   import Poison, only: [decode: 1]
   alias Kuber.Hex.{CreditCard, Response}
   
@@ -145,31 +145,24 @@ defmodule Kuber.Hex.Gateways.Monei do
 
   
   defp card_params(card) do
-    {expiration_year, expiration_month} = card.expiration
     ["card.number": card.number,
      "card.holder": "#{card.first_name} #{card.last_name}",
-     "card.expiryMonth": expiration_month |> Integer.to_string |> String.pad_leading(2, "0"),
-     "card.expiryYear": expiration_year |> Integer.to_string,
+     "card.expiryMonth": card.month |> Integer.to_string |> String.pad_leading(2, "0"),
+     "card.expiryYear": card.year |> Integer.to_string,
      "card.cvv": card.verification_code,
      "paymentBrand": card.brand]
   end
 
-  def commit(method, endpoint, params, opts = %{userId: userId,
-                                                password: password,
-                                                entityId: entityId}) do
-    auth_params = ["authentication.userId": userId,
-                   "authentication.password": password,
-                   "authentication.entityId": entityId]
+  def commit(method, endpoint, params, opts) do
+    auth_params = ["authentication.userId": opts[:userId],
+                   "authentication.password": opts[:password],
+                   "authentication.entityId": opts[:entityId]]
     body = params ++ auth_params
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
     case method do
       :post -> HTTPoison.post(url, {:form, body}, @default_headers) |> respond
       :delete -> HTTPoison.delete(url  <> "?" <> URI.encode_query(auth_params)) |> respond
     end
-  end
-
-  def commit(_method, _endpoint, _params, _opts) do
-    {:error, Response.error(reason: "Authorization fields missing", description: "Check if the application is correctly configured")}
   end
 
   def respond({:ok, %{status_code: 200, body: body}}) do
@@ -203,28 +196,6 @@ defmodule Kuber.Hex.Gateways.Monei do
     cond do
       String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) -> {:ok, results}
       true -> {:error, [{:reason, result["description"]} | results]}
-      # String.match?(code, ~r{^(000\.400\.0|000\.400\.100)}) -> :review
-      # String.match?(code, ~r{^(000\.200)}) -> :session_active
-      # String.match?(code, ~r{^(800\.400\.5|100\.400\.500)}) -> :pending
-      # String.match?(code, ~r{^(000\.400\.[1][0-9][1-9]|000\.400\.2)}) -> :reject # risk check
-      # String.match?(code, ~r{^(800\.[17]00|800\.800\.[123]}) -> :reject # bank or external
-      # String.match?(code, ~r{^(900\.[1234]00}) -> :reject # comms failed
-      # String.match?(code, ~r{^(800\.5|999\.|600\.1|800\.800\.8}) -> :reject # sys error
-      # String.match?(code, ~r{^(800\.1[123456]0}) -> :reject # risk validation
-      # String.match?(code, ~r{^(100\.400|100\.38|100\.370\.100|100\.370\.11}) -> :fail # external risk sys
-      # String.match?(code, ~r{^(800\.400\.1}) -> :fail # avs
-      # String.match?(code, ~r{^(800\.400\.2|100\.380\.4|100\.390}) -> :fail # 3ds
-      # String.match?(code, ~r{^(100\.100\.701|800\.[32]}) -> :fail # blacklisted (possibly temporary)
-      # String.match?(code, ~r{^(600\.[23]|500\.[12]|800\.121}) -> :invalid_config
-      # String.match?(code, ~r{^(100\.[13]50}) -> :invalid # registration
-      # String.match?(code, ~r{^(100\.[13]50}) -> :reject # job related
-      # String.match?(code, ~r{^(700\.[1345][05]0}) -> :reject # refference related
-      # String.match?(code, ~r{^(200\.[123]|100\.[53][07]|800\.900|100\.[69]00\.500}) -> :reject # bad format
-      # String.match?(code, ~r{^(100\.800}) -> :reject # address validation
-      # String.match?(code, ~r{^(100\.[97]00}) -> :reject # contact validation
-      # String.match?(code, ~r{^(100\.100|100.2[01]}) -> :reject # account validation
-      # String.match?(code, ~r{^(100\.55}) -> :reject # amount validation
-      # String.match?(code, ~r{^(000\.100\.2}) -> :reject # chargebacks!!
     end
   end
 
