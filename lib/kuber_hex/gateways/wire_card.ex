@@ -2,50 +2,11 @@
 import XmlBuilder
 defmodule Kuber.Hex.Gateways.WireCard do
   @moduledoc """
-    WireCard System Plugins - Terms of Use
-
-    The plugins offered are provided free of charge by Wirecard AG and are explicitly not part
-    of the Wirecard AG range of products and services.
-
-    They have been tested and approved for full functionality in the standard configuration
-    (status on delivery) of the corresponding shop system. They are under General Public
-    License Version 3 (GPLv3) and can be used, developed and passed on to third parties under
-    the same terms.
-
-    However, Wirecard AG does not provide any guarantee or accept any liability for any errors
-    occurring when used in an enhanced, customized shop system configuration.
-
-    Operation in an enhanced, customized configuration is at your own risk and requires a
-    comprehensive test phase by the user of the plugin.
-
-    Customers use the plugins at their own risk. Wirecard AG does not guarantee their full
-    functionality neither does Wirecard AG assume liability for any disadvantages related to
-    the use of the plugins. Additionally, Wirecard AG does not guarantee the full functionality
-    for customized shop systems or installed plugins of other vendors of plugins within the same
-    shop system.
-
-    Customers are responsible for testing the plugin's functionality before starting productive
-    operation.
-
-    By installing the plugin into the shop system the customer agrees to these terms of use.
-    Please do not use the plugin if you do not agree to these terms of use!
+    WireCard System Plugins
   """
   @test_url "https://c3-test.wirecard.com/secure/ssl-gateway"
   @live_url "https://c3.wirecard.com/secure/ssl-gateway"
   @homepage_url "http://www.wirecard.com"
-
-  # The Namespaces are not really needed, because it just tells the System, that there's actually no namespace used.
-  # It's just specified here for completeness.
-  @envelope_namespaces %{
-    "xmlns:xsi" => "http://www.w3.org/1999/XMLSchema-instance",
-    "xsi:noNamespaceSchemaLocation" => "wirecard.xsd"
-  }
-
-  # Unused Code, may be required for future reference
-  @permited_transactions ~w[ PREAUTHORIZATION CAPTURE PURCHASE ]
-
-  # Unused Code, required for future reference
-  @return_codes ~w[ ACK NOK ]
   
   @doc """
     Wirecard only allows phone numbers with a format like this: +xxx(yyy)zzz-zzzz-ppp, where:
@@ -57,15 +18,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     number 5551234 within area code 202 (country code 1).
   """
   @valid_phone_format ~r/\+\d{1,3}(\(?\d{3}\)?)?\d{3}-\d{4}-\d{3}/
-
-  @supported_cardtypes [ :visa, :master, :american_express, :diners_club, :jcb, :switch ]
-  @supported_countries ~w(AD CY GI IM MT RO CH AT DK GR IT MC SM TR BE EE HU LV NL SK GB BG FI IS LI NO SI VA FR IL LT PL ES CZ DE IE LU PT SE)
-  @display_name      "Wirecard"
   @default_currency  "EUR"
-
-  # Unused Code, required for future reference for 
-  # converting money to cents
-  @money_format      :cents
 
   use Kuber.Hex.Gateways.Base
   use Kuber.Hex.Adapter, required_config: [:login, :password, :signature]
