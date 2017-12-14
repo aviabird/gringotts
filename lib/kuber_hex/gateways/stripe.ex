@@ -123,7 +123,6 @@ defmodule Kuber.Hex.Gateways.Stripe do
   defp respond({:ok, %{status_code: 200, body: body}}) do
     data = decode!(body)
     {cvc_result, avs_result} = verification_result(data)
-
     {:ok, Response.success(authorization: data["id"], raw: data, cvc_result: cvc_result, avs_result: avs_result)}
   end
 
