@@ -95,7 +95,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
       year: 2018,
       first_name: "Longbob",
       last_name: "Longsen",
-      verification_value: "123",
+      verification_code: "123",
       brand: "visa"
     }
     address = %{
@@ -385,7 +385,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   defp add_creditcard(creditcard) do
     [element(:CREDIT_CARD_DATA, [
       element(:CreditCardNumber, creditcard.number),
-      element(:CVC2, creditcard.verification_value),
+      element(:CVC2, creditcard.verification_code),
       element(:ExpirationYear, creditcard.year),
       element(:ExpirationMonth, creditcard.month),
       element(:CardHolderName, join_string([creditcard.first_name, creditcard.last_name], " "))
