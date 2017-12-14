@@ -150,7 +150,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   # function to format the request as an xml for the authenticate method
   defp add_auth_request(opts) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts)
+      add_merchant_auth(opts[:config])
     ])
     |> generate
   end
@@ -158,7 +158,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   #function to format the request for normal refund
   defp normal_refund(amount, id, opts, transaction_type) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts),
+      add_merchant_auth(opts[:config]),
       add_order_id(opts),
       add_refund_transaction_request(amount, id, opts, transaction_type),
     ])
@@ -168,7 +168,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   #function to format the request for normal void operation
   defp normal_void(id, opts, transaction_type) do
     element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts),
+      add_merchant_auth(opts[:config]),
       add_order_id(opts),
       element(:transactionRequest, [
         add_transaction_type(transaction_type),
