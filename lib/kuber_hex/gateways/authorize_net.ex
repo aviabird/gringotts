@@ -118,11 +118,11 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   # Functions to send successful and error responses depending on message received 
   # from gateway.
   defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
-        {:ok, Response.success(raw: raw_response)}
+    {:ok, Response.success(raw: raw_response)}
   end
 
   defp response_check( %{"messages" => %{"resultCode" => "Error"}}, raw_response) do
-      {:ok, Response.error(raw: raw_response)}
+    {:ok, Response.error(raw: raw_response)}
   end
 
   #------------------- Helper functions for the interface functions------------------- 
@@ -253,9 +253,9 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   defp add_credit_card(source) do
     element(:payment, [
       element(:creditCard, [
-        element(:cardNumber, source[:number]),
-        element(:expirationDate, source[:expiration]),
-        element(:cardCode, source[:cvc])
+        element(:cardNumber, source.number),
+        element(:expirationDate, join_string([source.year, source.month], "-")),
+        element(:cardCode, source.verification_code)
       ])
     ])
   end
@@ -351,4 +351,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     element(:customerIP, opts[:customerIP])
   end
 
+  def join_string(list, symbol) do
+    Enum.join(list, symbol)
+  end
 end
