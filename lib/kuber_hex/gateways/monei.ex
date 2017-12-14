@@ -66,10 +66,10 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp card_params(card) do
     {expiration_year, expiration_month} = card.expiration
     ["card.number": card.number,
-     "card.holder": card.name,
+     "card.holder": "#{card.first_name} #{card.last_name}",
      "card.expiryMonth": expiration_month |> Integer.to_string |> String.pad_leading(2, "0"),
      "card.expiryYear": expiration_year |> Integer.to_string,
-     "card.cvv": card.cvc,
+     "card.cvv": card.verification_code,
      "paymentBrand": card.brand]
   end
 
@@ -148,10 +148,11 @@ alias Kuber.Hex.Gateways.Monei
 alias Kuber.Hex.{CreditCard, Address, Response}
 
 cc = %CreditCard{
-name: "Jo Doe",
+first_name: "Jo",
+last_name: "Doe",
 number: "4200000000000000",
 expiration: {2019, 12},
-cvc:  "123",
+verification_code:  "123",
 brand: "VISA"
 }
 
@@ -159,7 +160,7 @@ bad_cc = %CreditCard{
 name: "Jo Doe",
 number: "4200000000000000",
 expiration: {2011, 12},
-cvc:  "123",
+verification_code:  "123",
 brand: "VISA"
 }
 

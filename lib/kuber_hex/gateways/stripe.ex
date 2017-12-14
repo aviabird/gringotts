@@ -91,7 +91,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     ["card[number]":    card.number,
      "card[exp_year]":  expiration_year,
      "card[exp_month]": expiration_month,
-     "card[cvc]":       card.cvc,
+     "card[cvc]":       card.verification_code,
      "card[name]":      card.name]
   end
 

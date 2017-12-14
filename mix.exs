@@ -35,8 +35,8 @@ defmodule Kuber.Hex.Mixfile do
     [{:poison, "~> 3.1.0"},
      {:httpoison, "~> 0.13.0"},
      {:ex_doc, ">= 0.6.0", only: :dev},
-     {:mock, ">= 0.1.0", only: :test},
-     {:xml_builder, "~> 0.1.1"},
+     {:mock, ">= 0.1.0", only: :test}, 
+     {:xml_builder, "~> 0.1.1"}, 
      {:elixir_xml_to_map, "~> 0.1"}]
   end
 end
