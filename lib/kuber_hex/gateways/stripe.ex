@@ -46,7 +46,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
-    commit(:post, "charges", params) |> format_response
+    commit(:post, "charges", params, opts) |> format_response
   end
 
   @doc """
@@ -71,7 +71,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
-    commit(:post, "charges", params)
+    commit(:post, "charges", params, opts)
   end
 
   @doc """
@@ -95,8 +95,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   """
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
-    params = opts ++ amount_params(amount)
-    commit(:post, "charges/#{id}/capture", params)
+    params = optional_params(opts) ++ amount_params(amount)
+    commit(:post, "charges/#{id}/capture", params, opts)
   end
 
   @doc """
@@ -113,8 +113,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   """
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
-    params = opts
-    commit(:post, "charges/#{id}/refund", params)
+    params = optional_params(opts)
+    commit(:post, "charges/#{id}/refund", params, opts)
   end
 
   @doc """
@@ -135,8 +135,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   """
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
-    params = opts ++ amount_params(amount)
-    commit(:post, "charges/#{id}/refund", params)
+    params = optional_params(opts) ++ amount_params(amount)
+    commit(:post, "charges/#{id}/refund", params, opts)
   end
 
   @doc """
@@ -159,8 +159,8 @@ defmodule Kuber.Hex.Gateways.Stripe do
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
-    params = opts ++ source_params(payment)
-    commit(:post, "customers", params)
+    params = optional_params(opts) ++ source_params(payment)
+    commit(:post, "customers", params, opts)
   end
 
   @doc """
@@ -177,29 +177,30 @@ defmodule Kuber.Hex.Gateways.Stripe do
     Kuber.Hex.Gateways.Stripe.unstore(id)
   """
   @spec unstore(String.t) :: Map
-  def unstore(id), do: commit(:delete, "customers/#{id}")
+  def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
 
 
   # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-    opts ++ [capture: capture]
+    optional_params(opts) 
+      ++ [capture: capture]
       ++ amount_params(amount)
-      ++ source_params(payment)
+      ++ source_params(payment, opts)
   end
 
-  defp create_card_token(params) do
-    commit(:post, "tokens", params) |> format_response
+  defp create_card_token(params, opts) do
+    commit(:post, "tokens", params, opts) |> format_response
   end
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
 
-  defp source_params(%{} = payment) do
+  defp source_params(%{} = payment, opts) do
     params = 
       card_params(payment) ++ 
       address_params(payment)
 
-    response = create_card_token(params)
+    response = create_card_token(params, opts)
 
     case Map.has_key?(response, "error") do
       true -> []
@@ -245,10 +246,16 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
   defp address_params(_), do: []
 
-  defp commit(method, path, params \\ []) do
-    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", "Bearer sk_test_vIX41hayC0BKrPWQerLuOMld"}]
+  defp commit(method, path, params \\ [], opts \\ []) do
+    auth_token = "Bearer " <> opts[:config][:api_key]
+
+    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
     data = params_to_string(params)
     HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
+  end
+
+  defp optional_params(opts) do
+    Keyword.delete(opts, :config)
   end
 
   defp format_response(response) do
