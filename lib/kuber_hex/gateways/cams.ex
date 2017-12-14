@@ -65,14 +65,24 @@ defmodule Kuber.Hex.Gateways.Cams do
   
   
     use Kuber.Hex.Gateways.Base
+    use Kuber.Hex.Adapter, required_config: [:username, :password, :default_currency]
     alias Kuber.Hex.{
       CreditCard,
       Address,
       Response
     }
       @doc """
-        payment = %CreditCard{
+          payment = %CreditCard{
           number: "4111111111111111",
+          month: 11,
+          year: 2018,
+          first_name: "Longbob",
+          last_name: "Longsen",
+          verification_value: "123",
+          brand: "visa"
+        }
+        credit_card = %CreditCard{
+          number: "4242424242424242",
           month: 11,
           year: 2018,
           first_name: "Longbob",
@@ -92,15 +102,15 @@ defmodule Kuber.Hex.Gateways.Cams do
           phone:    "(555)555-5555",
           fax:      "(555)555-6666"
         }
-        options = %{
+        options = [
           config: %{
-            username: "testintegrationc",
-            password: "password9",
-          }
+                    username: "testintegrationc",
+                    password: "password9"
+                  },
           order_id: 1,
           billing_address: address,
           description: "Store Purchase",
-        }
+        ]
     """
     import Poison, only: [decode!: 1]
   
@@ -118,6 +128,7 @@ defmodule Kuber.Hex.Gateways.Cams do
         |> add_invoice(money, options)
         |> add_payment(payment)
         |> add_address(payment, options)
+      IO.inspect(options)
       commit("auth", post, options)
     end
   
@@ -141,6 +152,15 @@ defmodule Kuber.Hex.Gateways.Cams do
       post = []
       post = extract_auth(post, authorization)
       commit("void" , post, options)
+    end
+
+    def verify(credit_card, options) do
+      post = []
+      post = post
+            |> add_invoice( 0, options)
+            |> add_payment(credit_card)
+            |> add_address(credit_card, options)
+      commit("verify", post, options)
     end
   
     # private methods
@@ -195,9 +215,10 @@ defmodule Kuber.Hex.Gateways.Cams do
     defp commit(action, params, options) do 
       url = @live_url
       params = params|> Keyword.put(:type, action)
-                     |> Keyword.put(:password, options[:password])
-                     |> Keyword.put(:username, options[:username])
+                     |> Keyword.put(:password, options[:config][:password])
+                     |> Keyword.put(:username, options[:config][:username])
                      |> params_to_string
+                    #  options[:config][:login]
       headers = [
         { "Content-Type", "application/x-www-form-urlencoded" }
       ]
