@@ -286,7 +286,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
       # returns array of elements
       action when(action in [:preauthorization, :purchase, :authorization_check]) -> create_elems_for_preauth_or_purchase_or_auth_check(money, options)
       action when(action in [:capture, :bookback]) -> create_elems_for_capture_or_bookback(money, options)
-      action when(action in [:reversal, :bookback]) -> add_guwid(options[:preauthorization])
+      action when(action == :reversal) -> add_guwid(options[:preauthorization])
     end
   end
 
