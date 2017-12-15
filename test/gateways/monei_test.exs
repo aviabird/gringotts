@@ -10,10 +10,11 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
   alias Kuber.Hex.Gateways.Monei, as: Gateway
 
   @card %CreditCard{
-    name: "Jo Doe",
+    first_name: "Jo",
+    last_name: "Doe",
     number: "4200000000000000",
     expiration: {2099, 12},
-    cvc:  "123",
+    verification_code: "123",
     brand: "VISA"
   }
 
