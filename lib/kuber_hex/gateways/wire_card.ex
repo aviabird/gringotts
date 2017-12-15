@@ -77,20 +77,17 @@ defmodule Kuber.Hex.Gateways.WireCard do
       test: true
     ] 
   """
+  @spec authorize(Integer | Float, CreditCard | String.t, Keyword) :: { :ok, Map }
   def authorize(money, payment_method, options \\ [])
 
-  @spec authorize(Integer | Float, CreditCard, Keyword) :: { :ok, Map }
   def authorize(money, %CreditCard{} = creditcard, options) do
-    options = add_to_opts(:credit_card, creditcard, options)
-    response = commit(:post, :preauthorization, money, options)
-    response
+    options = Keyword.put(options, :credit_card, creditcard)
+    commit(:post, :preauthorization, money, options)
   end
 
-  @spec authorize(Integer | Float, String.t, Keyword) :: { :ok, Map }
   def authorize(money, authorization, options) when is_binary(authorization) do
-    options = add_to_opts(:preauthorization, authorization, options) 
-    response = commit(:post, :preauthorization, money, options)
-    response
+    options = Keyword.put(options, :preauthorization, authorization)
+    commit(:post, :preauthorization, money, options)
   end
 
   @doc """
@@ -98,8 +95,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     Authorization is obtained by authorizing the creditcard. 
   """
   @spec capture(String.t, Float, Keyword) :: { :ok, Map }
-  def capture(authorization, money, options \\ []) do
-    options = options |> Keyword.put(:preauthorization, authorization)
+  def capture(authorization, money, options \\ []) when is_binary(authorization) do
+    options = Keyword.put(options, :preauthorization, authorization)
     commit(:post, :capture, money, options)
   end
 
@@ -109,15 +106,14 @@ defmodule Kuber.Hex.Gateways.WireCard do
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
   """
+  @spec purchase(Float | Integer, CreditCard| String.t, Keyword) :: { :ok, Map }
   def purchase(money, payment_method, options \\ [])
 
-  @spec purchase(Float | Integer, CreditCard, Keyword) :: { :ok, Map }
   def purchase(money, %CreditCard{} = creditcard, options) do
     options = Keyword.put(options, :credit_card, creditcard)
     commit(:post, :purchase, money, options)
   end
 
-  @spec purchase(Float | Integer, String.t, Keyword) :: { :ok, Map }
   def purchase(money, authorization, options) when is_binary(authorization) do
     options = Keyword.put(options, :preauthorization, authorization)
     commit(:post, :purchase, money, options)
@@ -135,9 +131,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
                     initial authorization or purchase.
   """
   @spec void(String.t, Keyword) :: { :ok, Map }
-  def void(identification, options \\ []) do
-    options = options 
-                |> Keyword.put(:preauthorization, identification)
+  def void(identification, options \\ []) when is_binary(identification) do
+    options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :reversal, nil, options)
   end
   
@@ -152,9 +147,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     identification -- GuWID
   """
   @spec refund(Float, String.t, Keyword) :: { :ok, Map }
-  def refund(money, identification, options \\ []) do
-    options = options
-                |> Keyword.put(:preauthorization, identification)
+  def refund(money, identification, options \\ []) when is_binary(identification) do
+    options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :bookback, money, options)
   end
 
@@ -190,7 +184,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
     with +options[:recurring] = 'Repeated'+.
   """
   @spec store(CreditCard, Keyword) :: { :ok, Map }
-  def store(creditcard, options \\ []) do
+  def store(%CreditCard{} = creditcard, options \\ []) do
     options = options 
                 |> Keyword.put(:credit_card, creditcard) 
                 |> Keyword.put(:recurring, "Initial")
@@ -202,29 +196,28 @@ defmodule Kuber.Hex.Gateways.WireCard do
     end
   end
  
-  # =================== Private Methods =================== 
-
-  # Add new key value to given keyword options
-  def add_to_opts(key, value, options), do: Keyword.put(options, key, value)
- 
+  # =================== Private Methods ===================  
+  
   # Contact WireCard, make the XML request, and parse the
   # reply into a Response object.
   defp commit(method, action, money, options) do
     #TODO: validate and setup address hash as per AM
     request = build_request(action, money, options)
-    
     headers = %{ "Content-Type" => "text/xml",
-    "Authorization" => encoded_credentials(options[:config][:login], options[:config][:password]) }
+                 "Authorization" => encoded_credentials(
+                    options[:config][:login], options[:config][:password]
+                  ) 
+                }
     method |> HTTPoison.request(base_url(options) , request, headers) |> respond
   end
-  
-  defp respond({:ok, %{status_code: 200, body: body}}) do
+
+  defp respond({:ok, %{ status_code: 200, body: body}}) do
     response = parse(body)
     {:ok, response}
   end
 
   defp respond({:ok, %{body: body, status_code: status_code}}) do
-    { :error, "Some Error Occurred" }
+    { :error, "Some Error Occurred: \n #{ inspect body }" }
   end
 
   # Read the XML message from the gateway and check if it was successful,
@@ -236,7 +229,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
 
   # Generates the complete xml-message, that gets sent to the gateway
   defp build_request(action, money, options) do
-    options = options |> Keyword.put(:action, action)
+    options = Keyword.put(options, :action, action)
 
     request = doc(element(:WIRECARD_BXML, [
         element(:W_REQUEST, [
@@ -255,7 +248,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # TODO: Add order_id to options if not present, see AM
   # TOOD: Clean description before passing it to FunctionID, replace dummy
   defp add_transaction_data(action, money, options) do
-    element("FNC_CC_#{options[:action] |> atom_to_upcase_string}", [
+    element("FNC_CC_#{atom_to_upcase_string(options[:action])}", [
       element(:FunctionID, "dummy_description"),
       element(:CC_TRANSACTION, [
         element(:TransactionID, options[:order_id]),
