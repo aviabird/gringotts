@@ -5,7 +5,7 @@ defmodule Kuber.Hex.Gateways.Cams do
     @supported_cardtypes  [:visa, :master, :american_express, :discover]
     @homepage_url  "https://www.centralams.com/"
     @display_name  "CAMS: Central Account Management System"
-  
+    @headers = [{"Content-Type", "application/x-www-form-urlencoded"}]
   
 
     use Kuber.Hex.Gateways.Base
@@ -87,7 +87,7 @@ defmodule Kuber.Hex.Gateways.Cams do
              |> extract_auth(authorization)
              |> add_invoice(money, options)
       commit("refund", post, options)
-   end
+    end
     
     def void(authorization , options) do  
       post = extract_auth([], authorization)
@@ -147,16 +147,13 @@ defmodule Kuber.Hex.Gateways.Cams do
  
     defp commit(action, params, options) do 
       url = @live_url
-      headers = [
-        { "Content-Type", "application/x-www-form-urlencoded" }
-      ]
       params = params
                |> Keyword.put(:type, action)
                |> Keyword.put(:password, options[:config][:password])
                |> Keyword.put(:username, options[:config][:username])
                |> params_to_string
                    
-      HTTPoison.post(url, params, headers)
+      HTTPoison.post(url, params, @headers)
       |>respond
     end
 
