@@ -115,6 +115,10 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     end
   end
 
+  defp respond(_response_type, {:error, %{body: body, status_code: code}}) do
+    {:error, Response.error(raw: body, code: code)}
+  end
+ 
   # Functions to send successful and error responses depending on message received 
   # from gateway.
   defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
