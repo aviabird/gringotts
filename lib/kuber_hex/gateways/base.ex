@@ -45,7 +45,7 @@ defmodule Kuber.Hex.Gateways.Base do
       end
 
       defp money_to_cents(amount) do
-        amount
+        amount * 100
       end
 
       defp params_to_string(params) do
