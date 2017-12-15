@@ -5,7 +5,7 @@ defmodule Kuber.Hex.Gateways.Cams do
     @supported_cardtypes  [:visa, :master, :american_express, :discover]
     @homepage_url  "https://www.centralams.com/"
     @display_name  "CAMS: Central Account Management System"
-    @headers = [{"Content-Type", "application/x-www-form-urlencoded"}]
+    @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   
 
     use Kuber.Hex.Gateways.Base
