@@ -34,7 +34,7 @@ defmodule Kuber.Hex.Mixfile do
   defp deps do
     [{:poison, "~> 3.1.0"},
      {:httpoison, "~> 0.13.0"},
-     {:ex_doc, ">= 0.6.0", only: :dev},
+     {:ex_doc, "~> 0.16", only: :dev, runtime: false},
      {:mock, ">= 0.1.0", only: :test}, 
      {:xml_builder, "~> 0.1.1"}, 
      {:elixir_xml_to_map, "~> 0.1"}]

@@ -19,7 +19,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   """
   @valid_phone_format ~r/\+\d{1,3}(\(?\d{3}\)?)?\d{3}-\d{4}-\d{3}/
   @default_currency  "EUR"
-
+  @default_amount    100
   use Kuber.Hex.Gateways.Base
   use Kuber.Hex.Adapter, required_config: [:login, :password, :signature]
 
@@ -73,16 +73,21 @@ defmodule Kuber.Hex.Gateways.WireCard do
       billing_address: address,
       description: 'Wirecard remote test purchase',
       email: "soleone@example.com",
-      ip: "127.0.0.1"
+      ip: "127.0.0.1",
+      test: true
     ] 
   """
-  @spec authorize(Float, CreditCard, Keyword) :: { :ok, Map }
-  @spec authorize(Float, String.t, Keyword) :: { :ok, Map }
-  def authorize(money, payment_method, options \\ []) do
-    options = options 
-              |> check_and_return_payment_method(payment_method)
-    response = commit(:post, :preauthorization, money, options)
-    response
+  @spec authorize(Integer | Float, CreditCard | String.t, Keyword) :: { :ok, Map }
+  def authorize(money, payment_method, options \\ [])
+
+  def authorize(money, %CreditCard{} = creditcard, options) do
+    options = Keyword.put(options, :credit_card, creditcard)
+    commit(:post, :preauthorization, money, options)
+  end
+
+  def authorize(money, authorization, options) when is_binary(authorization) do
+    options = Keyword.put(options, :preauthorization, authorization)
+    commit(:post, :preauthorization, money, options)
   end
 
   @doc """
@@ -90,8 +95,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     Authorization is obtained by authorizing the creditcard. 
   """
   @spec capture(String.t, Float, Keyword) :: { :ok, Map }
-  def capture(authorization, money, options \\ []) do
-    options = options |> Keyword.put(:preauthorization, authorization)
+  def capture(authorization, money, options \\ []) when is_binary(authorization) do
+    options = Keyword.put(options, :preauthorization, authorization)
     commit(:post, :capture, money, options)
   end
 
@@ -101,14 +106,19 @@ defmodule Kuber.Hex.Gateways.WireCard do
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
   """
-  @spec purchase(Float, String.t, Keyword) :: { :ok, Map }
-  @spec purchase(Float, CreditCard, Keyword) :: { :ok, Map }
-  def purchase(money, payment_method, options \\ []) do
-    options = options 
-                |> check_and_return_payment_method(payment_method)
+  @spec purchase(Float | Integer, CreditCard| String.t, Keyword) :: { :ok, Map }
+  def purchase(money, payment_method, options \\ [])
+
+  def purchase(money, %CreditCard{} = creditcard, options) do
+    options = Keyword.put(options, :credit_card, creditcard)
     commit(:post, :purchase, money, options)
   end
- 
+
+  def purchase(money, authorization, options) when is_binary(authorization) do
+    options = Keyword.put(options, :preauthorization, authorization)
+    commit(:post, :purchase, money, options)
+  end
+
   @doc """
   Void - A credit card purchase that a seller cancels after it has 
         been authorized but before it has been settled. 
@@ -121,9 +131,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
                     initial authorization or purchase.
   """
   @spec void(String.t, Keyword) :: { :ok, Map }
-  def void(identification, options \\ []) do
-    options = options 
-                |> Keyword.put(:preauthorization, identification)
+  def void(identification, options \\ []) when is_binary(identification) do
+    options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :reversal, nil, options)
   end
   
@@ -138,9 +147,8 @@ defmodule Kuber.Hex.Gateways.WireCard do
     identification -- GuWID
   """
   @spec refund(Float, String.t, Keyword) :: { :ok, Map }
-  def refund(money, identification, options \\ []) do
-    options = options
-                |> Keyword.put(:preauthorization, identification)
+  def refund(money, identification, options \\ []) when is_binary(identification) do
+    options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :bookback, money, options)
   end
 
@@ -176,11 +184,11 @@ defmodule Kuber.Hex.Gateways.WireCard do
     with +options[:recurring] = 'Repeated'+.
   """
   @spec store(CreditCard, Keyword) :: { :ok, Map }
-  def store(creditcard, options \\ []) do
+  def store(%CreditCard{} = creditcard, options \\ []) do
     options = options 
                 |> Keyword.put(:credit_card, creditcard) 
                 |> Keyword.put(:recurring, "Initial")
-    money = options[:amount] || 100
+    money = options[:amount] || @default_amount
     # Amex does not support authorization_check
     case creditcard.brand do
       "american_express" -> commit(:post, :preauthorization, money, options)
@@ -188,63 +196,40 @@ defmodule Kuber.Hex.Gateways.WireCard do
     end
   end
  
-  # =================== Private Methods =================== 
-
-  # Check if paymenth method is creditcard or authorization code
-  defp check_and_return_payment_method(options, payment_method) do
-    case payment_method do
-      %CreditCard{}  ->
-        options = options |> Keyword.put(:credit_card, payment_method)
-      _             -> 
-      options = options |> Keyword.put(:preauthorization, payment_method)
-    end
-    options
-  end
-
+  # =================== Private Methods ===================  
+  
   # Contact WireCard, make the XML request, and parse the
   # reply into a Response object.
   defp commit(method, action, money, options) do
     #TODO: validate and setup address hash as per AM
     request = build_request(action, money, options)
-    
     headers = %{ "Content-Type" => "text/xml",
-    "Authorization" => encoded_credentials(options[:config][:login], options[:config][:password]) }
-    method |> HTTPoison.request(@test_url , request, headers) |> respond
+                 "Authorization" => encoded_credentials(
+                    options[:config][:login], options[:config][:password]
+                  ) 
+                }
+    method |> HTTPoison.request(base_url(options) , request, headers) |> respond
   end
-  
-  defp respond({:ok, %{status_code: 200, body: body}}) do
+
+  defp respond({:ok, %{ status_code: 200, body: body}}) do
     response = parse(body)
     {:ok, response}
   end
 
   defp respond({:ok, %{body: body, status_code: status_code}}) do
-    { :error, "Some Error Occurred" }
+    { :error, "Some Error Occurred: \n #{ inspect body }" }
   end
 
   # Read the XML message from the gateway and check if it was successful,
-  # and also extract required return values from the response.
-  # For Error => 
-  # {:GuWID=>"C663288151298675530735",
-  #  :AuthorizationCode=>"",
-  #  :StatusType=>"INFO",
-  #  :FunctionResult=>"NOK",
-  #  :ERROR_Type=>"DATA_ERROR",
-  #  :ERROR_Number=>"20080",
-  #  :ERROR_Message=>"Could not find referenced transaction for GuWID C428094138244444404448.",
-  #  :TimeStamp=>"2017-12-11 11:05:55",
-  #  "ErrorCode"=>"20080",
-  #  :Message=>"Could not find referenced transaction for GuWID C428094138244444404448."}
-  # =================================================
-  # For Response
+  # and also extract required return values from the response
   # TODO: parse XML Response
   defp parse(data) do    
-    data 
-      |> XmlToMap.naive_map
+    XmlToMap.naive_map(data)
   end
 
   # Generates the complete xml-message, that gets sent to the gateway
   defp build_request(action, money, options) do
-    options = options |> Keyword.put(:action, action)
+    options = Keyword.put(options, :action, action)
 
     request = doc(element(:WIRECARD_BXML, [
         element(:W_REQUEST, [
@@ -263,7 +248,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # TODO: Add order_id to options if not present, see AM
   # TOOD: Clean description before passing it to FunctionID, replace dummy
   defp add_transaction_data(action, money, options) do
-    element("FNC_CC_#{options[:action] |> atom_to_upcase_string}", [
+    element("FNC_CC_#{atom_to_upcase_string(options[:action])}", [
       element(:FunctionID, "dummy_description"),
       element(:CC_TRANSACTION, [
         element(:TransactionID, options[:order_id]),
@@ -357,7 +342,7 @@ defmodule Kuber.Hex.Gateways.WireCard do
   def add_invoice(money, options) do
     [
       add_amount(money, options),
-      element(:Currency, options[:currency] || @default_currency),
+      element(:Currency, currency(options)),
       element(:CountryCode, options[:billing_address][:country]),
       element(:RECURRING_TRANSACTION, [
         element(:Type, (options[:recurring] || "Single"))
@@ -368,12 +353,12 @@ defmodule Kuber.Hex.Gateways.WireCard do
   # Include the amount in the transaction-xml
   # TODO: check for localized currency or currency
   # localized_amount(money, options[:currency] || currency(money))
-  defp add_amount(money, options) do
-    element(:Amount, money)
-  end
+  defp add_amount(money, options), do: element(:Amount, money)
 
   defp atom_to_upcase_string(atom) do
-    String.upcase to_string atom
+    atom
+      |> to_string
+      |> String.upcase
   end
 
   # Encode login and password in Base64 to supply as HTTP header
@@ -384,11 +369,11 @@ defmodule Kuber.Hex.Gateways.WireCard do
     |> (&( "Basic "<> &1)).()
   end
 
-  defp join_string(list_of_words, joiner) do
-    Enum.join(list_of_words, joiner)
-  end
+  defp join_string(list_of_words, joiner), do: Enum.join(list_of_words, joiner)
 
-  defp regex_match(regex, string) do
-    Regex.match?(regex, string)
-  end
+  defp regex_match(regex, string), do: Regex.match?(regex, string)
+
+  defp base_url(opts), do: if opts[:test], do: @test_url, else: @live_url
+
+  defp currency(opts), do: opts[:currency] || @default_currency
 end
