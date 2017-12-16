@@ -24,6 +24,27 @@ defmodule Kuber.Hex.Gateways.Monei do
   * **Tokenization** and **Registrations**\
   In `store/2` ~~and `unstore/2`~~.
 
+  ## The `opts` argument
+
+  This is a `Keyword` list of optional arguments for transactions with the MONEI
+  gateway. The following keys are supported:
+
+  | Key                 | Remark | Status          |
+  | ----                | ---    | ----            |
+  | `billing_address`   |        | Not implemented |
+  | `shipping_address`  |        | Not implemented |
+  | `customer`          |        | Not implemented |
+  | `shipping_customer` |        | Not implemented |
+  | `merchant`          |        | Not implemented |
+  | `cart`              |        | Not implemented |
+  | `invoice`           |        | Not implemented |
+  | `customParameters`  |        | Not implemented |
+  | `currency`          |        | Not implemented |
+
+  ## MONEI _quirks_
+
+  * MONEI does not process money in cents, and the `amount` is rounded to 2 decimal places.
+
   ## Caveats
 
   Although MONEI supports payments from [various cards](https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods), banks and virtual accounts (like some wallets), this library only accepts payments by (supported) cards.
@@ -69,7 +90,24 @@ defmodule Kuber.Hex.Gateways.Monei do
   # MONEI supports payment by card, bank account and even something obscure: virtual account
   # opts has the auth keys.
 
-  @spec authorize(Integer | Float, CreditCard, Keyword) :: Response
+  @doc """  
+  Performs a (pre) Authorize operation.
+
+  The authorization validates the `card` details with the banking network,
+  places a hold on the transaction `amount` in the customer’s issuing bank also
+  triggers risk management. Funds are not transferred.
+
+  MONEI returns an ID string which can be used to:
+
+  * `capture/3` _an_ amount.
+  * `void/2` a pre-authorization.
+
+  ### Note  
+  
+  A stand-alone pre-authorization [expires in
+  72hrs](https://docs.monei.net/tutorials/manage-payments/backoffice).
+  """
+  @spec authorize(number, CreditCard, keyword) :: Response
   def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
     authorize(amount / 1, card, opts)
   end
@@ -82,7 +120,22 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments", params, auth_info)
   end
 
-  @spec capture(Integer | Float, String.t, Keyword) :: Response
+  @doc """  
+  Captures a pre-authorized `amount`.
+
+  `amount` is transferred to the merchant account by MONEI when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `paymentId`.
+
+  ### Note
+
+  MONEI allows partial captures and unlike many other gateways, does not release
+  the remaining amount back to the payment source. Thus, the same
+  pre-authorisation ID can be used to perform multiple captures, till:
+  * all the pre-authorized amount is captured or,
+  * the remaining amount is explicitly "reversed" via `void/2`. **[citation-needed]**
+  """
+  @spec capture(number, String.t, keyword) :: Response
+  def capture(amount, paymentId, opts)
   def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
     capture(amount / 1, paymentId, opts)
   end
@@ -95,10 +148,14 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec purchase(Integer | Float, CreditCard, Keyword) :: Response
-  def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do
-    purchase(amount / 1, card, opts)
-  end
+  @doc """
+  Credits the merchant account with `amount` by debiting the account of the customer.
+  
+  MONEI attempts to debit the customer to accept a payment of `amount` with the
+  given `card`.
+  """
+  @spec purchase(number, CreditCard, keyword) :: Response
+  def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do purchase(amount / 1, card, opts) end
   
   def purchase(amount, card = %CreditCard{}, opts) when is_float(amount) do
     params = [paymentType: "DB",
@@ -108,14 +165,50 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments", params, auth_info)
   end
 
-  @spec void(String.t, Keyword) :: Response
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal of the `paymentId` referencing either a
+  previous `purchase/3` or `authorize/3`.
+
+  ## Voiding a previous authorization
+  
+  MONEI will reverse the authorization by sending a "reversal request" to be
+  sent the payment source (card issuer) to clear the funds held against the
+  authorization. If some of the authorized amount was captured, only the
+  remaining amount is cleared. **[citation-needed]**
+
+  ## Voiding a previous purchase
+
+  MONEI will reverse the payment, by sending all the amount back to the
+  customer.
+
+  As a consequence, the customer will never see any booking on his
+  statement. Refer MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
+  """  
+  @spec void(String.t, keyword) :: Response
+  def void(paymentId, opts)
   def void(<<paymentId::bytes-size(32)>>, opts) do
     params = [paymentType: "RV"]
     auth_info = Keyword.fetch!(opts, :config)
     commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec refund(Integer | Float, String.t, Keyword) :: Response
+  @doc """
+  Credits the account of the customer with a reference to a prior transfer.
+
+  MONEI can process a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`ed.
+
+  The end customer will always see two bookings/records on his statement.  Refer
+  MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
+  """
+  @spec refund(number, String.t, keyword) :: Response
+  def refund(amount, paymentId, opts)
   def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
     params = [paymentType: "RF",
               amount: :erlang.float_to_binary(amount, decimals: 2),
@@ -124,7 +217,22 @@ defmodule Kuber.Hex.Gateways.Monei do
     commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec store(CreditCard, Keyword) :: Response
+  @doc """
+  Stores the payment-source data for later use.
+
+  MONEI can store the payment-source details, for example card or bank details
+  which can be used to effectively process _One-Click_ and _Recurring_ payments,
+  and return a registration token for reference.
+
+  It is recommended to associate these details with a "Customer" by passing
+  customer details in the `opts`.
+
+  ### Note
+
+  * _One-Click_ and _Recurring_ payments are currently not implemented.
+  * Payment details can be saved during a `purchase/3` or `capture/3`.
+  """
+  @spec store(CreditCard, keyword) :: Response
   def store(card = %CreditCard{}, opts) do
     params = card_params(card)
     auth_info = Keyword.fetch!(opts, :config)
@@ -134,9 +242,11 @@ defmodule Kuber.Hex.Gateways.Monei do
   @doc """
   WIP
 
-  MONEI unstore does not seem to work. MONEI always returns a `403`
+  **MONEI unstore does not seem to work. MONEI always returns a `403`**
+
+  Deletes previously stored payment-source data.
   """
-  @spec unstore(String.t, Keyword) :: Response
+  @spec unstore(String.t, keyword) :: Response
   def unstore(<<registrationId::bytes-size(32)>>, opts) do
     auth_info = Keyword.fetch!(opts, :config)
     commit(:delete, "registrations/#{registrationId}", [], auth_info)
@@ -153,6 +263,12 @@ defmodule Kuber.Hex.Gateways.Monei do
      "paymentBrand": card.brand]
   end
 
+  @doc """
+  Makes the request to MONEI's network.
+  """
+  @spec commit(atom, String.t, keyword, keyword) ::
+  {:ok, HTTPoison.Response} |
+  {:error, HTTPoison.Error}
   def commit(method, endpoint, params, opts) do
     auth_params = ["authentication.userId": opts[:userId],
                    "authentication.password": opts[:password],
@@ -165,6 +281,9 @@ defmodule Kuber.Hex.Gateways.Monei do
     end
   end
 
+  @doc """
+  Parses MONEI's response and returns a `Response` struct in a `:ok`, `:error` tuple.
+  """
   def respond({:ok, %{status_code: 200, body: body}}) do
     case decode(body) do
       {:ok, decoded_json} -> case verification_result(decoded_json) do

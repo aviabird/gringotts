@@ -2,8 +2,7 @@ defmodule Kuber.Hex.Integration.Gateways.MoneiTest do
   use ExUnit.Case, async: false
 
   alias Kuber.Hex.{
-    CreditCard,
-    Worker
+    CreditCard
   }
   alias Kuber.Hex.Gateways.Monei, as: Gateway
 
@@ -20,7 +19,6 @@ defmodule Kuber.Hex.Integration.Gateways.MoneiTest do
   }
 
   setup_all do
-    auth = %{userId: "8a8294186003c900016010a285582e0a", password: "hMkqf2qbWf", entityId: "8a82941760036820016010a28a8337f6"}
     Application.put_env(:kuber_hex, Kuber.Hex.Gateways.Monei, [adapter: Kuber.Hex.Gateways.Monei,
                                                                userId: "8a8294186003c900016010a285582e0a",
                                                                password: "hMkqf2qbWf",
