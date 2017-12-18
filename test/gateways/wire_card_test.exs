@@ -18,10 +18,11 @@ defmodule Kuber.Hex.Gateways.WireCardTest do
     # credit_card =  %CreditCard{name: "Longbob", number: "4200000000000000", cvc: "123", expiration: {2015, 11}}
 
     # config = %{credentails: {'user', 'pass'}, default_currency: "EUR"}
+    :ok
   end
 
   test "test_successful_authorization" do
-    assert 1 + 1 = 2
+    assert 1 + 1 == 2
   end
 
 

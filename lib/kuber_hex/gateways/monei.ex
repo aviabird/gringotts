@@ -1,22 +1,73 @@
 defmodule Kuber.Hex.Gateways.Monei do
-  @moduledoc """
-  Issues:
+  @moduledoc ~S"""
+  An API client for the [MONEI](https://www.monei.net) gateway.
+
+  For reference see [MONEI's API (v1) documentation](https://docs.monei.net).
+
+  The following features of MONEI are implemented:
   
-  commerce_billing and kuber_hex have some issues with their deps. `mix deps.get` throws a million warnings.
-  Can't use Kuber.Hex.Gateways.Base.http as it is specifically tailored for stripe!
-  There's no validation for opts, ie some required keys might be missing.
-    this will allow me to fail-fast, currently errors are caught in `commit` which is too late.
-  Why don't we `use HTTPoison.Base`.
-  Need a card brand field in CreditCard struct
+  * `PA` **Pre-Authorize**\
+  In `authorize/3`.
+
+  * `CP` **Capture**\
+  In `capture/3`.
+
+  * `RF` **Refund**\
+  In `refund/3` and ~~also `void/2`~~.
+
+  * `RV` **Reversal**\
+  In `void/2`.
+
+  * `DB` **Debit**\
+  In `purchase/3`.
+  
+  * **Tokenization** and **Registrations**\
+  In `store/2` ~~and `unstore/2`~~.
+
+  ## The `opts` argument
+
+  This is a `Keyword` list of optional arguments for transactions with the MONEI
+  gateway. The following keys are supported:
+
+  | Key                 | Remark | Status          |
+  | ----                | ---    | ----            |
+  | `billing_address`   |        | Not implemented |
+  | `shipping_address`  |        | Not implemented |
+  | `customer`          |        | Not implemented |
+  | `shipping_customer` |        | Not implemented |
+  | `merchant`          |        | Not implemented |
+  | `cart`              |        | Not implemented |
+  | `invoice`           |        | Not implemented |
+  | `customParameters`  |        | Not implemented |
+  | `currency`          |        | Not implemented |
+
+  ## MONEI _quirks_
+
+  * MONEI does not process money in cents, and the `amount` is rounded to 2 decimal places.
+
+  ## Caveats
+
+  Although MONEI supports payments from [various cards](https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods), banks and virtual accounts (like some wallets), this library only accepts payments by (supported) cards.
+
+  ## TODO
+
+  * [Backoffice operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+    - Credit
+    - Rebill
+  * [Recurring payments](https://docs.monei.net/recurring)
+  * [Reporting](https://docs.monei.net/tutorials/reporting)
+  
   """
   
-  use Kuber.Hex.Gateways.Base
-  import Poison, only: [decode!: 1]
-  alias Kuber.Hex.{CreditCard, Address, Response}
+  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password]
+  import Poison, only: [decode: 1]
+  alias Kuber.Hex.{CreditCard, Response}
   
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded",
                     "charset": "UTF-8"]
+  @default_currency "EUR"
+  
   @version "v1"
 
   @cvc_code_translator %{
@@ -39,69 +90,216 @@ defmodule Kuber.Hex.Gateways.Monei do
   # MONEI supports payment by card, bank account and even something obscure: virtual account
   # opts has the auth keys.
 
-  @spec authorize(Float, String.t, CreditCard, Map) :: Response
-  def authorize(amount, currency \\ "EUR", card, opts) do # not just card, also bank!
+  @doc """  
+  Performs a (pre) Authorize operation.
+
+  The authorization validates the `card` details with the banking network,
+  places a hold on the transaction `amount` in the customer’s issuing bank also
+  triggers risk management. Funds are not transferred.
+
+  MONEI returns an ID string which can be used to:
+
+  * `capture/3` _an_ amount.
+  * `void/2` a pre-authorization.
+
+  ### Note  
+  
+  A stand-alone pre-authorization [expires in
+  72hrs](https://docs.monei.net/tutorials/manage-payments/backoffice).
+  """
+  @spec authorize(number, CreditCard, keyword) :: Response
+  def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
+    authorize(amount / 1, card, opts)
+  end
+  
+  def authorize(amount, card = %CreditCard{}, opts) when is_float(amount) do
     params = [paymentType: "PA",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)] ++ card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments", params, auth_info)
   end
 
-  @spec capture(Float, String.t, String.t, Map) :: Response
-  def capture(amount, currency \\ "EUR", <<paymentId::bytes-size(32)>>, opts) do
+  @doc """  
+  Captures a pre-authorized `amount`.
+
+  `amount` is transferred to the merchant account by MONEI when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `paymentId`.
+
+  ### Note
+
+  MONEI allows partial captures and unlike many other gateways, does not release
+  the remaining amount back to the payment source. Thus, the same
+  pre-authorisation ID can be used to perform multiple captures, till:
+  * all the pre-authorized amount is captured or,
+  * the remaining amount is explicitly "reversed" via `void/2`. **[citation-needed]**
+  """
+  @spec capture(number, String.t, keyword) :: Response
+  def capture(amount, paymentId, opts)
+  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
+    capture(amount / 1, paymentId, opts)
+  end
+  
+  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_float(amount) do
     params = [paymentType: "CP",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency]
-    commit(:post, "payments/#{paymentId}", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
   end
 
-  @spec purchase(Float, String.t, CreditCard, Map) :: Response
-  def purchase(amount, currency \\ "EUR", card, opts) do
+  @doc """
+  Credits the merchant account with `amount` by debiting the account of the customer.
+  
+  MONEI attempts to debit the customer to accept a payment of `amount` with the
+  given `card`.
+  """
+  @spec purchase(number, CreditCard, keyword) :: Response
+  def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do purchase(amount / 1, card, opts) end
+  
+  def purchase(amount, card = %CreditCard{}, opts) when is_float(amount) do
     params = [paymentType: "DB",
               amount: :erlang.float_to_binary(amount, decimals: 2),
-              currency: currency] ++ card_params(card)
-    commit(:post, "payments", params, Keyword.fetch!(opts, :config))
+              currency: currency(opts)] ++ card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments", params, auth_info)
   end
 
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal of the `paymentId` referencing either a
+  previous `purchase/3` or `authorize/3`.
+
+  ## Voiding a previous authorization
+  
+  MONEI will reverse the authorization by sending a "reversal request" to be
+  sent the payment source (card issuer) to clear the funds held against the
+  authorization. If some of the authorized amount was captured, only the
+  remaining amount is cleared. **[citation-needed]**
+
+  ## Voiding a previous purchase
+
+  MONEI will reverse the payment, by sending all the amount back to the
+  customer.
+
+  As a consequence, the customer will never see any booking on his
+  statement. Refer MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
+  """  
+  @spec void(String.t, keyword) :: Response
+  def void(paymentId, opts)
+  def void(<<paymentId::bytes-size(32)>>, opts) do
+    params = [paymentType: "RV"]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
+  end
+
+  @doc """
+  Credits the account of the customer with a reference to a prior transfer.
+
+  MONEI can process a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`ed.
+
+  The end customer will always see two bookings/records on his statement.  Refer
+  MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
+  """
+  @spec refund(number, String.t, keyword) :: Response
+  def refund(amount, paymentId, opts)
+  def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
+    params = [paymentType: "RF",
+              amount: :erlang.float_to_binary(amount, decimals: 2),
+              currency: currency(opts)]
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "payments/#{paymentId}", params, auth_info)
+  end
+
+  @doc """
+  Stores the payment-source data for later use.
+
+  MONEI can store the payment-source details, for example card or bank details
+  which can be used to effectively process _One-Click_ and _Recurring_ payments,
+  and return a registration token for reference.
+
+  It is recommended to associate these details with a "Customer" by passing
+  customer details in the `opts`.
+
+  ### Note
+
+  * _One-Click_ and _Recurring_ payments are currently not implemented.
+  * Payment details can be saved during a `purchase/3` or `capture/3`.
+  """
+  @spec store(CreditCard, keyword) :: Response
+  def store(card = %CreditCard{}, opts) do
+    params = card_params(card)
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:post, "registrations", params, auth_info)
+  end
+
+  @doc """
+  WIP
+
+  **MONEI unstore does not seem to work. MONEI always returns a `403`**
+
+  Deletes previously stored payment-source data.
+  """
+  @spec unstore(String.t, keyword) :: Response
+  def unstore(<<registrationId::bytes-size(32)>>, opts) do
+    auth_info = Keyword.fetch!(opts, :config)
+    commit(:delete, "registrations/#{registrationId}", [], auth_info)
+  end
+
+
+  
   defp card_params(card) do
-    {expiration_year, expiration_month} = card.expiration
     ["card.number": card.number,
      "card.holder": "#{card.first_name} #{card.last_name}",
-     "card.expiryMonth": expiration_month |> Integer.to_string |> String.pad_leading(2, "0"),
-     "card.expiryYear": expiration_year |> Integer.to_string,
+     "card.expiryMonth": card.month |> Integer.to_string |> String.pad_leading(2, "0"),
+     "card.expiryYear": card.year |> Integer.to_string,
      "card.cvv": card.verification_code,
      "paymentBrand": card.brand]
   end
 
-  def commit(method, endpoint, params, %{userId: userId,
-                                         password: password,
-                                         entityId: entityId}) do
-    body = params ++ ["authentication.userId": userId,
-                      "authentication.password": password,
-                      "authentication.entityId": entityId]
-    url = "#{@base_url}/#{@version}/#{endpoint}"
-    method
-    |> HTTPoison.request(url, {:form, body}, @default_headers)
-    |> respond
-  end
-  def commit(_method, _endpoint, _params, _opts) do
-    Response.error(reason: "Authorization fields missing")
-  end
-
-  def respond({:ok, %{status_code: 200, body: body}}) do
-    data = decode!(body)
-    # IO.inspect data
-    case verification_result(data) do
-      {:ok, results} -> {:ok, [{:id, data["id"]} | results] |> Response.success}
-      {:error, errors} -> {:error, [{:id, data["id"]} | errors] |> Response.error}
+  @doc """
+  Makes the request to MONEI's network.
+  """
+  @spec commit(atom, String.t, keyword, keyword) ::
+  {:ok, HTTPoison.Response} |
+  {:error, HTTPoison.Error}
+  def commit(method, endpoint, params, opts) do
+    auth_params = ["authentication.userId": opts[:userId],
+                   "authentication.password": opts[:password],
+                   "authentication.entityId": opts[:entityId]]
+    body = params ++ auth_params
+    url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
+    case method do
+      :post -> HTTPoison.post(url, {:form, body}, @default_headers) |> respond
+      :delete -> HTTPoison.delete(url  <> "?" <> URI.encode_query(auth_params)) |> respond
     end
   end
 
-  @doc"""
-  MONEI will respond with an HTML message if status code is not 200.
+  @doc """
+  Parses MONEI's response and returns a `Response` struct in a `:ok`, `:error` tuple.
   """
+  def respond({:ok, %{status_code: 200, body: body}}) do
+    case decode(body) do
+      {:ok, decoded_json} -> case verification_result(decoded_json) do
+                               {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
+                               {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
+                             end
+      {:error, _} -> {:error, Response.error(raw: body, code: :undefined_response_from_monei)}
+    end
+  end
+
   def respond({:ok, %{status_code: status_code, body: body}}) do
-    {:error, Response.error(code: status_code, raw: {:html, body})}
+    {:error, Response.error(code: status_code, raw: body)}
+  end
+
+  def respond({:error, %HTTPoison.Error{} = error}) do
+    {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
   end
 
   defp verification_result(data = %{"result" => result}) do
@@ -117,58 +315,12 @@ defmodule Kuber.Hex.Gateways.Monei do
     cond do
       String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) -> {:ok, results}
       true -> {:error, [{:reason, result["description"]} | results]}
-      # String.match?(code, ~r{^(000\.400\.0|000\.400\.100)}) -> :review
-      # String.match?(code, ~r{^(000\.200)}) -> :session_active
-      # String.match?(code, ~r{^(800\.400\.5|100\.400\.500)}) -> :pending
-      # String.match?(code, ~r{^(000\.400\.[1][0-9][1-9]|000\.400\.2)}) -> :reject # risk check
-      # String.match?(code, ~r{^(800\.[17]00|800\.800\.[123]}) -> :reject # bank or external
-      # String.match?(code, ~r{^(900\.[1234]00}) -> :reject # comms failed
-      # String.match?(code, ~r{^(800\.5|999\.|600\.1|800\.800\.8}) -> :reject # sys error
-      # String.match?(code, ~r{^(800\.1[123456]0}) -> :reject # risk validation
-      # String.match?(code, ~r{^(100\.400|100\.38|100\.370\.100|100\.370\.11}) -> :fail # external risk sys
-      # String.match?(code, ~r{^(800\.400\.1}) -> :fail # avs
-      # String.match?(code, ~r{^(800\.400\.2|100\.380\.4|100\.390}) -> :fail # 3ds
-      # String.match?(code, ~r{^(100\.100\.701|800\.[32]}) -> :fail # blacklisted (possibly temporary)
-      # String.match?(code, ~r{^(600\.[23]|500\.[12]|800\.121}) -> :invalid_config
-      # String.match?(code, ~r{^(100\.[13]50}) -> :invalid # registration
-      # String.match?(code, ~r{^(100\.[13]50}) -> :reject # job related
-      # String.match?(code, ~r{^(700\.[1345][05]0}) -> :reject # refference related
-      # String.match?(code, ~r{^(200\.[123]|100\.[53][07]|800\.900|100\.[69]00\.500}) -> :reject # bad format
-      # String.match?(code, ~r{^(100\.800}) -> :reject # address validation
-      # String.match?(code, ~r{^(100\.[97]00}) -> :reject # contact validation
-      # String.match?(code, ~r{^(100\.100|100.2[01]}) -> :reject # account validation
-      # String.match?(code, ~r{^(100\.55}) -> :reject # amount validation
-      # String.match?(code, ~r{^(000\.100\.2}) -> :reject # chargebacks!!
     end
-  end      
+  end
+
+  defp base_url(opts), do: opts[:test_url] || @base_url
+  defp currency(opts), do: opts[:currency] || @default_currency
+  defp version(opts), do: opts[:api_version] || @version
 end
 
-"""
-alias Kuber.Hex.Gateways.Monei
-alias Kuber.Hex.{CreditCard, Address, Response}
 
-cc = %CreditCard{
-first_name: "Jo",
-last_name: "Doe",
-number: "4200000000000000",
-expiration: {2019, 12},
-verification_code:  "123",
-brand: "VISA"
-}
-
-bad_cc = %CreditCard{
-name: "Jo Doe",
-number: "4200000000000000",
-expiration: {2011, 12},
-verification_code:  "123",
-brand: "VISA"
-}
-
-opts = [config: %{userId: "8a829417539edb400153c1eae83932ac", password: "6XqRtMGS2N", entityId: "8a829417539edb400153c1eae6de325e", default_currency: "EUR"}]
-
-url = "https://test.monei-api.net/v1/payments"
-headers = ["Content-Type": "application/x-www-form-urlencoded"]
-{:ok, res} = Monei.authorize(92.0, cc, opts)
-Monei.capture(12.0, res.authorization, opts)
-Monei.purchase(92.0, cc, opts)
-"""
