@@ -97,6 +97,14 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     respond(@response_type[:transaction_response], response_data)
   end
 
+  @doc """
+    Use this function to store the customer card  information by creating a customer profile,
+    and in case the customer_profile_exists then by creating customer payment profile.
+  """
+  def store(card, opts) do
+    
+  end
+
   # method to make the api request with params
   defp commit(method, payload) do
     path = @test_url
