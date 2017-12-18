@@ -22,3 +22,5 @@ jobs:
       - run: mix local.rebar --force
       - run: mix deps.get
       - run: mix test
+      # Let CircleCI run integration tests separately.
+      - run: mix test --only integration

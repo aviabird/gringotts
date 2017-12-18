@@ -36,6 +36,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     function to authorize the merchant using merchant name
     and transactionKey
   """
+  @spec 
   def authenticate(opts) do
     case Keyword.fetch(opts, :config) do
       {:ok, config} ->
@@ -49,7 +50,9 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   @doc """
     Function to charge a user credit card for the specified amount,
     according to the payment method provided(e.g. credit card, apple pay etc.)
+    AuthorizeNet.purchase(amount, payment, opts)
   """
+  @spec purchase(Float, %CreditCard, List) :: Tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data)
@@ -59,7 +62,9 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   @doc """
     Use this method to authorize a card payment. To actually charge funds, a follow up with 
     capture method needs to be done.
+    AuthorizeNet.authorize(amount, payment, opts)
   """
+  @spec authorize(Float, %CreditCard, List) :: Tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data)
@@ -70,7 +75,9 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     Use this method to capture funds for transactions which have been authorized,
     requires transId of the authorize function response to be passed as id along with
     the amount to be captured.
+    AuthorizeNet.capture(amount, id, opts)
   """
+  @spec (Float, String, List) :: Tuple
   def capture(amount, id, opts) do
     request_data = normal_capture(amount, id,  opts, @transaction_type[:capture])
     response_data = commit(:post, request_data)
@@ -78,8 +85,11 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   end
 
   @doc """
-    Use this method to refund a customer for a transaction that was already settled
+    Use this method to refund a customer for a transaction that was already settled, requires
+    transId of the transaction.
+    AuthorizeNet.refund(amount, id, opts)
   """
+  @spec refund(Float, String, List) :: Tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data)
@@ -90,7 +100,9 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     Use this method to cancel either an original transaction that is not settled or 
     an entire order composed of more than one transaction. It can be submitted against
     any other transaction type. Requires the transId of a request passed as id.
+    AuthorizeNet.void(id, opts)
   """
+  @spec void(String, List) :: Tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data)
