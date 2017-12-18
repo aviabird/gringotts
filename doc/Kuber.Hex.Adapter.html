@@ -8,7 +8,7 @@
     <title>Kuber.Hex.Adapter – kuber_hex v0.0.2</title>
     <link rel="stylesheet" href="dist/app-c922dbe7ef.css" />
     
-    <script src="dist/sidebar_items-59b49ae195.js"></script>
+    <script src="dist/sidebar_items-a31106edb0.js"></script>
     
     
     
@@ -70,6 +70,15 @@
         
       </h1>
 
+      
+        <section id="moduledoc">
+          <p>Adapter module is currently holding the validation part.</p>
+<p>This modules is being <code class="inline">used</code> by all the payment gateways and raises a run-time 
+error for the missing configurations which are passed by the gateways to 
+<code class="inline">validate_config</code> method.</p>
+<p>Raises an exception <a href="https://hexdocs.pm/elixir/ArgumentError.html"><code class="inline">ArgumentError</code></a> if the config is not as per the <code class="inline">@required_config</code></p>
+
+        </section>
       
 
       

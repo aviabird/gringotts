@@ -8,7 +8,7 @@
     <title>Kuber.Hex – kuber_hex v0.0.2</title>
     <link rel="stylesheet" href="dist/app-c922dbe7ef.css" />
     
-    <script src="dist/sidebar_items-59b49ae195.js"></script>
+    <script src="dist/sidebar_items-a31106edb0.js"></script>
     
     
     
@@ -71,6 +71,81 @@
       </h1>
 
       
+        <section id="moduledoc">
+          <p>Kuber.Hex is a payment gateway integration library supporting many gateway integrations.</p>
+<p>Where the configuration for <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> must be in your application
+environment, usually defined in your <code class="inline">config/config.exs</code>:</p>
+<pre><code class="elixir">config :kuber_hex, Kuber.Hex.Gateways.Stripe,
+  adapter: Kuber.Hex.Gateways.Stripe,
+  api_key: &quot;sk_test_vIX41hC0sdfBKrPWQerLuOMld&quot;,
+  default_currency: &quot;USD&quot;</code></pre>
+<p><code class="inline">Key</code> for the configuration and the adapter value should be the same, we could have
+chosen to pick adapter and used it as the key but we have chosen to be explicit rather 
+than implicit.</p>
+<h2 id="module-standard-arguments" class="section-heading">
+  <a href="#module-standard-arguments" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Standard Arguments
+</h2>
+
+<p>The public API is designed in such a way that library users end up passing mostly a 
+standard params for almost all requests.</p>
+<h3 id="module-worker-name" class="section-heading">
+  <a href="#module-worker-name" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Worker Name
+</h3>
+
+<p>  eg: :payment_worker</p>
+<p>  The standard central supervised worker responsible for delegating/calling all
+  the payment specific methods such as <code class="inline">authorise</code> &amp; <code class="inline">purchase</code>.</p>
+<p>  &gt; This option is going to be removed in our next version.</p>
+<h3 id="module-gateway-name" class="section-heading">
+  <a href="#module-gateway-name" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Gateway Name
+</h3>
+
+<p>  eg: Kuber.Hex.Gateways.Stripe</p>
+<p>  This option specifies which payment gateway this request should be called for.
+  Since <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> supports multiple payment gateway integrations at the same time
+  so this information get’s critical.</p>
+<h3 id="module-amount" class="section-heading">
+  <a href="#module-amount" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Amount
+</h3>
+
+<p>  eg: 5000</p>
+<p>  Amount is the money an application wants to deduct in cents on the card.</p>
+<h3 id="module-card-info" class="section-heading">
+  <a href="#module-card-info" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Card Info
+</h3>
+
+<p>  eg: </p>
+<pre><code class="elixir">  %CreditCard {
+    name: &quot;John Doe&quot;,
+    number: &quot;4242424242424242&quot;,
+    expiration: {2018, 12},
+    cvc:  &quot;123&quot;,
+    street1: &quot;123 Main&quot;,
+    street2: &quot;Suite 100&quot;,
+    city: &quot;New York&quot;,
+    region: &quot;NY&quot;,
+    country: &quot;US&quot;,
+    postal_code: &quot;11111&quot; 
+  }</code></pre>
+<p>  This stores all the credit card info of the customer along with some address info etc.</p>
+<h3 id="module-other-options" class="section-heading">
+  <a href="#module-other-options" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Other options
+</h3>
+
+<p>  eg: [currency: “usd”]</p>
+<p>  This is a keyword list of all the other options/information which the payment gateway 
+  needs apart from the above mentioned options. </p>
+<p>  &gt; This is passed as is to the gateway and not modified, usually it comes back in the 
+  response object intact.</p>
+
+        </section>
+      
 
       
         <section id="summary" class="details-list">
@@ -93,7 +168,10 @@
     <a href="#authorize/5">authorize(worker, gateway, amount, card, opts \\ [])</a>
   </div>
   
-    <div class="summary-synopsis"><p>Public API authorize method</p>
+    <div class="summary-synopsis"><p>Authorize should authorize funds on a payment instrument that will 
+not be settled without a following call to <code class="inline">capture</code> within some finite 
+period of time. When implementing this API, authorize and capture are 
+both required</p>
 </div>
   
 </div>
@@ -102,11 +180,17 @@
     <a href="#capture/5">capture(worker, gateway, id, amount, opts \\ [])</a>
   </div>
   
+    <div class="summary-synopsis"><p>Captures deducts an amount from the card, this happens once the card is authorised</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#purchase/5">purchase(worker, gateway, amount, card, opts \\ [])</a>
   </div>
+  
+    <div class="summary-synopsis"><p>This is the bare minimum API for a gateway to support, and consists of a single call</p>
+</div>
   
 </div>
 <div class="summary-row">
@@ -114,11 +198,22 @@
     <a href="#refund/5">refund(worker, gateway, amount, id, opts \\ [])</a>
   </div>
   
+    <div class="summary-synopsis"><p>Cancels settlement or returns funds as appropriate for a referenced prior 
+<code class="inline">purchase</code> or <code class="inline">capture</code></p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#store/4">store(worker, gateway, card, opts \\ [])</a>
   </div>
+  
+    <div class="summary-synopsis"><p>Tokenizes a supported payment method in the gateway’s vault. If the gateway 
+conflates tokenization with customer management, <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> should hide all 
+customer management and any customer identifier(s) within the token returned. 
+It’s certainly legitimate to have a library that interacts with all the features 
+in a gateway’s vault, but <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> is not the right place for it</p>
+</div>
   
 </div>
 <div class="summary-row">
@@ -126,11 +221,20 @@
     <a href="#unstore/5">unstore(worker, gateway, customer_id, card_id, opts \\ [])</a>
   </div>
   
+    <div class="summary-synopsis"><p>Removes the token from the payment gateway, once <code class="inline">unstore</code> request is fired the 
+token which could enable <code class="inline">authorise</code> &amp; <code class="inline">capture</code> would not work with this token</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#void/4">void(worker, gateway, id, opts \\ [])</a>
   </div>
+  
+    <div class="summary-synopsis"><p>Void is an optional (but highly recommended) supplement to <code class="inline">authorise</code> &amp; <code class="inline">capture</code> 
+API that should immediately cancel an authorized charge, clearing it off of the 
+underlying payment instrument without waiting for expiration</p>
+</div>
   
 </div>
 
@@ -169,8 +273,26 @@
     
   </div>
   <section class="docstring">
-    <p>Public API authorize method</p>
-<p>Makes an asynchronous authorize call to the Genserver</p>
+    <p>Authorize should authorize funds on a payment instrument that will 
+not be settled without a following call to <code class="inline">capture</code> within some finite 
+period of time. When implementing this API, authorize and capture are 
+both required.</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+@options [currency: &quot;usd&quot;]
+
+Kuber.Hex.authorize(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, @payment, @options)</code></pre>
 
   </section>
 </div>
@@ -190,7 +312,31 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Captures deducts an amount from the card, this happens once the card is authorised.</p>
+<p>Partial captures, if supported by the gateway, are achieved by passing an amount. 
+Not passing an amount to capture should always cause the full amount of the initial 
+authorization to be captured.</p>
+<p>If the gateway does not support partial captures, calling <code class="inline">capture</code> with an amount 
+other than nil should raise an error indicating partial capture is not supported.</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+@options [currency: &quot;usd&quot;]
+
+id = &quot;ch_1BYvGkBImdnrXiZwet3aKkQE&quot;
+
+Kuber.Hex.capture(:payment_worker, Kuber.Hex.Gateways.Stripe, id, 5)</code></pre>
+
   </section>
 </div>
 <div class="detail" id="purchase/5">
@@ -209,7 +355,27 @@
     
   </div>
   <section class="docstring">
-    
+    <p>This is the bare minimum API for a gateway to support, and consists of a single call:</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+@options [currency: &quot;usd&quot;]
+
+Kuber.Hex.purchase(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, @payment, @options)</code></pre>
+<p>This method is expected to authorize payment and transparently trigger eventual 
+settlement. Preferably it is implemented as a single call to the gateway, 
+but it can also be implemented as chained <code class="inline">authorize</code> and <code class="inline">capture</code> calls.</p>
+
   </section>
 </div>
 <div class="detail" id="refund/5">
@@ -228,7 +394,25 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Cancels settlement or returns funds as appropriate for a referenced prior 
+<code class="inline">purchase</code> or <code class="inline">capture</code>.</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+id = &quot;ch_1BYvGkBImdnrXiZwet3aKkQE&quot;
+
+Kuber.Hex.refund(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, id)</code></pre>
+
   </section>
 </div>
 <div class="detail" id="store/4">
@@ -247,7 +431,31 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Tokenizes a supported payment method in the gateway’s vault. If the gateway 
+conflates tokenization with customer management, <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> should hide all 
+customer management and any customer identifier(s) within the token returned. 
+It’s certainly legitimate to have a library that interacts with all the features 
+in a gateway’s vault, but <a href="Kuber.Hex.html#content"><code class="inline">Kuber.Hex</code></a> is not the right place for it.</p>
+<p>It’s critical that <code class="inline">store</code> returns a token that can be used against <code class="inline">purchase</code> 
+and <code class="inline">authorize</code>. Currently the standard is to return the token in the 
+<code class="inline">%Response{...}</code> <code class="inline">authorization</code> field.</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+id = &quot;ch_1BYvGkBImdnrXiZwet3aKkQE&quot;
+
+Kuber.Hex.store(:payment_worker, Kuber.Hex.Gateways.Stripe, @payment)</code></pre>
+
   </section>
 </div>
 <div class="detail" id="unstore/5">
@@ -266,7 +474,15 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Removes the token from the payment gateway, once <code class="inline">unstore</code> request is fired the 
+token which could enable <code class="inline">authorise</code> &amp; <code class="inline">capture</code> would not work with this token.</p>
+<p>This should be done once the payment capture is done and you don’t wish to make any
+further deductions for the same card.</p>
+<pre><code class="elixir">id = &quot;ch_1BYvGkBImdnrXiZwet3aKkQE&quot;
+customer_id = &quot;random_customer&quot;
+
+Kuber.Hex.unstore(:payment_worker, Kuber.Hex.Gateways.Stripe, customer_id, id)</code></pre>
+
   </section>
 </div>
 <div class="detail" id="void/4">
@@ -285,7 +501,28 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Void is an optional (but highly recommended) supplement to <code class="inline">authorise</code> &amp; <code class="inline">capture</code> 
+API that should immediately cancel an authorized charge, clearing it off of the 
+underlying payment instrument without waiting for expiration.</p>
+<pre><code class="elixir">@payment %{
+  name: &quot;John Doe&quot;,
+  number: &quot;4242424242424242&quot;,
+  expiration: {2018, 12},
+  cvc:  &quot;123&quot;,
+  street1: &quot;123 Main&quot;,
+  street2: &quot;Suite 100&quot;,
+  city: &quot;New York&quot;,
+  region: &quot;NY&quot;,
+  country: &quot;US&quot;,
+  postal_code: &quot;11111&quot;
+}
+
+@options [currency: &quot;usd&quot;]
+
+id = &quot;ch_1BYvGkBImdnrXiZwet3aKkQE&quot;
+
+Kuber.Hex.void(:payment_worker, Kuber.Hex.Gateways.Stripe, id)</code></pre>
+
   </section>
 </div>
 

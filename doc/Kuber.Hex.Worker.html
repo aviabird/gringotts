@@ -8,7 +8,7 @@
     <title>Kuber.Hex.Worker – kuber_hex v0.0.2</title>
     <link rel="stylesheet" href="dist/app-c922dbe7ef.css" />
     
-    <script src="dist/sidebar_items-59b49ae195.js"></script>
+    <script src="dist/sidebar_items-a31106edb0.js"></script>
     
     
     
@@ -71,6 +71,19 @@
       </h1>
 
       
+        <section id="moduledoc">
+          <p>A central supervised worker handling all the calls for different gateways</p>
+<p>It’s main task is to re-route the requests to the respective gateway methods.</p>
+<p>State for this worker currently is:-</p>
+<ul>
+<li><code class="inline">gateways</code>:- a list of all the gateways configured in the application.
+</li>
+<li><code class="inline">all_configs</code>:- All the configurations for all the gateways that are configured.
+</li>
+</ul>
+
+        </section>
+      
 
       
         <section id="summary" class="details-list">
@@ -89,6 +102,15 @@
       <a href="#functions">Functions</a>
     </h2>
     <div class="summary-row">
+  <div class="summary-signature">
+    <a href="#handle_call/3">handle_call(msg, from, state)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Handles call for ‘unstore’ method</p>
+</div>
+  
+</div>
+<div class="summary-row">
   <div class="summary-signature">
     <a href="#start_link/3">start_link(gateways, all_config, opts \\ [])</a>
   </div>
@@ -114,7 +136,25 @@
             </a>
             Functions
           </h1>
-          <div class="detail" id="start_link/3">
+          <div class="detail" id="handle_call/3">
+  
+  
+  <div class="detail-header">
+    <a href="#handle_call/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">handle_call(msg, from, state)</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    <p>Handles call for ‘unstore’ method</p>
+
+  </section>
+</div>
+<div class="detail" id="start_link/3">
   
   
     <span id="start_link/2"></span>
