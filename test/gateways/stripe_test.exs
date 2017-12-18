@@ -5,7 +5,8 @@ defmodule Kuber.Hex.Gateways.StripeTest do
   alias Kuber.Hex.Gateways.Stripe
 
   @required_payment_attrs %{
-    expiration: {2018, 12},
+    month: 12,
+    year: 2018,
     number: "4242424242424242",
     cvc:  "123"
   }

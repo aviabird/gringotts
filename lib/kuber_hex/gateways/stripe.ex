@@ -218,15 +218,10 @@ defmodule Kuber.Hex.Gateways.Stripe do
   end
 
   defp card_params(%{} = card) do
-    {exp_year, exp_month} = case Map.has_key?(card, :expiration) do
-      true ->  card[:expiration]
-      false -> {nil, nil}
-    end
-
     [ "card[name]": card[:name],
       "card[number]": card[:number],
-      "card[exp_year]": exp_year,
-      "card[exp_month]": exp_month,
+      "card[exp_year]": card[:year],
+      "card[exp_month]": card[:month],
       "card[cvc]": card[:cvc]
     ]   
   end
