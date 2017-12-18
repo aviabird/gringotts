@@ -1,0 +1,552 @@
+    <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.18.1">
+    <title>Kuber.Hex.Gateways.Stripe – kuber_hex v0.0.2</title>
+    <link rel="stylesheet" href="dist/app-c922dbe7ef.css" />
+    
+    <script src="dist/sidebar_items-59b49ae195.js"></script>
+    
+    
+    
+    
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode')) document.body.className += ' night-mode'; } catch (e) { }</script>
+
+    <div class="main">
+<button class="sidebar-toggle">
+  <span class="icon-menu" aria-hidden="true"></span>
+  <span class="sr-only">Toggle Sidebar</span>
+</button>
+<section class="sidebar">
+
+  
+  <a href="api-reference.html" class="sidebar-projectLink">
+    <div class="sidebar-projectDetails">
+      <h1 class="sidebar-projectName">
+        kuber_hex
+      </h1>
+      <h2 class="sidebar-projectVersion">
+        v0.0.2
+      </h2>
+    </div>
+    
+  </a>
+
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <input name="q" type="text" id="search-list" class="search-input" placeholder="search" aria-label="Search" autocomplete="off" />
+  </form>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+    
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+    
+
+    
+
+    
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+
+      <h1>
+        <small class="visible-xs">kuber_hex v0.0.2</small>
+        Kuber.Hex.Gateways.Stripe
+        
+      </h1>
+
+      
+        <section id="moduledoc">
+          <p>Functions for working with Stripe payment gateway. Through this API you can:</p>
+<ul>
+<li>Authorize payment source and use it later for payment.
+</li>
+<li>Purchase with payment source.
+</li>
+<li>Capture a payment for already authorized payment source.
+</li>
+<li>Void the payment for payment source.
+</li>
+<li>Refund amount to payment source.
+</li>
+<li>Store payment source for making purchases later.
+</li>
+<li>Unstore payment source.
+</li>
+</ul>
+<p>Stripe API reference: https://stripe.com/docs/api</p>
+
+        </section>
+      
+
+      
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+          
+
+          
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+    <div class="summary-row">
+  <div class="summary-signature">
+    <a href="#authorize/3">authorize(amount, payment, opts)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Authorize payment source</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#capture/2">capture(id, opts)</a>
+  </div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#capture/3">capture(id, amount, opts \\ [])</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Captures a payment</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#purchase/3">purchase(amount, payment, opts)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Purchase with payment source</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#refund/3">refund(amount, id, opts)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Refunds the amount</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#store/2">store(payment, opts)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Stores the payment source</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#unstore/2">unstore(id, opts \\ [])</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Unstore the stored payment source</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#unstore/3">unstore(customer_id, card_id, opts)</a>
+  </div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#validate_config/1">validate_config(config)</a>
+  </div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#void/2">void(id, opts)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Voids the payment</p>
+</div>
+  
+</div>
+
+  </div>
+
+
+          
+
+        </section>
+      
+
+      
+
+      
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Functions
+          </h1>
+          <div class="detail" id="authorize/3">
+  
+  
+  <div class="detail-header">
+    <a href="#authorize/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">authorize(amount, payment, opts)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>authorize(Float, Map, List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Authorize payment source.</p>
+<p>Authorize the payment source for a customer or card using amount and opts.
+opts must include the default currency.</p>
+<h2 id="authorize/3-examples" class="section-heading">
+  <a href="#authorize/3-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  payment = %{</p>
+<pre><code class="elixir">expiration: {2018, 12}, number: &quot;4242424242424242&quot;, cvc:  &quot;123&quot;, name: &quot;John Doe&quot;,
+street1: &quot;123 Main&quot;, street2: &quot;Suite 100&quot;, city: &quot;New York&quot;, region: &quot;NY&quot;, country: &quot;US&quot;,
+postal_code: &quot;11111&quot;</code></pre>
+<p>  }</p>
+<p>  opts = [currency: “usd”]
+  amount = 5</p>
+<p>  Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)</p>
+
+  </section>
+</div>
+<div class="detail" id="capture/2">
+  
+  
+  <div class="detail-header">
+    <a href="#capture/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">capture(id, opts)</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    
+  </section>
+</div>
+<div class="detail" id="capture/3">
+  
+  
+    <span id="capture/2"></span>
+  
+  <div class="detail-header">
+    <a href="#capture/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">capture(id, amount, opts \\ [])</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>capture(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Float, List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Captures a payment.</p>
+<p>Captures a payment with already authorized payment source.
+Once the charge is captured, it cannot be captured again.
+Amount less than or equal to authorized amount can be captured
+but not more than that.
+If less amount is captured than the authorized amount, then
+remaining amount will be refunded back to the authorized 
+paymet source.</p>
+<h2 id="capture/3-examples" class="section-heading">
+  <a href="#capture/3-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  id = “ch_1BYvGkBImdnrXiZwet3aKkQE”
+  amount = 5
+  opts = []</p>
+<p>  Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)</p>
+
+  </section>
+</div>
+<div class="detail" id="purchase/3">
+  
+  
+  <div class="detail-header">
+    <a href="#purchase/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">purchase(amount, payment, opts)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>purchase(Float, Map, List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Purchase with payment source.</p>
+<p>Purchase with the payment source using amount and opts.
+opts must include the default currency.</p>
+<h2 id="purchase/3-examples" class="section-heading">
+  <a href="#purchase/3-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  payemnt = %{</p>
+<pre><code class="elixir">expiration: {2018, 12}, number: &quot;4242424242424242&quot;, cvc:  &quot;123&quot;, name: &quot;John Doe&quot;,
+street1: &quot;123 Main&quot;, street2: &quot;Suite 100&quot;, city: &quot;New York&quot;, region: &quot;NY&quot;, country: &quot;US&quot;,
+postal_code: &quot;11111&quot;</code></pre>
+<p>  }</p>
+<p>  opts = [currency: “usd”]
+  amount = 5</p>
+<p>  Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)</p>
+
+  </section>
+</div>
+<div class="detail" id="refund/3">
+  
+  
+  <div class="detail-header">
+    <a href="#refund/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">refund(amount, id, opts)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>refund(Float, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Refunds the amount.</p>
+<p>Returns the captured amount to the authorized payment source.
+Less than or equal to the captured amount can be refunded.
+If the refunded amount is less than the captured amount, then
+remaining amount can be refunded again.</p>
+<h2 id="refund/3-examples" class="section-heading">
+  <a href="#refund/3-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  amount = 5
+  id = “ch_1BYvGkBImdnrXiZwet3aKkQE”
+  opts = []</p>
+<p>  Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)</p>
+
+  </section>
+</div>
+<div class="detail" id="store/2">
+  
+  
+  <div class="detail-header">
+    <a href="#store/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">store(payment, opts)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>store(Map, List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Stores the payment source.</p>
+<p>Store the payment source, so that it can be used
+for capturing the amount at later stages.</p>
+<h2 id="store/2-examples" class="section-heading">
+  <a href="#store/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  payment = %{</p>
+<pre><code class="elixir">expiration: {2018, 12}, number: &quot;4242424242424242&quot;, cvc:  &quot;123&quot;, name: &quot;John Doe&quot;,
+street1: &quot;123 Main&quot;, street2: &quot;Suite 100&quot;, city: &quot;New York&quot;, region: &quot;NY&quot;, country: &quot;US&quot;,
+postal_code: &quot;11111&quot;</code></pre>
+<p>  }</p>
+<p>  opts = []</p>
+<p>  Kuber.Hex.Gateways.Stripe.store(payment, opts)</p>
+
+  </section>
+</div>
+<div class="detail" id="unstore/2">
+  
+  
+    <span id="unstore/1"></span>
+  
+  <div class="detail-header">
+    <a href="#unstore/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">unstore(id, opts \\ [])</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    <p>Unstore the stored payment source.</p>
+<p>Unstore the already stored payment source,
+so that it cannot be used again for capturing
+payments.</p>
+<h2 id="unstore/2-examples" class="section-heading">
+  <a href="#unstore/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  id = “cus_BwpLX2x4ecEUgD”</p>
+<p>  Kuber.Hex.Gateways.Stripe.unstore(id)</p>
+
+  </section>
+</div>
+<div class="detail" id="unstore/3">
+  
+  
+  <div class="detail-header">
+    <a href="#unstore/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">unstore(customer_id, card_id, opts)</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    
+  </section>
+</div>
+<div class="detail" id="validate_config/1">
+  
+  
+  <div class="detail-header">
+    <a href="#validate_config/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">validate_config(config)</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    
+  </section>
+</div>
+<div class="detail" id="void/2">
+  
+  
+  <div class="detail-header">
+    <a href="#void/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">void(id, opts)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>void(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), List) :: Map</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Voids the payment.</p>
+<p>Returns the captured amount to the authorized payment source.</p>
+<h2 id="void/2-examples" class="section-heading">
+  <a href="#void/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+
+<p>  id = “ch_1BYvGkBImdnrXiZwet3aKkQE”
+  opts = []</p>
+<p>  Kuber.Hex.Gateways.Stripe.void(id, opts)</p>
+
+  </section>
+</div>
+
+        </section>
+      
+
+      
+          <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" rel="help" target="_blank">ExDoc</a> (v0.18.1),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+            </span>
+        </p>
+        <button class="night-mode-toggle"><span class="sr-only">Switch theme</span></button>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  <script src="dist/app-778c9ef903.js"></script>
+  
+  
+  
+  
+  </body>
+</html>
+
