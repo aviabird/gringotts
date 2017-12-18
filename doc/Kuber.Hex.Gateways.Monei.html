@@ -75,33 +75,44 @@
           <p>An API client for the <a href="https://www.monei.net">MONEI</a> gateway.</p>
 <p>For reference see <a href="https://docs.monei.net">MONEI’s API (v1) documentation</a>.</p>
 <p>The following features of MONEI are implemented:</p>
-<ul>
-<li><p><code class="inline">PA</code> <strong>Pre-Authorize</strong><br/>
-In <a href="#authorize/3"><code class="inline">authorize/3</code></a>.</p>
-</li>
-<li><p><code class="inline">CP</code> <strong>Capture</strong><br/>
-In <a href="#capture/3"><code class="inline">capture/3</code></a>.</p>
-</li>
-<li><p><code class="inline">RF</code> <strong>Refund</strong><br/>
-In <a href="#refund/3"><code class="inline">refund/3</code></a> and <del>also <a href="#void/2"><code class="inline">void/2</code></a></del>.</p>
-</li>
-<li><p><code class="inline">RV</code> <strong>Reversal</strong><br/>
-In <a href="#void/2"><code class="inline">void/2</code></a>.</p>
-</li>
-<li><p><code class="inline">DB</code> <strong>Debit</strong><br/>
-In <a href="#purchase/3"><code class="inline">purchase/3</code></a>.</p>
-</li>
-<li><p><strong>Tokenization</strong> and <strong>Registrations</strong><br/>
-In <a href="#store/2"><code class="inline">store/2</code></a> <del>and <a href="#unstore/2"><code class="inline">unstore/2</code></a></del>.</p>
-</li>
-</ul>
+<table>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left"><code class="inline">type</code></th><th style="text-align: left">Action</th><th style="text-align: left">Method</th>
+</tr>
+</thead>
+<tr>
+<td style="text-align: left"><code class="inline">PA</code></td><td style="text-align: left">Pre-authorize</td><td style="text-align: left"><a href="#authorize/3"><code class="inline">authorize/3</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">CP</code></td><td style="text-align: left">Capture</td><td style="text-align: left"><a href="#capture/3"><code class="inline">capture/3</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">DB</code></td><td style="text-align: left">Debit</td><td style="text-align: left"><a href="#purchase/3"><code class="inline">purchase/3</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">RF</code></td><td style="text-align: left">Refund</td><td style="text-align: left"><a href="#refund/3"><code class="inline">refund/3</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">RV</code></td><td style="text-align: left">Reversal</td><td style="text-align: left"><a href="#void/2"><code class="inline">void/2</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left"></td><td style="text-align: left">Tokenization / Registrations</td><td style="text-align: left"><a href="#store/2"><code class="inline">store/2</code></a></td>
+</tr>
+</table>
 <h2 id="module-the-opts-argument" class="section-heading">
   <a href="#module-the-opts-argument" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   The <code class="inline">opts</code> argument
 </h2>
 
-<p>This is a <a href="https://hexdocs.pm/elixir/Keyword.html"><code class="inline">Keyword</code></a> list of optional arguments for transactions with the MONEI
-gateway. The following keys are supported:</p>
+<p>Most <a href="Kuber.Hex.html"><code class="inline">Kuber.Hex</code></a> API calls accept an optional <a href="https://hexdocs.pm/elixir/Keyword.html"><code class="inline">Keyword</code></a> list <code class="inline">opts</code> to supply
+optional arguments for transactions with the MONEI gateway. The following keys
+are supported:</p>
 <table>
 <colgroup>
 <col>
@@ -117,28 +128,28 @@ gateway. The following keys are supported:</p>
 <td style="text-align: left"><code class="inline">billing_address</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
 </tr>
 <tr>
-<td style="text-align: left"><code class="inline">shipping_address</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
-</tr>
-<tr>
-<td style="text-align: left"><code class="inline">customer</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
-</tr>
-<tr>
-<td style="text-align: left"><code class="inline">shipping_customer</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
-</tr>
-<tr>
-<td style="text-align: left"><code class="inline">merchant</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
-</tr>
-<tr>
 <td style="text-align: left"><code class="inline">cart</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
 </tr>
 <tr>
-<td style="text-align: left"><code class="inline">invoice</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+<td style="text-align: left"><code class="inline">currency</code></td><td style="text-align: left"></td><td style="text-align: left"><strong>Implemented</strong></td>
 </tr>
 <tr>
 <td style="text-align: left"><code class="inline">customParameters</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
 </tr>
 <tr>
-<td style="text-align: left"><code class="inline">currency</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+<td style="text-align: left"><code class="inline">customer</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">invoice</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">merchant</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">shipping_address</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
+</tr>
+<tr>
+<td style="text-align: left"><code class="inline">shipping_customer</code></td><td style="text-align: left"></td><td style="text-align: left">Not implemented</td>
 </tr>
 </table>
 <h2 id="module-monei-quirks" class="section-heading">
@@ -227,7 +238,7 @@ gateway. The following keys are supported:</p>
     <a href="#purchase/3">purchase(amount, card, opts)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Credits the merchant account with <code class="inline">amount</code> by debiting the account of the customer</p>
+    <div class="summary-synopsis"><p>Transfers <code class="inline">amount</code> from the customer to the merchant</p>
 </div>
   
 </div>
@@ -236,16 +247,16 @@ gateway. The following keys are supported:</p>
     <a href="#refund/3">refund(amount, paymentId, opts)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Credits the account of the customer with a reference to a prior transfer</p>
+    <div class="summary-synopsis"><p>Refunds the <code class="inline">amount</code> to the customer’s account with reference to a prior transfer</p>
 </div>
   
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#respond/1">respond(arg)</a>
+    <a href="#respond/1">respond(monei_response)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Parses MONEI’s response and returns a <code class="inline">Response</code> struct in a <code class="inline">:ok</code>, <code class="inline">:error</code> tuple</p>
+    <div class="summary-synopsis"><p>Parses MONEI’s response and returns a <a href="Kuber.Hex.Response.html"><code class="inline">Kuber.Hex.Response</code></a> struct in a <code class="inline">:ok</code>, <code class="inline">:error</code> tuple</p>
 </div>
   
 </div>
@@ -327,8 +338,8 @@ gateway. The following keys are supported:</p>
   <section class="docstring">
     <p>Performs a (pre) Authorize operation.</p>
 <p>The authorization validates the <code class="inline">card</code> details with the banking network,
-places a hold on the transaction <code class="inline">amount</code> in the customer’s issuing bank also
-triggers risk management. Funds are not transferred.</p>
+places a hold on the transaction <code class="inline">amount</code> in the customer’s issuing bank and
+also triggers risk management. Funds are not transferred.</p>
 <p>MONEI returns an ID string which can be used to:</p>
 <ul>
 <li><a href="#capture/3"><code class="inline">capture/3</code></a> <em>an</em> amount.
@@ -432,9 +443,9 @@ pre-authorisation ID can be used to perform multiple captures, till:</p>
     
   </div>
   <section class="docstring">
-    <p>Credits the merchant account with <code class="inline">amount</code> by debiting the account of the customer.</p>
-<p>MONEI attempts to debit the customer to accept a payment of <code class="inline">amount</code> with the
-given <code class="inline">card</code>.</p>
+    <p>Transfers <code class="inline">amount</code> from the customer to the merchant.</p>
+<p>MONEI attempts to process a purchase on behalf of the customer, by debiting
+<code class="inline">amount</code> from the customer’s account by charging the customer’s <code class="inline">card</code>.</p>
 
   </section>
 </div>
@@ -458,11 +469,11 @@ given <code class="inline">card</code>.</p>
     
   </div>
   <section class="docstring">
-    <p>Credits the account of the customer with a reference to a prior transfer.</p>
-<p>MONEI can process a full or partial refund worth <code class="inline">amount</code>, referencing a
-previous <a href="#purchase/3"><code class="inline">purchase/3</code></a> or <a href="#capture/3"><code class="inline">capture/3</code></a>ed.</p>
-<p>The end customer will always see two bookings/records on his statement.  Refer
-MONEI’s <a href="https://docs.monei.net/tutorials/manage-payments/backoffice">Backoffice
+    <p>Refunds the <code class="inline">amount</code> to the customer’s account with reference to a prior transfer.</p>
+<p>MONEI processes a full or partial refund worth <code class="inline">amount</code>, referencing a
+previous <a href="#purchase/3"><code class="inline">purchase/3</code></a> or <a href="#capture/3"><code class="inline">capture/3</code></a>.</p>
+<p>The end customer will always see two bookings/records on his statement.
+Refer MONEI’s <a href="https://docs.monei.net/tutorials/manage-payments/backoffice">Backoffice
 Operations</a>
 guide.</p>
 
@@ -476,13 +487,21 @@ guide.</p>
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <span class="signature">respond(arg)</span>
+    <span class="signature">respond(monei_response)</span>
     
     
+    
+      <div class="specs">
+        
+          <pre>respond(term()) ::
+  {:ok, Kuber.Hex.Response} |
+  {:error, Kuber.Hex.Response}</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
-    <p>Parses MONEI’s response and returns a <code class="inline">Response</code> struct in a <code class="inline">:ok</code>, <code class="inline">:error</code> tuple.</p>
+    <p>Parses MONEI’s response and returns a <a href="Kuber.Hex.Response.html"><code class="inline">Kuber.Hex.Response</code></a> struct in a <code class="inline">:ok</code>, <code class="inline">:error</code> tuple.</p>
 
   </section>
 </div>
@@ -591,15 +610,19 @@ customer details in the <code class="inline">opts</code>.</p>
   </div>
   <section class="docstring">
     <p>Voids the referenced payment.</p>
-<p>This method attempts a reversal of the <code class="inline">paymentId</code> referencing either a
-previous <a href="#purchase/3"><code class="inline">purchase/3</code></a> or <a href="#authorize/3"><code class="inline">authorize/3</code></a>.</p>
+<p>This method attempts a reversal of the either a previous <a href="#purchase/3"><code class="inline">purchase/3</code></a> or
+<a href="#authorize/3"><code class="inline">authorize/3</code></a> referenced by <code class="inline">paymentId</code>.</p>
+<p>As a consequence, the customer will never see any booking on his
+statement. Refer MONEI’s <a href="https://docs.monei.net/tutorials/manage-payments/backoffice">Backoffice
+Operations</a>
+guide.</p>
 <h2 id="void/2-voiding-a-previous-authorization" class="section-heading">
   <a href="#void/2-voiding-a-previous-authorization" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Voiding a previous authorization
 </h2>
 
-<p>MONEI will reverse the authorization by sending a “reversal request” to be
-sent the payment source (card issuer) to clear the funds held against the
+<p>MONEI will reverse the authorization by sending a “reversal request” to the
+payment source (card issuer) to clear the funds held against the
 authorization. If some of the authorized amount was captured, only the
 remaining amount is cleared. <strong>[citation-needed]</strong></p>
 <h2 id="void/2-voiding-a-previous-purchase" class="section-heading">
@@ -608,11 +631,7 @@ remaining amount is cleared. <strong>[citation-needed]</strong></p>
 </h2>
 
 <p>MONEI will reverse the payment, by sending all the amount back to the
-customer.</p>
-<p>As a consequence, the customer will never see any booking on his
-statement. Refer MONEI’s <a href="https://docs.monei.net/tutorials/manage-payments/backoffice">Backoffice
-Operations</a>
-guide.</p>
+customer. Note that this is not the same as <a href="#refund/3"><code class="inline">refund/3</code></a>.</p>
 
   </section>
 </div>
