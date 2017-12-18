@@ -4,12 +4,6 @@ defmodule Kuber.Hex.Gateways.Paymill do
 
   use Kuber.Hex.Adapter, required_config: [:private_key, :public_key]
 
-  @supported_countries ~w(AD AT BE BG CH CY CZ DE DK EE ES FI FO FR GB
-                          GI GR HR HU IE IL IM IS IT LI LT LU LV MC MT
-                          NL NO PL PT RO SE SI SK TR VA)
-
-  @supported_cartypes [:visa, :master, :american_express, :diners_club, :discover, :union_pay, :jcb]
-
   @home_page "https://paymill.com"
   @money_format :cents
   @default_currency "EUR"
@@ -109,7 +103,7 @@ defmodule Kuber.Hex.Gateways.Paymill do
 
   defp get_currency(options), do: options[:currency] || @default_currency
 
-  defp get_amount(options), do: options[:money] || 100
+  defp get_amount(options), do: options[:money]
 
   defp get_token(response) do
     get_in(response, ["transaction", "identification", "uniqueId"])
