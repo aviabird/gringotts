@@ -1,154 +1,267 @@
 defmodule Kuber.Hex.Gateways.Stripe do
+
+  @moduledoc """
+  Functions for working with Stripe payment gateway. Through this API you can:
+
+  * Authorize payment source and use it later for payment.
+  * Purchase with payment source.
+  * Capture a payment for already authorized payment source.
+  * Void the payment for payment source.
+  * Refund amount to payment source.
+  * Store payment source for making purchases later.
+  * Unstore payment source.
+  
+  Stripe API reference: https://stripe.com/docs/api
+  """
+
   @base_url "https://api.stripe.com/v1"
-
-  @cvc_code_translator %{
-    "pass" => "M",
-    "fail" => "N",
-    "unchecked" => "P"
-  }
-
-  @avs_code_translator %{
-    {"pass", "pass"} => "Y",
-    {"pass", "fail"} => "A",
-    {"pass", "unchecked"} => "B",
-    {"fail", "pass"} => "Z",
-    {"fail", "fail"} => "N",
-    {"unchecked", "pass"} => "P",
-    {"unchecked", "unchecked"} => "I"
-  }
 
   use Kuber.Hex.Gateways.Base
   use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency]
 
   alias Kuber.Hex.{
     CreditCard,
-    Address,
-    Response
+    Address
   }
 
-  import Poison, only: [decode!: 1]
+  @doc """
+  Authorize payment source.
 
-  def purchase(amount, card_or_id, opts),
-    do: authorize(amount, card_or_id, [{:capture, true} | opts])
+  Authorize the payment source for a customer or card using amount and opts.
+  opts must include the default currency.
 
+  ## Examples
 
-  def authorize(amount, card_or_id, opts) do
-    config      = Keyword.fetch!(opts, :config)
-    # TODO: Verify if params passed in requests are merged to config 
-    # for description, address, customer_id, capture
-    description = Keyword.get(opts, :description)
-    address     = Keyword.get(opts, :billing_address)
-    customer_id = Keyword.get(opts, :customer_id)
-    capture     = Keyword.get(opts, :capture, false)
-    # Picking from adapter config 
-    currency    = config[:default_currency]
+    payment = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
+  
+    opts = [currency: "usd"]
+    amount = 5
 
-    params = [capture: capture, description: description,
-              currency: currency, customer: customer_id] ++
-             amount_params(amount) ++
-             card_params(card_or_id) ++
-             address_params(address) ++
-             connect_params(opts)
-
+    Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)
+  """
+  @spec authorize(Float, Map, List) :: Map
+  def authorize(amount, payment, opts \\ []) do
+    params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
   end
 
-  def capture(id, amount, opts) do
-    params = amount_params(amount)
+  @doc """
+  Purchase with payment source.
+
+  Purchase with the payment source using amount and opts.
+  opts must include the default currency.
+
+  ## Examples
+
+    payemnt = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
+  
+    opts = [currency: "usd"]
+    amount = 5
+
+    Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)
+  """
+  @spec purchase(Float, Map, List) :: Map
+  def purchase(amount, payment, opts \\ []) do
+    params = create_params_for_auth_or_purchase(amount, payment, opts)
+    commit(:post, "charges", params, opts)
+  end
+
+  @doc """
+  Captures a payment.
+
+  Captures a payment with already authorized payment source.
+  Once the charge is captured, it cannot be captured again.
+  Amount less than or equal to authorized amount can be captured
+  but not more than that.
+  If less amount is captured than the authorized amount, then
+  remaining amount will be refunded back to the authorized 
+  paymet source.
+
+  ## Examples  
+    
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    amount = 5
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)
+  """
+  @spec capture(String.t, Float, List) :: Map
+  def capture(id, amount, opts \\ []) do
+    params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
   end
 
-  def void(id, opts),
-    do: commit(:post, "charges/#{id}/refund", [], opts)
+  @doc """
+  Voids the payment.
 
-  def refund(amount, id, opts) do
-    params = amount_params(amount)
+  Returns the captured amount to the authorized payment source.
 
+  ## Examples  
+    
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.void(id, opts)
+  """
+  @spec void(String.t, List) :: Map
+  def void(id, opts \\ []) do
+    params = optional_params(opts)
     commit(:post, "charges/#{id}/refund", params, opts)
   end
 
-  def store(card=%CreditCard{}, opts) do
-    customer_id = Keyword.get(opts, :customer_id)
-    params = card_params(card)
+  @doc """
+  Refunds the amount.
 
-    path = if customer_id, do: "customers/#{customer_id}/card", else: "customers"
+  Returns the captured amount to the authorized payment source.
+  Less than or equal to the captured amount can be refunded.
+  If the refunded amount is less than the captured amount, then
+  remaining amount can be refunded again.
 
-    commit(:post, path, params, opts)
+  ## Examples  
+    
+    amount = 5
+    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+    opts = []
+
+    Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)
+  """
+  @spec refund(Float, String.t, List) :: Map
+  def refund(amount, id, opts \\ []) do
+    params = optional_params(opts) ++ amount_params(amount)
+    commit(:post, "charges/#{id}/refund", params, opts)
   end
 
-  def unstore(customer_id, nil, opts),
-    do: commit(:delete, "customers/#{customer_id}", [], opts)
+  @doc """
+  Stores the payment source.
 
-  def unstore(customer_id, card_id, opts),
-    do: commit(:delete, "customers/#{customer_id}/#{card_id}", [], opts)
+  Store the payment source, so that it can be used
+  for capturing the amount at later stages.
 
-  defp amount_params(amount),
-    do: [amount: money_to_cents(amount)]
+  ## Examples  
+    
+    payment = %{
+      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      postal_code: "11111"
+    }
 
-  defp card_params(card=%CreditCard{}) do
-    {expiration_year, expiration_month} = card.expiration
+    opts = []
 
-    ["card[number]":    card.number,
-     "card[exp_year]":  expiration_year,
-     "card[exp_month]": expiration_month,
-     "card[cvc]":       card.verification_code,
-     "card[name]":      card.name]
+    Kuber.Hex.Gateways.Stripe.store(payment, opts)
+  """
+  @spec store(Map, List) :: Map
+  def store(payment, opts \\ []) do
+    params = optional_params(opts) ++ source_params(payment, opts)
+    commit(:post, "customers", params, opts)
   end
 
-  defp card_params(id), do: [card: id]
+  @doc """
+  Unstore the stored payment source.
 
-  defp address_params(address=%Address{}) do
-    ["card[address_line1]": address.street1,
-     "card[address_line2]": address.street2,
-     "card[address_city]":  address.city,
-     "card[address_state]": address.region,
-     "card[address_zip]":   address.postal_code,
-     "card[address_country]": address.country]
+  Unstore the already stored payment source,
+  so that it cannot be used again for capturing
+  payments.
+
+  ## Examples  
+    
+    id = "cus_BwpLX2x4ecEUgD"
+
+    Kuber.Hex.Gateways.Stripe.unstore(id)
+  """
+  @spec unstore(String.t) :: Map
+  def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
+
+  # Private methods
+
+  defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
+    optional_params(opts) 
+      ++ [capture: capture]
+      ++ amount_params(amount)
+      ++ source_params(payment, opts)
+  end
+
+  defp create_card_token(params, opts) do
+    commit(:post, "tokens", params, opts)
+  end
+
+  defp amount_params(amount), do: [amount: money_to_cents(amount)]
+
+  defp source_params(%{} = payment, opts) do
+    params = 
+      card_params(payment) ++ 
+      address_params(payment)
+
+    response = create_card_token(params, opts)
+
+    case Map.has_key?(response, "error") do
+      true -> []
+      false -> response
+        |> Map.get("id")
+        |> source_params
+    end
+  end
+
+  defp source_params(token_or_customer) do
+    [head, _] = String.split(token_or_customer, "_")
+    case head do
+      "tok" -> [source: token_or_customer]
+      "cus" -> [customer: token_or_customer]
+    end
+  end
+
+  defp card_params(%{} = card) do
+    {exp_year, exp_month} = case Map.has_key?(card, :expiration) do
+      true ->  card[:expiration]
+      false -> {nil, nil}
+    end
+
+    [ "card[name]": card[:name],
+      "card[number]": card[:number],
+      "card[exp_year]": exp_year,
+      "card[exp_month]": exp_month,
+      "card[cvc]": card[:cvc]
+    ]   
+  end
+
+  defp card_params(_), do: []
+
+  defp address_params(%{} = address) do
+    [ "card[address_line1]": address[:street1],
+      "card[address_line2]": address[:street2],
+      "card[address_city]":  address[:city],
+      "card[address_state]": address[:region],
+      "card[address_zip]":   address[:postal_code],
+      "card[address_country]": address[:country]
+    ]
   end
 
   defp address_params(_), do: []
 
-  defp connect_params(opts),
-    do: Keyword.take(opts, [:destination, :application_fee])
-
-  defp commit(method, path, params, opts) do
-    config = Keyword.fetch!(opts, :config)
-    # TODO: credentials should be investigated why it is {api_key, ""}
-    # Did to mimic the earlier behavior.
-    method
-      |> http("#{@base_url}/#{path}", params, credentials: {config[:api_key], ""})
-      |> respond
+  defp commit(method, path, params \\ [], opts \\ []) do
+    auth_token = "Bearer " <> opts[:config][:api_key]
+    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
+    data = params_to_string(params)
+    response = HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
+    format_response(response)
   end
 
-  defp respond({:ok, %{status_code: 200, body: body}}) do
-    data = decode!(body)
-    {cvc_result, avs_result} = verification_result(data)
-    {:ok, Response.success(authorization: data["id"], raw: data, cvc_result: cvc_result, avs_result: avs_result)}
+  defp optional_params(opts) do
+    Keyword.delete(opts, :config)
   end
 
-  defp respond({:ok, %{body: body, status_code: status_code}}) do
-    data = decode!(body)
-    {code, reason} = error(status_code, data["error"])
-    {cvc_result, avs_result} = verification_result(data)
-
-    {:error, Response.error(code: code, reason: reason, raw: data, cvc_result: cvc_result, avs_result: avs_result)}
+  defp format_response(response) do
+    case response do
+      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!
+      _ -> %{"error" => "something went wrong, please try again later"}
+    end
   end
 
-  defp verification_result(%{"card" => card}) do
-    cvc_result = @cvc_code_translator[card["cvc_check"]]
-    avs_result = @avs_code_translator[{card["address_line1_check"], card["address_zip_check"]}]
-
-    {cvc_result, avs_result}
-  end
-
-  defp verification_result(_), do: {"N","N"}
-
-  defp error(status, _) when status >= 500,            do: {:server_error, nil}
-  defp error(_, %{"type" => "invalid_request_error"}), do: {:invalid_request, nil}
-  defp error(_, %{"code" => "incorrect_number"}),      do: {:declined, :invalid_number}
-  defp error(_, %{"code" => "invalid_expiry_year"}),   do: {:declined, :invalid_expiration}
-  defp error(_, %{"code" => "invalid_expiry_month"}),  do: {:declined, :invalid_expiration}
-  defp error(_, %{"code" => "invalid_cvc"}),           do: {:declined, :invalid_cvc}
-  defp error(_, %{"code" => "rate_limit"}),            do: {:rate_limit, nil}
-  defp error(_, _), do: {:declined, :unknown}
 end
