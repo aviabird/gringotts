@@ -42,7 +42,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNetTest do
 
     test "test_bad_card_purchase" do
       {:error, response} = ANet.purchase(@amount, @bad_card, @opts)
-      assert response.raw["ErrorResponse"]["messages"]["resultCode"] == "Error" 
+      assert response.raw["ErrorResponse"]["messages"]["resultCode"] == "Error"
     end
   end
 

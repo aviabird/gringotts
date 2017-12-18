@@ -112,10 +112,27 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   end
 
   @doc """
-    Use this function to store the customer card  information by creating a customer profile,
-    and in case the customer_profile_exists then by creating customer payment profile.
+    Use this function to store the customer card information by creating a customer profile,
+    and in case the customer_profile_exists with gateway then by creating customer payment profile.
+    AuthorizeNet.store(card, opts)
   """
+  @spec store(CreditCard, List) :: Tuple
   def store(card, opts) do
+    if opts[:customer_profile_id] do
+      create_customer_payment_profile(card, opts)
+    else
+      create_customer_profile(card, opts)
+    end
+  end
+
+  @doc """
+    Use this function to unstore the customer card information by deleting the customer profile
+    present. Requires the customer profile id.
+    AuthorizeNet.unstore()
+  """
+  @spec unstore(String, String, List) :: Tuple
+  def unstore(customer_profile_id, _card_id, opts) do
+    delete_customer_profile(customer_profile_id, opts)
   end
 
   # method to make the api request with params
@@ -204,6 +221,40 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
       ])
     ])
     |> generate
+  end
+
+  def create_customer_payment_profile(card, opts) do
+    element(:createCustomerPaymentProfileRequest, %{xmlns: @aut_net_namespace},[
+      add_merchant_auth(opts[:config]),
+      element(:customerProfileId, opts[:customer_profile_id]),
+      element(:paymentProfile, [
+        add_billing_info(opts),
+        add_payment_source(card)
+      ]),
+      element(:validationMode, opts[:validation_mode])
+    ])
+  end
+
+  def create_customer_profile(card, opts) do
+    element(:createCustomerProfileRequest, %{xmlns: @aut_net_namespace}, [
+      add_merchant_auth(opts[:config]),
+      element(:profile, [
+        element(:merchantCustomerId, opts[:profile][:merchantCustomerId]),
+        element(:description, opts[:profile][:description]),
+        element(:email, opts[:profile][:description]),
+        element(:paymentProfiles, [
+          element(:customerType, opts[:customer_type]),
+          add_payment_source(card)
+        ])
+      ])
+    ])
+  end
+
+  def delete_customer_profile(id, opts) do
+    element(:deleteCustomerProfileRequest, %{xmlns: @aut_net_namespace},[
+      add_merchant_auth(opts[:config]),
+      element(:customerProfileId, id)
+    ])
   end
 
   #--------------- XMl Builder functions for helper functions to assist 
