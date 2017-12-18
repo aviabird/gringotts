@@ -19,8 +19,10 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
 
   @response_type %{
     auth_response: "authenticateTestResponse",
-    transaction_response: "createTransactionResponse"
+    transaction_response: "createTransactionResponse",
+    error_response: "ErrorResponse"
   }
+
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
   alias Kuber.Hex.{
@@ -36,13 +38,13 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     function to authorize the merchant using merchant name
     and transactionKey
   """
-  @spec 
+  @spec authenticate(List) :: Tuple
   def authenticate(opts) do
     case Keyword.fetch(opts, :config) do
       {:ok, config} ->
         data = add_auth_request(config)
         response_data = commit(:post, data)
-        respond(@response_type[:auth_response], response_data)
+        respond(response_data)
       {:error, _} -> {:error, "config not found"}
     end
   end
@@ -52,11 +54,11 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     according to the payment method provided(e.g. credit card, apple pay etc.)
     AuthorizeNet.purchase(amount, payment, opts)
   """
-  @spec purchase(Float, %CreditCard, List) :: Tuple
+  @spec purchase(Float, CreditCard, List) :: Tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
@@ -64,11 +66,11 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     capture method needs to be done.
     AuthorizeNet.authorize(amount, payment, opts)
   """
-  @spec authorize(Float, %CreditCard, List) :: Tuple
+  @spec authorize(Float, CreditCard, List) :: Tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
@@ -77,11 +79,11 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     the amount to be captured.
     AuthorizeNet.capture(amount, id, opts)
   """
-  @spec (Float, String, List) :: Tuple
+  @spec capture(Float, String, List) :: Tuple
   def capture(amount, id, opts) do
     request_data = normal_capture(amount, id,  opts, @transaction_type[:capture])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
@@ -93,7 +95,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
@@ -106,7 +108,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
@@ -114,7 +116,6 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
     and in case the customer_profile_exists then by creating customer payment profile.
   """
   def store(card, opts) do
-    
   end
 
   # method to make the api request with params
@@ -125,28 +126,31 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   end
 
   # Function to return a response 
-  defp respond(response_type, {:ok, %{body: body, status_code: 200}}) do
+  defp respond({:ok, %{body: body, status_code: 200}}) do
     raw_response  = naive_map(body)
-    case response_type do
-      "authenticateTestResponse" ->
-        response_check(raw_response["authenticateTestResponse"], raw_response)
-      "createTransactionResponse" -> 
-        response_check(raw_response["createTransactionResponse"], raw_response)
+    cond do
+      raw_response[@response_type[:auth_response]] ->
+        response_check(raw_response[@response_type[:auth_response]], raw_response)
+      raw_response[@response_type[:transaction_response]] ->
+        response_check(raw_response[@response_type[:transaction_response]], raw_response)
+      raw_response[@response_type[:error_response]] ->
+        response_check(raw_response[@response_type[:error_response]], raw_response)
     end
   end
 
-  defp respond(_response_type, {:error, %{body: body, status_code: code}}) do
+  defp respond({:error, %{body: body, status_code: code}}) do
     {:error, Response.error(raw: body, code: code)}
   end
  
-  # Functions to send successful and error responses depending on message received 
+  # Functions to send successful and error responses depending on message received
   # from gateway.
+
   defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
     {:ok, Response.success(raw: raw_response)}
   end
 
   defp response_check( %{"messages" => %{"resultCode" => "Error"}}, raw_response) do
-    {:ok, Response.error(raw: raw_response)}
+    {:error, Response.error(raw: raw_response)}
   end
 
   #------------------- Helper functions for the interface functions------------------- 
