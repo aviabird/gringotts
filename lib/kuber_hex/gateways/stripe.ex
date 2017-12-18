@@ -31,17 +31,18 @@ defmodule Kuber.Hex.Gateways.Stripe do
   opts must include the default currency.
 
   ## Examples
+  ```
+  payment = %{
+    expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+    street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+    postal_code: "11111"
+  }
 
-    payment = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
-  
-    opts = [currency: "usd"]
-    amount = 5
+  opts = [currency: "usd"]
+  amount = 5
 
-    Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)
+  iex> Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)
+  ```
   """
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -56,17 +57,18 @@ defmodule Kuber.Hex.Gateways.Stripe do
   opts must include the default currency.
 
   ## Examples
+  ```
+  payemnt = %{
+    expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+    street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+    postal_code: "11111"
+  }
 
-    payemnt = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
-  
-    opts = [currency: "usd"]
-    amount = 5
+  opts = [currency: "usd"]
+  amount = 5
 
-    Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)
+  iex> Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)
+  ``` 
   """
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
@@ -86,12 +88,13 @@ defmodule Kuber.Hex.Gateways.Stripe do
   paymet source.
 
   ## Examples  
-    
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    amount = 5
-    opts = []
+  ```
+  id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  amount = 5
+  opts = []
 
-    Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)
+  iex> Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)
+  ```
   """
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
@@ -104,12 +107,13 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
   Returns the captured amount to the authorized payment source.
 
-  ## Examples  
-    
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    opts = []
+  ## Examples
+  ```
+  id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  opts = []
 
-    Kuber.Hex.Gateways.Stripe.void(id, opts)
+  iex> Kuber.Hex.Gateways.Stripe.void(id, opts)
+  ```
   """
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
@@ -125,13 +129,14 @@ defmodule Kuber.Hex.Gateways.Stripe do
   If the refunded amount is less than the captured amount, then
   remaining amount can be refunded again.
 
-  ## Examples  
-    
-    amount = 5
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    opts = []
+  ## Examples
+  ```
+  amount = 5
+  id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  opts = []
 
-    Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)
+  iex> Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)
+  ```
   """
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
@@ -146,16 +151,17 @@ defmodule Kuber.Hex.Gateways.Stripe do
   for capturing the amount at later stages.
 
   ## Examples  
-    
-    payment = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
+  ```
+  payment = %{
+    expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+    street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+    postal_code: "11111"
+  }
 
-    opts = []
+  opts = []
 
-    Kuber.Hex.Gateways.Stripe.store(payment, opts)
+  iex> Kuber.Hex.Gateways.Stripe.store(payment, opts)
+  ```
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
@@ -170,11 +176,12 @@ defmodule Kuber.Hex.Gateways.Stripe do
   so that it cannot be used again for capturing
   payments.
 
-  ## Examples  
-    
-    id = "cus_BwpLX2x4ecEUgD"
+  ## Examples
+  ```
+  id = "cus_BwpLX2x4ecEUgD"
 
-    Kuber.Hex.Gateways.Stripe.unstore(id)
+  iex> Kuber.Hex.Gateways.Stripe.unstore(id)
+  ```
   """
   @spec unstore(String.t) :: Map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
