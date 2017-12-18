@@ -19,8 +19,6 @@ defmodule Kuber.Hex.Gateways.Paymill do
      parse_card_response(response)
   end
 
-  defp get_save_card_url(), do: "https://test-token.paymill.com/"
-
   def authorize(amount, card_or_token, options) do
     Keyword.put(options, :money, amount)
     action_with_token(:authorize, amount, card_or_token, options)
@@ -68,18 +66,6 @@ defmodule Kuber.Hex.Gateways.Paymill do
     commit(:post, "transactions", post, options)
   end
 
-  defp add_amount(post, money, options) do
-    post ++ [{"amount", money}, {"currency", @default_currency}]
-  end
-
-  defp set_username(options) do
-    [{"Authorization", "Basic #{Base.encode64(get_config(:private_key, options))}"}]
-  end
-
-  def get_headers(options) do
-    @headers ++ set_username(options)
-  end
-
   def get_save_card_params(card, options) do
     [ {"transaction.mode" , "CONNECTOR_TEST"},
       {"channel.id" , get_config(:public_key, options)},
@@ -93,6 +79,20 @@ defmodule Kuber.Hex.Gateways.Paymill do
       {"presentation.currency3D" , get_currency(options)}
     ]
   end
+
+  defp get_headers(options) do
+    @headers ++ set_username(options)
+  end
+
+  defp add_amount(post, money, options) do
+    post ++ [{"amount", money}, {"currency", @default_currency}]
+  end
+
+  defp set_username(options) do
+    [{"Authorization", "Basic #{Base.encode64(get_config(:private_key, options))}"}]
+  end
+
+  defp get_save_card_url(), do: "https://test-token.paymill.com/"
 
   defp parse_card_response(response) do
     response
