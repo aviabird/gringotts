@@ -16,13 +16,6 @@ defmodule Kuber.Hex.Gateways.Paymill do
   @live_url "https://api.paymill.com/v2.1/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
 
-  @credit_card %CreditCard{
-    name: "Sagar Karwande",
-    number: "4111111111111111",
-    expiration: {12, 2018},
-    cvc: 123
-  }
-
   def save_card(card, options) do
     {:ok, %HTTPoison.Response{body: response}} = HTTPoison.get(
         get_save_card_url(),
@@ -34,11 +27,13 @@ defmodule Kuber.Hex.Gateways.Paymill do
 
   defp get_save_card_url(), do: "https://test-token.paymill.com/"
 
-  def authorize(amount, card, options) do
-    action_with_token(:authorize, amount, card, options)
+  def authorize(amount, card_or_token, options) do
+    Keyword.put(options, :money, amount)
+    action_with_token(:authorize, amount, card_or_token, options)
   end
 
   def purchase(amount, card, options) do
+    Keyword.put(options, :money, amount)
     action_with_token(:purchase, amount, card, options)
   end
 
@@ -56,8 +51,11 @@ defmodule Kuber.Hex.Gateways.Paymill do
     save_card(card, options)
   end
 
-  defp action_with_token(action, amount, card, options) do
-    Keyword.put(options, :money, amount)
+  defp action_with_token(action, amount, "tok_" <> id = card_token, options) do
+    apply(__MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token , options])
+  end
+
+  defp action_with_token(action, amount, %CreditCard{} = card, options) do
     {:ok, response} = save_card(card, options)
     card_token = get_token(response)
 
@@ -89,40 +87,32 @@ defmodule Kuber.Hex.Gateways.Paymill do
   end
 
   def get_save_card_params(card, options) do
-    {month, year} = card.expiration
-
     [ {"transaction.mode" , "CONNECTOR_TEST"},
       {"channel.id" , get_config(:public_key, options)},
       {"jsonPFunction" , "jsonPFunction"},
       {"account.number" , card.number},
-      {"account.expiry.month" , month},
-      {"account.expiry.year" , year},
-      {"account.verification" , card.cvc},
-      {"account.holder" , card.name},
+      {"account.expiry.month" , card.month},
+      {"account.expiry.year" , card.year},
+      {"account.verification" , card.verification_code},
+      {"account.holder" , "#{card.first_name} #{card.last_name}"},
       {"presentation.amount3D" , get_amount(options)},
       {"presentation.currency3D" , get_currency(options)}
     ]
   end
 
-  def parse_card_response(response) do
+  defp parse_card_response(response) do
     response
     |> String.replace(~r/jsonPFunction\(/,"")
     |> String.replace(~r/\)/, "")
     |> Poison.decode
   end
 
-  defp get_currency(options) do
-    {:ok, currency} = Keyword.fetch(options, :currency)
-    currency
-  end
+  defp get_currency(options), do: options[:currency] || @default_currency
 
-  defp get_amount(options) do
-    {:ok, amount} = Keyword.fetch(options, :currency)
-    amount
-  end
+  defp get_amount(options), do: options[:money] || 100
 
-  def get_token(response) do
-    Kernel.get_in(response, ["transaction", "identification", "uniqueId"])
+  defp get_token(response) do
+    get_in(response, ["transaction", "identification", "uniqueId"])
   end
 
   defp commit(method, action, parameters \\ nil, options) do
@@ -130,7 +120,7 @@ defmodule Kuber.Hex.Gateways.Paymill do
   end
 
   defp get_config(key, options) do
-    Kernel.get_in(options, [:config, key])
+    get_in(options, [:config, key])
   end
 
 end
