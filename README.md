@@ -1,7 +1,7 @@
 Gringotts
 =================
 
-[![CircleCI](https://circleci.com/gh/aviabird/gringotts.svg?style=svg)](https://circleci.com/gh/aviabird/gringotts)
+[![Build](https://travis-ci.org/aviabird/gringotts.svg?branch=master)](https://travis-ci.org/aviabird/gringotts) | [![Coverage](https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master)](https://coveralls.io/github/aviabird/gringotts?branch=master)
 
 Payment processing library for Elixir. Based on [Shopify's](http://shopify.com) [ActiveMerchant](http://github.com/Shopify/active_merchant) ruby gem.
 
