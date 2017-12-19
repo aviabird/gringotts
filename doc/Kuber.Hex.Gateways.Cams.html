@@ -71,6 +71,28 @@
       </h1>
 
       
+        <section id="moduledoc">
+          <p>  An API client for the <a href="https://www.centralams.com/">CAMS</a> gateway.
+  For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).</p>
+<p>  Test it using test crediantials username:”testintegrationc”, password:”password9”</p>
+<p>  The following features of CAMS are implemented:</p>
+<ul>
+<li><p><strong>Purchase</strong>  In  <a href="#purchase/3"><code class="inline">purchase/3</code></a></p>
+</li>
+<li><p><strong>Authorize</strong> In  <a href="#authorize/3"><code class="inline">authorize/3</code></a></p>
+</li>
+<li><p><strong>Capture</strong>   In  <a href="#capture/3"><code class="inline">capture/3</code></a></p>
+</li>
+<li><p><strong>Refund</strong>    In  <a href="#refund/3"><code class="inline">refund/3</code></a></p>
+</li>
+<li><p><strong>Void</strong>      In  <a href="#void/2"><code class="inline">void/2</code></a></p>
+</li>
+<li><p><strong>Verify</strong>    In  <a href="#verify/2"><code class="inline">verify/2</code></a> </p>
+</li>
+</ul>
+
+        </section>
+      
 
       
         <section id="summary" class="details-list">
@@ -93,6 +115,14 @@
     <a href="#authorize/3">authorize(money, payment, options)</a>
   </div>
   
+    <div class="summary-synopsis"><p>authorize method responsible for authorize the credit card with specified amount.
+  Authorize method authorize the transaction but does not trasnfer the funds.
+  After authorize we need to call capture method for complete the transaction(fund transfer).
+  After successful authorisation it returns response containing authcode &amp; transactionid.
+  <em>auth_code</em> and <em>transactionid</em> is required for capturing specified amount for particular transaction.
+  After successful transaction it returns response with authcode &amp; transactionid</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -105,51 +135,17 @@
     <a href="#capture/3">capture(money, authorization, options)</a>
   </div>
   
+    <div class="summary-synopsis"><p>An authorized transaction need to be captured to compelete the transaction</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#purchase/3">purchase(money, payment, options)</a>
   </div>
   
-    <div class="summary-synopsis"><p>payment = %CreditCard{</p>
-<pre><code class="elixir">  number: &quot;4111111111111111&quot;,
-  month: 11,
-  year: 2018,
-  first_name: &quot;Longbob&quot;,
-  last_name: &quot;Longsen&quot;,
-  verification_code: &quot;123&quot;,
-  brand: &quot;visa&quot;
-}
-credit_card = %CreditCard{
-  number: &quot;4242424242424242&quot;,
-  month: 11,
-  year: 2018,
-  first_name: &quot;Longbob&quot;,
-  last_name: &quot;Longsen&quot;,
-  verification_code: &quot;123&quot;,
-  brand: &quot;visa&quot;
-}
-address = %{
-  name:     &quot;Jim Smith&quot;,
-  address1: &quot;456 My Street&quot;,
-  address2: &quot;Apt 1&quot;,
-  company:  &quot;Widgets Inc&quot;,
-  city:     &quot;Ottawa&quot;,
-  state:    &quot;ON&quot;,
-  zip:      &quot;K1C2N6&quot;,
-  country:  &quot;CA&quot;,
-  phone:    &quot;(555)555-5555&quot;,
-  fax:      &quot;(555)555-6666&quot;
-}
-options = [
-  config: %{
-            username: &quot;testintegrationc&quot;,
-            password: &quot;password9&quot;
-          },
-  order_id: 1,
-  billing_address: address,
-  description: &quot;Store Purchase&quot;,
-]</code></pre>
+    <div class="summary-synopsis"><p>Purchase method responsible for sale operation.
+  After successfull transaction it returns response containing  authcode &amp; transactionid</p>
 </div>
   
 </div>
@@ -157,6 +153,10 @@ options = [
   <div class="summary-signature">
     <a href="#refund/3">refund(money, authorization, options)</a>
   </div>
+  
+    <div class="summary-synopsis"><p>Successful trasaction can be refunded after settlement or any time.
+It require <em>transactionid</em> for refund the specified amount back to creditcard holder</p>
+</div>
   
 </div>
 <div class="summary-row">
@@ -185,11 +185,19 @@ options = [
     <a href="#verify/2">verify(credit_card, options)</a>
   </div>
   
+    <div class="summary-synopsis"><p>This mehthod is for only verification purpose for credit card.
+Here we need to provide CreditCard info</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#void/2">void(authorization, options)</a>
   </div>
+  
+    <div class="summary-synopsis"><p>Transaction can be cancled only before settlement.
+It require <em>transactionid</em> for cancel the transaction</p>
+</div>
   
 </div>
 
@@ -224,9 +232,21 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>authorize(number(), Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>  authorize method responsible for authorize the credit card with specified amount.
+  Authorize method authorize the transaction but does not trasnfer the funds.
+  After authorize we need to call capture method for complete the transaction(fund transfer).
+  After successful authorisation it returns response containing authcode &amp; transactionid.
+  <em>auth_code</em> and <em>transactionid</em> is required for capturing specified amount for particular transaction.
+  After successful transaction it returns response with authcode &amp; transactionid </p>
+
   </section>
 </div>
 <div class="detail" id="capture/2">
@@ -258,9 +278,16 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>capture(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>An authorized transaction need to be captured to compelete the transaction. </p>
+
   </section>
 </div>
 <div class="detail" id="purchase/3">
@@ -275,47 +302,16 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>purchase(number(), Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    <pre><code class="elixir">  payment = %CreditCard{
-  number: &quot;4111111111111111&quot;,
-  month: 11,
-  year: 2018,
-  first_name: &quot;Longbob&quot;,
-  last_name: &quot;Longsen&quot;,
-  verification_code: &quot;123&quot;,
-  brand: &quot;visa&quot;
-}
-credit_card = %CreditCard{
-  number: &quot;4242424242424242&quot;,
-  month: 11,
-  year: 2018,
-  first_name: &quot;Longbob&quot;,
-  last_name: &quot;Longsen&quot;,
-  verification_code: &quot;123&quot;,
-  brand: &quot;visa&quot;
-}
-address = %{
-  name:     &quot;Jim Smith&quot;,
-  address1: &quot;456 My Street&quot;,
-  address2: &quot;Apt 1&quot;,
-  company:  &quot;Widgets Inc&quot;,
-  city:     &quot;Ottawa&quot;,
-  state:    &quot;ON&quot;,
-  zip:      &quot;K1C2N6&quot;,
-  country:  &quot;CA&quot;,
-  phone:    &quot;(555)555-5555&quot;,
-  fax:      &quot;(555)555-6666&quot;
-}
-options = [
-  config: %{
-            username: &quot;testintegrationc&quot;,
-            password: &quot;password9&quot;
-          },
-  order_id: 1,
-  billing_address: address,
-  description: &quot;Store Purchase&quot;,
-]</code></pre>
+    <p>  Purchase method responsible for sale operation.
+  After successfull transaction it returns response containing  authcode &amp; transactionid </p>
 
   </section>
 </div>
@@ -331,9 +327,17 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>refund(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>Successful trasaction can be refunded after settlement or any time.
+It require <em>transactionid</em> for refund the specified amount back to creditcard holder. </p>
+
   </section>
 </div>
 <div class="detail" id="store/2">
@@ -400,9 +404,17 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>verify(Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>This mehthod is for only verification purpose for credit card.
+Here we need to provide CreditCard info. </p>
+
   </section>
 </div>
 <div class="detail" id="void/2">
@@ -417,9 +429,17 @@ options = [
     
     
     
+      <div class="specs">
+        
+          <pre>void(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>Transaction can be cancled only before settlement.
+It require <em>transactionid</em> for cancel the transaction.  </p>
+
   </section>
 </div>
 
