@@ -12,7 +12,7 @@ defmodule Kuber.Hex.Gateways.Base do
         not_implemented()
       end
 
-      def capture(_id, _opts) do
+      def capture(_id, _amount, _opts) do
         not_implemented()
       end
 
@@ -28,7 +28,7 @@ defmodule Kuber.Hex.Gateways.Base do
         not_implemented()
       end
 
-      def unstore(_customer_id, _card_id, _opts) do
+      def unstore(_customer_id, _opts) do
         not_implemented()
       end
 
@@ -58,7 +58,7 @@ defmodule Kuber.Hex.Gateways.Base do
         {:error, Response.error(code: :not_implemented)}
       end
 
-      defoverridable [purchase: 3, authorize: 3, capture: 2, void: 2, refund: 3, store: 2, unstore: 3]
+      defoverridable [purchase: 3, authorize: 3, capture: 3, void: 2, refund: 3, store: 2, unstore: 2]
     end
   end
 end
