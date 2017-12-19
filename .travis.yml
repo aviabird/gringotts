@@ -5,7 +5,7 @@ otp_release:
   - 19.1
 
 script:
-  - mix test, coveralls.json
+  - mix test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
