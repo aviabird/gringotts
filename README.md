@@ -1,7 +1,7 @@
 Gringotts
 =================
 
-[![CircleCI](https://circleci.com/bb/aviabird/gringotts/tree/master.svg?style=svg)](https://circleci.com/bb/aviabird/gringotts/tree/master)
+[![CircleCI](https://circleci.com/gh/aviabird/gringotts.svg?style=svg)](https://circleci.com/gh/aviabird/gringotts)
 
 Payment processing library for Elixir. Based on [Shopify's](http://shopify.com) [ActiveMerchant](http://github.com/Shopify/active_merchant) ruby gem.
 
