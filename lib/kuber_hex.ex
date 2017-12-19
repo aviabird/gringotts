@@ -36,9 +36,9 @@ defmodule Kuber.Hex do
     call(worker, {:store, gateway, card, opts})
   end
 
-  def unstore(worker, gateway, customer_id, card_id, opts \\ []) do 
+  def unstore(worker, gateway, customer_id, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:unstore, gateway, customer_id, card_id, opts})
+    call(worker, {:unstore, gateway, customer_id, opts})
   end
 
   # TODO: This is runtime error reporing fix this to be compile
