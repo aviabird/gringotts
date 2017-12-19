@@ -1,9 +1,52 @@
-# call => Gringotts.Gateways.WireCard.authorize(100, creditcard, options)
-import XmlBuilder
-
 defmodule Gringotts.Gateways.WireCard do
-  @moduledoc """
-    WireCard System Plugins
+  @moduledoc ~S"""
+    An API client for the [WireCard](http://www.wirecard.com) gateway.
+
+    For reference see [WireCard's CEE integration documentation](https://guides.wirecard.com/_export/pdf/wcp:test_mode)
+
+    The Following Features of WireCard are implemented:
+
+    | `type` | Action                       | Method        |
+    | ------ | ------                       | ------        |
+    | `PA`   | Pre-authorize                | `authorize/3` |
+    | `CP`   | Capture                      | `capture/3`   |
+    | `DB`   | Debit                        | `purchase/3`  |
+    | `RF`   | Refund                       | `refund/3`    |
+    | `RV`   | Reversal                     | `void/2`      |
+    |        | Tokenization / Registrations | `store/2`     |
+
+  ## The `opts` argument
+
+    Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
+    optional arguments for transactions with the WireCard gateway. The following keys
+    are supported:
+
+    | Key                 | Remark | Status      |
+    | ----                | ---    | ----        |
+    | `order_id`          |        | implemented |
+    | `billing_address`   | [Address Format](#address-format)| implemented |
+    | `description`       |        | Not implemented |
+    | `email`             |        | implemented |
+    | `ip`                |        | implemented |
+    | `test`              |        | implemented |
+
+  ##  <a href='#address-format' id='address-format' class='anchor' aria-hidden='true'>Address Format</a>
+  Address in `opts` should be `Map` with following keys:
+
+    | Key           | Remark | Status     |
+    | ----         | ---    | ----        |
+    | `name`       |        | implemented |
+    | `address1`   |        | implemented |
+    | `address2`   |        | implemented |
+    | `company`    |        | implemented |
+    | `city`       |        | implemented |
+    | `zip`        |        | implemented |
+    | `country`    |        | implemented |
+    | `phone`      |        | implemented |
+    | `fax`        |        | implemented |
+
+  ## WireCard _quirks_
+  * WireCard does not process money in cents, and the `amount` is by default considered to be cents.
   """
   @test_url "https://c3-test.wirecard.com/secure/ssl-gateway"
   @live_url "https://c3.wirecard.com/secure/ssl-gateway"
@@ -25,24 +68,22 @@ defmodule Gringotts.Gateways.WireCard do
   use Gringotts.Adapter, required_config: [:login, :password, :signature]
 
   alias Gringotts.{
-    CreditCard,
-    Address,
-    Response
+    CreditCard
   }
-
-  import Poison, only: [decode!: 1]
+  
+  import XmlBuilder
 
   @doc """
+    Performs a (pre) Authorize operation.
+
     Authorization - the second parameter may be a CreditCard or
     a String which represents a GuWID reference to an earlier
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
-    ===========================================================
-    TODO: Mandatorily check for :login,:password, :signature in options
-    Note: payment_menthod for now is only credit_card and
-    TODO: change it so it can also have GuWID
-    ================================================
-    E.g: =>
+
+  ## Examples
+    Run this in your `iex -S mix`
+    ```
     creditcard = %CreditCard{
       number: "4200000000000000",
       month: 12,
@@ -52,6 +93,7 @@ defmodule Gringotts.Gateways.WireCard do
       verification_code: "123",
       brand: "visa"
     }
+
     address = %{
       name:     "Jim Smith",
       address1: "456 My Street",
@@ -64,6 +106,7 @@ defmodule Gringotts.Gateways.WireCard do
       phone:    "(555)555-5555",
       fax:      "(555)555-6666"
     }
+
     options = [
       config: %{
         login: "00000031629CA9FA",
@@ -280,7 +323,7 @@ defmodule Gringotts.Gateways.WireCard do
     end
   end
 
-  def add_action_data(action, money, options) do
+  defp add_action_data(_action, money, options) do
     case options[:action] do
       # returns array of elements
       action when action in [:preauthorization, :purchase, :authorization_check] ->
@@ -364,7 +407,7 @@ defmodule Gringotts.Gateways.WireCard do
   end
 
   # Includes the payment (amount, currency, country) to the transaction-xml
-  def add_invoice(money, options) do
+  defp add_invoice(money, options) do
     [
       add_amount(money, options),
       element(:Currency, currency(options)),
@@ -378,7 +421,7 @@ defmodule Gringotts.Gateways.WireCard do
   # Include the amount in the transaction-xml
   # TODO: check for localized currency or currency
   # localized_amount(money, options[:currency] || currency(money))
-  defp add_amount(money, options), do: element(:Amount, money)
+  defp add_amount(money, _options), do: element(:Amount, money)
 
   defp atom_to_upcase_string(atom) do
     atom
