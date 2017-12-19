@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Gateways.Monei do
+defmodule Gringotts.Gateways.Monei do
   @moduledoc ~S"""
   An API client for the [MONEI](https://www.monei.net) gateway.
 
@@ -17,7 +17,7 @@ defmodule Kuber.Hex.Gateways.Monei do
 
   ## The `opts` argument
 
-  Most `Kuber.Hex` API calls accept an optional `Keyword` list `opts` to supply
+  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the MONEI gateway. The following keys
   are supported:
 
@@ -50,10 +50,10 @@ defmodule Kuber.Hex.Gateways.Monei do
   * [Reporting](https://docs.monei.net/tutorials/reporting)
   """
 
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password]
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:userId, :entityId, :password]
   import Poison, only: [decode: 1]
-  alias Kuber.Hex.{CreditCard, Response}
+  alias Gringotts.{CreditCard, Response}
   
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded",
@@ -277,7 +277,7 @@ defmodule Kuber.Hex.Gateways.Monei do
   end
 
   @doc """
-  Parses MONEI's response and returns a `Kuber.Hex.Response` struct in a `:ok`, `:error` tuple.
+  Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
   """
   @spec respond(term) ::
   {:ok, Response} |
@@ -322,5 +322,3 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp currency(opts), do: opts[:currency] || @default_currency
   defp version(opts), do: opts[:api_version] || @version
 end
-
-

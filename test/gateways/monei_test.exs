@@ -1,10 +1,10 @@
-defmodule Kuber.Hex.Gateways.MoneiTest do
+defmodule Gringotts.Gateways.MoneiTest do
   use ExUnit.Case, async: false
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
   }
-  alias Kuber.Hex.Gateways.Monei, as: Gateway
+  alias Gringotts.Gateways.Monei, as: Gateway
 
   @card %CreditCard{
     first_name: "Jo",
@@ -144,8 +144,8 @@ defmodule Kuber.Hex.Gateways.MoneiTest do
   end
 end
 
-defmodule Kuber.Hex.Gateways.MoneiDocTest do
+defmodule Gringotts.Gateways.MoneiDocTest do
   use ExUnit.Case, async: true
 
-  doctest Kuber.Hex.Gateways.Monei
+  doctest Gringotts.Gateways.Monei
 end

@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Gateways.Stripe do
+defmodule Gringotts.Gateways.Stripe do
 
   @moduledoc """
   Functions for working with Stripe payment gateway. Through this API you can:
@@ -16,10 +16,10 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
   @base_url "https://api.stripe.com/v1"
 
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:api_key, :default_currency]
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:api_key, :default_currency]
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
     Address
   }
@@ -41,7 +41,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     opts = [currency: "usd"]
     amount = 5
 
-    Kuber.Hex.Gateways.Stripe.authorize(amount, payment, opts)
+    Gringotts.Gateways.Stripe.authorize(amount, payment, opts)
   """
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -66,7 +66,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     opts = [currency: "usd"]
     amount = 5
 
-    Kuber.Hex.Gateways.Stripe.purchase(amount, payment, opts)
+    Gringotts.Gateways.Stripe.purchase(amount, payment, opts)
   """
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
@@ -91,7 +91,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     amount = 5
     opts = []
 
-    Kuber.Hex.Gateways.Stripe.capture(id, amount, opts)
+    Gringotts.Gateways.Stripe.capture(id, amount, opts)
   """
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
@@ -109,7 +109,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
     opts = []
 
-    Kuber.Hex.Gateways.Stripe.void(id, opts)
+    Gringotts.Gateways.Stripe.void(id, opts)
   """
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
@@ -131,7 +131,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
     opts = []
 
-    Kuber.Hex.Gateways.Stripe.refund(amount, id, opts)
+    Gringotts.Gateways.Stripe.refund(amount, id, opts)
   """
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
@@ -155,7 +155,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
 
     opts = []
 
-    Kuber.Hex.Gateways.Stripe.store(payment, opts)
+    Gringotts.Gateways.Stripe.store(payment, opts)
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
@@ -174,7 +174,7 @@ defmodule Kuber.Hex.Gateways.Stripe do
     
     id = "cus_BwpLX2x4ecEUgD"
 
-    Kuber.Hex.Gateways.Stripe.unstore(id)
+    Gringotts.Gateways.Stripe.unstore(id)
   """
   @spec unstore(String.t) :: Map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)

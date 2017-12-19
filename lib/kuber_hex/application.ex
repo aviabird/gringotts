@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Application do
+defmodule Gringotts.Application do
   @moduledoc ~S"""
   Has the supervision tree which monitors all the workers
   that are handling the payments.
@@ -7,15 +7,15 @@ defmodule Kuber.Hex.Application do
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
-    app_config = Application.get_all_env(:kuber_hex)
+    app_config = Application.get_all_env(:Gringotts)
     adapters = Enum.filter(app_config, fn({key, klist}) -> klist != [] end)
                 |> Enum.map(fn({key, klist}) -> Keyword.get(klist, :adapter) end)
 
     children = [
       # Define workers and child supervisors to be supervised
-      # worker(Kuber.Hex.Worker, [arg1, arg2, arg3])
+      # worker(Gringotts.Worker, [arg1, arg2, arg3])
       worker(
-        Kuber.Hex.Worker,
+        Gringotts.Worker,
         [
           adapters,       # gateways
           app_config,     # options(config from application)
@@ -27,7 +27,7 @@ defmodule Kuber.Hex.Application do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Kuber.Hex.Supervisor]
+    opts = [strategy: :one_for_one, name: Gringotts.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

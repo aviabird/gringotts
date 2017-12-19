@@ -1,14 +1,14 @@
-defmodule Kuber.Hex.Gateways.WireCardTest do
+defmodule Gringotts.Gateways.WireCardTest do
   use ExUnit.Case, async: false
 
   import Mock
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
     Address,
     Response
   }
-  alias Kuber.Hex.Gateways.WireCard, as: Gateway
+  alias Gringotts.Gateways.WireCard, as: Gateway
 
   setup do
     # TEST_AUTHORIZATION_GUWID = 'C822580121385121429927'
