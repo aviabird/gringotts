@@ -1,8 +1,8 @@
-defmodule Kuber.Hex.Gateways.Paymill do
-  use Kuber.Hex.Gateways.Base
-  alias Kuber.Hex.{ CreditCard, Address, Response}
+defmodule Gringotts.Gateways.Paymill do
+  use Gringotts.Gateways.Base
+  alias Gringotts.{ CreditCard, Address, Response}
 
-  use Kuber.Hex.Adapter, required_config: [:private_key, :public_key]
+  use Gringotts.Adapter, required_config: [:private_key, :public_key]
 
   @home_page "https://paymill.com"
   @money_format :cents

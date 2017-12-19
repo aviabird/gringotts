@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Worker do
+defmodule Gringotts.Worker do
   @moduledoc ~S"""
   A central supervised worker handling all the calls for different gateways
 
@@ -82,6 +82,6 @@ defmodule Kuber.Hex.Worker do
   end
 
   defp set_gateway_and_config(request_gateway) do
-    { request_gateway, Application.get_env(:kuber_hex, request_gateway) }
+    { request_gateway, Application.get_env(:Gringotts, request_gateway) }
   end
 end

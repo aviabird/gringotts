@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Adapter do
+defmodule Gringotts.Adapter do
   @moduledoc ~S"""
   Adapter module is currently holding the validation part.
 

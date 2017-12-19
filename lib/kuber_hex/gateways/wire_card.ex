@@ -1,6 +1,6 @@
-# call => Kuber.Hex.Gateways.WireCard.authorize(100, creditcard, options)
+# call => Gringotts.Gateways.WireCard.authorize(100, creditcard, options)
 import XmlBuilder
-defmodule Kuber.Hex.Gateways.WireCard do
+defmodule Gringotts.Gateways.WireCard do
   @moduledoc """
     WireCard System Plugins
   """
@@ -20,10 +20,10 @@ defmodule Kuber.Hex.Gateways.WireCard do
   @valid_phone_format ~r/\+\d{1,3}(\(?\d{3}\)?)?\d{3}-\d{4}-\d{3}/
   @default_currency  "EUR"
   @default_amount    100
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:login, :password, :signature]
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:login, :password, :signature]
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
     Address,
     Response
