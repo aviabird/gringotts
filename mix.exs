@@ -10,7 +10,9 @@ defmodule Kuber.Hex.Mixfile do
        licenses: ["MIT"],
        links: %{github: "https://github.com/github/kuber_hex"}
      ],
-     elixir: ">= 1.2.0",
+     elixir: ">= 1.3.0",
+     test_coverage: [tool: ExCoveralls],
+     preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test, "coveralls.html": :test],
      deps: deps()]
   end
 
@@ -38,6 +40,7 @@ defmodule Kuber.Hex.Mixfile do
      {:mock, "~> 0.3.0", only: :test},
      {:bypass, "~> 0.8", only: :test},
      {:xml_builder, "~> 0.1.1"}, 
-     {:elixir_xml_to_map, "~> 0.1"}]
+     {:elixir_xml_to_map, "~> 0.1"},
+     {:excoveralls, "~> 0.7", only: :test}]
   end
 end

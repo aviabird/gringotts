@@ -9,8 +9,12 @@ An open source initiative of [Aviabird Technologies](https://aviabird.com)
 
 ## Supported Gateways
 
-- Bogus
 - Stripe
+- Authorize.net
+- Paymill
+- Monei
+- CAMS
+- Wirecard
 
 ## Advantages of Elixir
 
