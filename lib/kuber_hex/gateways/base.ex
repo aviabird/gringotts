@@ -28,7 +28,7 @@ defmodule Kuber.Hex.Gateways.Base do
         not_implemented()
       end
 
-      def unstore(_customer_id, _card_id, _opts) do
+      def unstore(_customer_id, _opts) do
         not_implemented()
       end
 

@@ -195,7 +195,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
       id = "trans id of the transaction to be refunded"
       amount = 5
   """
-  @spec refund(Float, String, List) :: Tuple
+  @spec refund(Float, String.t, List) :: Tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data)
@@ -219,7 +219,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
       ]
       id = "trans id of the transaction to be void"
   """
-  @spec void(String, List) :: Tuple
+  @spec void(String.t, List) :: Tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data)
@@ -270,8 +270,8 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
       customerProfileId:
       ]
   """
-  @spec unstore(String, String, List) :: Tuple
-  def unstore(customer_profile_id, _card_id, opts) do
+  @spec unstore(String.t, List) :: Tuple
+  def unstore(customer_profile_id, opts) do
     request_data = delete_customer_profile(customer_profile_id, opts)
     response_data = commit(:post, request_data)
     respond(response_data)
