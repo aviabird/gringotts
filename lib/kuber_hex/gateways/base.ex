@@ -18,6 +18,7 @@ defmodule Kuber.Hex.Gateways.Base do
         not_implemented()
       end
 
+      @doc false
       def void(_id, _opts) do
         not_implemented()
       end
