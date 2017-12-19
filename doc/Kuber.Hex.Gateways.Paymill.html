@@ -8,7 +8,7 @@
     <title>Kuber.Hex.Gateways.Paymill – kuber_hex v0.0.2</title>
     <link rel="stylesheet" href="dist/app-c922dbe7ef.css" />
     
-    <script src="dist/sidebar_items-a31106edb0.js"></script>
+    <script src="dist/sidebar_items-dbca2f57a8.js"></script>
     
     
     
@@ -114,12 +114,6 @@
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_save_card_params/2">get_save_card_params(card, options)</a>
-  </div>
-  
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="#purchase/3">purchase(amount, card, options)</a>
   </div>
   
@@ -207,6 +201,12 @@
     
     
     
+      <div class="specs">
+        
+          <pre>authorize(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
     
@@ -223,6 +223,12 @@
     <span class="signature">authorize_with_token(money, card_token, options)</span>
     
     
+    
+      <div class="specs">
+        
+          <pre>authorize_with_token(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: term()</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
@@ -258,22 +264,11 @@
     
     
     
-  </div>
-  <section class="docstring">
-    
-  </section>
-</div>
-<div class="detail" id="get_save_card_params/2">
-  
-  
-  <div class="detail-header">
-    <a href="#get_save_card_params/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <span class="signature">get_save_card_params(card, options)</span>
-    
-    
+      <div class="specs">
+        
+          <pre>capture(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
@@ -292,6 +287,12 @@
     
     
     
+      <div class="specs">
+        
+          <pre>purchase(number(), Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
     
@@ -308,6 +309,12 @@
     <span class="signature">purchase_with_token(money, card_token, options)</span>
     
     
+    
+      <div class="specs">
+        
+          <pre>purchase_with_token(number(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: term()</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
@@ -343,6 +350,12 @@
     
     
     
+      <div class="specs">
+        
+          <pre>save(Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
     
@@ -359,6 +372,12 @@
     <span class="signature">save_card(card, options)</span>
     
     
+    
+      <div class="specs">
+        
+          <pre>save_card(Kuber.Hex.CreditCard, Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
@@ -428,6 +447,12 @@
     <span class="signature">void(authorization, options)</span>
     
     
+    
+      <div class="specs">
+        
+          <pre>void(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), Keyword) :: Kuber.Hex.Response</pre>
+        
+      </div>
     
   </div>
   <section class="docstring">
