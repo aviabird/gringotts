@@ -24,3 +24,6 @@ jobs:
       - run: mix test
       # Let CircleCI run integration tests separately.
       - run: mix test --only integration
+test:
+  override:
+    - mix coveralls.circle
