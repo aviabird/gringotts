@@ -21,7 +21,7 @@ jobs:
       - run: mix local.hex --force
       - run: mix local.rebar --force
       - run: mix deps.get
-      - run: mix test
+      - run: mix coveralls.circle
       # Let CircleCI run integration tests separately.
       - run: mix test --only integration
 test:
