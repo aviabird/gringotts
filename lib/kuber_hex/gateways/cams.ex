@@ -1,7 +1,7 @@
 defmodule Kuber.Hex.Gateways.Cams do
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @supported_countries  ["US"]
-  @default_currency  "USD"
+  @default_currency  ["USD","AUD"]
   @money_format "cents"
   @supported_cardtypes  [:visa, :master, :american_express, :discover]
   @homepage_url  "https://www.centralams.com/"
@@ -12,7 +12,7 @@ defmodule Kuber.Hex.Gateways.Cams do
   An API client for the [CAMS](https://www.centralams.com/) gateway.
   For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).
 
-  Test it using test crediantials username:"testintegrationc", password:"password9"
+  Test it using test crediantials username:***testintegrationc***, password:***password9***
 
   The following features of CAMS are implemented:
 
@@ -45,7 +45,7 @@ defmodule Kuber.Hex.Gateways.Cams do
   #       verification_code: "123",
   #       brand: "visa"
   #     }
-  #     credit_card = %CreditCard{
+  #       credit_card = %CreditCard{
   #       number: "4242424242424242",
   #       month: 11,
   #       year: 2018,
@@ -79,8 +79,14 @@ defmodule Kuber.Hex.Gateways.Cams do
   import Poison, only: [decode!: 1]
    
   @doc """
-    Purchase method responsible for sale operation.
-    After successfull transaction it returns response containing  authcode & transactionid 
+    Use this method for performing purchase(sale) operation. 
+
+
+    It perform operation by taking `money`, `payment`(credit card details) & `options` as parameters.
+    Here `money` is required field which contains amount to be deducted. 
+    Required fields in credit card are `Credit Card Number` & `Expiration Date`.
+    Whereas `options` contains other information like billing address,order information etc. 
+    After successful transaction it returns response containing **authcode** & **transactionid**.
   """
   @spec purchase(number, CreditCard, Keyword) :: Response
   def purchase(money, payment, options) do
@@ -92,12 +98,17 @@ defmodule Kuber.Hex.Gateways.Cams do
   end
 
   @doc """
-    authorize method responsible for authorize the credit card with specified amount.
-    Authorize method authorize the transaction but does not trasnfer the funds.
-    After authorize we need to call capture method for complete the transaction(fund transfer).
-    After successful authorisation it returns response containing authcode & transactionid.
-    *auth_code* and *transactionid* is required for capturing specified amount for particular transaction.
-    After successful transaction it returns response with authcode & transactionid 
+    Use this method for authorising the credit card for particular transaction. 
+
+
+    `authorize/3` method only authorise the transaction,it does not transfer the funds.
+    After authorised a transaction, we need to call `capture/3` method to complete the transaction.
+    After successful authorisation it returns response containing **authcode** and **transactionid**.
+    We required **authcode**,**transactionid** and **money** for capturing transaction later on.
+    It perform operation by taking `money`, `payment` (credit card details) & `options` as parameters.
+    Here `money` is required field which contains amount to be deducted. 
+    Required fields in credit card are `Credit Card Number` & `Expiration Date`.
+    Whereas `options` contains other information like billing address,order information etc. 
   """
   @spec authorize(number, CreditCard, Keyword) :: Response
   def authorize(money, payment, options) do
@@ -109,7 +120,12 @@ defmodule Kuber.Hex.Gateways.Cams do
   end
  
   @doc """
-  An authorized transaction need to be captured to compelete the transaction. 
+    Use this method for capture the amount of the authorised transaction which is previously authorised by `authorize/3` method.
+
+
+    It take `money`, `authorization` and `options` as parameters.
+    Here `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
+    Both *money* and *authorization* are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do

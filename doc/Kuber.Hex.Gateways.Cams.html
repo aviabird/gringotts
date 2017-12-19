@@ -74,7 +74,7 @@
         <section id="moduledoc">
           <p>  An API client for the <a href="https://www.centralams.com/">CAMS</a> gateway.
   For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).</p>
-<p>  Test it using test crediantials username:”testintegrationc”, password:”password9”</p>
+<p>  Test it using test crediantials username:<strong><em>testintegrationc</em></strong>, password:<strong><em>password9</em></strong></p>
 <p>  The following features of CAMS are implemented:</p>
 <ul>
 <li><p><strong>Purchase</strong>  In  <a href="#purchase/3"><code class="inline">purchase/3</code></a></p>
@@ -115,12 +115,7 @@
     <a href="#authorize/3">authorize(money, payment, options)</a>
   </div>
   
-    <div class="summary-synopsis"><p>authorize method responsible for authorize the credit card with specified amount.
-  Authorize method authorize the transaction but does not trasnfer the funds.
-  After authorize we need to call capture method for complete the transaction(fund transfer).
-  After successful authorisation it returns response containing authcode &amp; transactionid.
-  <em>auth_code</em> and <em>transactionid</em> is required for capturing specified amount for particular transaction.
-  After successful transaction it returns response with authcode &amp; transactionid</p>
+    <div class="summary-synopsis"><p>Use this method for authorising the credit card for particular transaction</p>
 </div>
   
 </div>
@@ -135,7 +130,7 @@
     <a href="#capture/3">capture(money, authorization, options)</a>
   </div>
   
-    <div class="summary-synopsis"><p>An authorized transaction need to be captured to compelete the transaction</p>
+    <div class="summary-synopsis"><p>Use this method for capture the amount of the authorised transaction which is previously authorised by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method</p>
 </div>
   
 </div>
@@ -144,8 +139,7 @@
     <a href="#purchase/3">purchase(money, payment, options)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Purchase method responsible for sale operation.
-  After successfull transaction it returns response containing  authcode &amp; transactionid</p>
+    <div class="summary-synopsis"><p>Use this method for performing purchase(sale) operation</p>
 </div>
   
 </div>
@@ -240,12 +234,15 @@ It require <em>transactionid</em> for cancel the transaction</p>
     
   </div>
   <section class="docstring">
-    <p>  authorize method responsible for authorize the credit card with specified amount.
-  Authorize method authorize the transaction but does not trasnfer the funds.
-  After authorize we need to call capture method for complete the transaction(fund transfer).
-  After successful authorisation it returns response containing authcode &amp; transactionid.
-  <em>auth_code</em> and <em>transactionid</em> is required for capturing specified amount for particular transaction.
-  After successful transaction it returns response with authcode &amp; transactionid </p>
+    <p>  Use this method for authorising the credit card for particular transaction. </p>
+<p>  <a href="#authorize/3"><code class="inline">authorize/3</code></a> method only authorise the transaction,it does not transfer the funds.
+  After authorised a transaction, we need to call <a href="#capture/3"><code class="inline">capture/3</code></a> method to complete the transaction.
+  After successful authorisation it returns response containing <strong>authcode</strong> and <strong>transactionid</strong>.
+  We required <strong>authcode</strong>,<strong>transactionid</strong> and <strong>money</strong> for capturing transaction later on.
+  It perform operation by taking <code class="inline">money</code>, <code class="inline">payment</code> (credit card details) &amp; <code class="inline">options</code> as parameters.
+  Here <code class="inline">money</code> is required field which contains amount to be deducted. 
+  Required fields in credit card are <code class="inline">Credit Card Number</code> &amp; <code class="inline">Expiration Date</code>.
+  Whereas <code class="inline">options</code> contains other information like billing address,order information etc. </p>
 
   </section>
 </div>
@@ -286,7 +283,10 @@ It require <em>transactionid</em> for cancel the transaction</p>
     
   </div>
   <section class="docstring">
-    <p>An authorized transaction need to be captured to compelete the transaction. </p>
+    <p>  Use this method for capture the amount of the authorised transaction which is previously authorised by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method.</p>
+<p>  It take <code class="inline">money</code>, <code class="inline">authorization</code> and <code class="inline">options</code> as parameters.
+  Here <code class="inline">money</code> is a amount to be captured and <code class="inline">authorization</code> is a response returned by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method.
+  Both <em>money</em> and <em>authorization</em> are required fields, whereas <code class="inline">options</code> are as same as <a href="#authorize/3"><code class="inline">authorize/3</code></a> and <a href="#purchase/3"><code class="inline">purchase/3</code></a> methods.</p>
 
   </section>
 </div>
@@ -310,8 +310,12 @@ It require <em>transactionid</em> for cancel the transaction</p>
     
   </div>
   <section class="docstring">
-    <p>  Purchase method responsible for sale operation.
-  After successfull transaction it returns response containing  authcode &amp; transactionid </p>
+    <p>  Use this method for performing purchase(sale) operation. </p>
+<p>  It perform operation by taking <code class="inline">money</code>, <code class="inline">payment</code>(credit card details) &amp; <code class="inline">options</code> as parameters.
+  Here <code class="inline">money</code> is required field which contains amount to be deducted. 
+  Required fields in credit card are <code class="inline">Credit Card Number</code> &amp; <code class="inline">Expiration Date</code>.
+  Whereas <code class="inline">options</code> contains other information like billing address,order information etc. 
+  After successful transaction it returns response containing <strong>authcode</strong> &amp; <strong>transactionid</strong>.</p>
 
   </section>
 </div>
