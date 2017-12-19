@@ -3,5 +3,5 @@
 erl_crash.dump
 *.ez
 NOTES
-docs
+doc
 .elixir_ls
