@@ -1,14 +1,14 @@
-defmodule Kuber.Hex.Mixfile do
+defmodule Gringotts.Mixfile do
   use Mix.Project
   
   def project do
-    [app: :kuber_hex,
+    [app: :gringotts,
      version: "0.0.2",
      description: "Credit card processing library",
      package: [
        contributors: ["Aviabird Technologies"],
        licenses: ["MIT"],
-       links: %{github: "https://github.com/github/kuber_hex"}
+       links: %{github: "https://github.com/aviabird/gringotts"}
      ],
      elixir: ">= 1.3.0",
      test_coverage: [tool: ExCoveralls],
@@ -21,7 +21,7 @@ defmodule Kuber.Hex.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [applications: [:httpoison, :hackney, :elixir_xml_to_map],
-     mod: {Kuber.Hex.Application, []}]
+     mod: {Gringotts.Application, []}]
   end
 
   # Dependencies can be hex.pm packages:

@@ -1,7 +1,7 @@
-Kuber.Hex
+Gringotts
 =================
 
-[![CircleCI](https://circleci.com/bb/aviabird/kuber_hex/tree/master.svg?style=svg)](https://circleci.com/bb/aviabird/kuber_hex/tree/master)
+[![CircleCI](https://circleci.com/bb/aviabird/gringotts/tree/master.svg?style=svg)](https://circleci.com/bb/aviabird/gringotts/tree/master)
 
 Payment processing library for Elixir. Based on [Shopify's](http://shopify.com) [ActiveMerchant](http://github.com/Shopify/active_merchant) ruby gem
 
@@ -27,7 +27,7 @@ An open source initiative of [Aviabird Technologies](https://aviabird.com)
 ## Card processing example
 
 ```elixir
-alias Kuber.Hex
+alias Gringotts
 alias Billing.{CreditCard, Address, Worker, Gateways}
 
 config = %{credentials: {"sk_test_BQokikJOvBiI2HlWgH4olfQ2", ""},

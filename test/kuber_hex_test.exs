@@ -1,11 +1,11 @@
-defmodule Kuber.HexTest do
+defmodule GringottsTest do
   use ExUnit.Case
 
-  alias Kuber.Hex.Worker
-  import Kuber.Hex
+  alias Gringotts.Worker
+  import Gringotts
 
   defmodule FakeGateway do
-    use Kuber.Hex.Adapter, required_config: [:some_auth_info]
+    use Gringotts.Adapter, required_config: [:some_auth_info]
     
     def authorize(100, :card, _) do
       :authorization_response
@@ -37,37 +37,37 @@ defmodule Kuber.HexTest do
   end
 
   setup_all do
-    Application.put_env(:kuber_hex, Kuber.HexTest.FakeGateway, [
-          adapter: Kuber.HexTest.FakeGateway,
+    Application.put_env(:Gringotts, GringottsTest.FakeGateway, [
+          adapter: GringottsTest.FakeGateway,
           some_auth_info: :merchant_secret_key])
     :ok
   end
 
   test "authorization" do
-    assert authorize(:payment_worker, Kuber.HexTest.FakeGateway, 100, :card, []) == :authorization_response
+    assert authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) == :authorization_response
   end
 
   test "purchase" do
-    assert purchase(:payment_worker, Kuber.HexTest.FakeGateway, 100, :card, []) == :purchase_response
+    assert purchase(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) == :purchase_response
   end
 
   test "capture" do
-    assert capture(:payment_worker, Kuber.HexTest.FakeGateway, 1234, 100,[]) == :capture_response
+    assert capture(:payment_worker, GringottsTest.FakeGateway, 1234, 100,[]) == :capture_response
   end
 
   test "void" do
-    assert void(:payment_worker, Kuber.HexTest.FakeGateway, 1234, []) == :void_response
+    assert void(:payment_worker, GringottsTest.FakeGateway, 1234, []) == :void_response
   end
 
   test "refund" do
-    assert refund(:payment_worker, Kuber.HexTest.FakeGateway, 100, 1234, []) == :refund_response
+    assert refund(:payment_worker, GringottsTest.FakeGateway, 100, 1234, []) == :refund_response
   end
 
   test "store" do
-    assert store(:payment_worker, Kuber.HexTest.FakeGateway, :card, []) == :store_response
+    assert store(:payment_worker, GringottsTest.FakeGateway, :card, []) == :store_response
   end
 
   test "unstore" do
-    assert unstore(:payment_worker, Kuber.HexTest.FakeGateway, 123, 456, []) == :unstore_response
+    assert unstore(:payment_worker, GringottsTest.FakeGateway, 123, 456, []) == :unstore_response
   end
 end
