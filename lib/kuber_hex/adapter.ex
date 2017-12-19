@@ -3,6 +3,7 @@ defmodule Kuber.Hex.Adapter do
     quote bind_quoted: [opts: opts] do
       @required_config opts[:required_config] || []
 
+      @doc false
       def validate_config(config) do
         missing_keys = Enum.reduce(@required_config, [], fn(key, missing_keys) ->
           if config[key] in [nil, ""], do: [key | missing_keys], else: missing_keys

@@ -1,17 +1,19 @@
 defmodule Kuber.Hex.Gateways.Base do
   alias Kuber.Hex.Response
 
-  @doc false
   defmacro __using__(_) do
     quote location: :keep do
+      @doc false
       def purchase(_amount, _card_or_id, _opts)  do
         not_implemented()
       end
 
+      @doc false
       def authorize(_amount, _card_or_id, _opts)  do
         not_implemented()
       end
 
+      @doc false
       def capture(_id, _amount, _opts) do
         not_implemented()
       end
@@ -20,14 +22,17 @@ defmodule Kuber.Hex.Gateways.Base do
         not_implemented()
       end
 
+      @doc false
       def refund(_amount, _id, _opts) do
         not_implemented()
       end
 
+      @doc false
       def store(_card, _opts) do
         not_implemented()
       end
 
+      @doc false
       def unstore(_customer_id, _opts) do
         not_implemented()
       end
