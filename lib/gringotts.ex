@@ -268,7 +268,7 @@ defmodule Gringotts do
   # time error reporting.
   defp validate_config(gateway) do
     # Keep the key name and adapter the same in the config in application
-    config = Application.get_env(:Gringotts, gateway)
+    config = Application.get_env(:gringotts, gateway)
     gateway.validate_config(config)
   end
 end
