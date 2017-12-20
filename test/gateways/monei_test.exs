@@ -100,14 +100,14 @@ defmodule Gringotts.Gateways.MoneiTest do
     Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
       Plug.Conn.resp(conn, 400, "")
     end
-    {:error, _response} = Gateway.authorize(52.00, @bad_card, [config: auth])
+    {:error, _response} = Gateway.authorize(52, @bad_card, [config: auth])
   end
 
   test "purchase  | when all is good.", %{bypass: bypass, auth: auth} do
     Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
       Plug.Conn.resp(conn, 200, @auth_success)
     end
-    {:ok, response} = Gateway.purchase(52.00, @card, [config: auth])
+    {:ok, response} = Gateway.purchase(15, @card, [config: auth])
     assert response.code == "000.100.110"
   end
 
@@ -120,7 +120,30 @@ defmodule Gringotts.Gateways.MoneiTest do
     assert response.raw["card"]["holder"] == "Jo Doe"
   end
 
-  @tag :skip
+  test "capture   | when all is good.", %{bypass: bypass, auth: auth} do
+    Bypass.expect_once(
+      bypass,
+      "POST",
+      "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+      fn conn ->
+        Plug.Conn.resp(conn, 200, @auth_success)
+      end)
+    {:ok, response} = Gateway.capture(4000, "7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+    assert response.code == "000.100.110"
+  end
+
+  test "refund    | when all is good.", %{bypass: bypass, auth: auth} do
+    Bypass.expect_once(
+      bypass,
+      "POST",
+      "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+      fn conn ->
+        Plug.Conn.resp(conn, 200, @auth_success)
+      end)
+    {:ok, response} = Gateway.refund(3, "7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+    assert response.code == "000.100.110"
+  end
+  
   test "unstore   | when all is good.", %{bypass: bypass, auth: auth} do
     Bypass.expect_once(
       bypass,
@@ -133,6 +156,18 @@ defmodule Gringotts.Gateways.MoneiTest do
     assert response.code == :undefined_response_from_monei
   end
 
+  test "void      | when all is good", %{bypass: bypass, auth: auth} do
+    Bypass.expect_once(
+      bypass,
+      "POST",
+      "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+      fn conn ->
+        Plug.Conn.resp(conn, 200, @auth_success)
+      end)
+    {:ok, response} = Gateway.void("7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+    assert response.code == "000.100.110"
+  end
+  
   test "respond   | various scenarios." do
     json_200 = %HTTPoison.Response{body: @auth_success, status_code: 200}
     json_not_200 = %HTTPoison.Response{body: @auth_success, status_code: 300}
