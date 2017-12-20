@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Gateways.Monei do
+defmodule Gringotts.Gateways.Monei do
   @moduledoc ~S"""
   An API client for the [MONEI](https://www.monei.net) gateway.
 
@@ -6,40 +6,32 @@ defmodule Kuber.Hex.Gateways.Monei do
 
   The following features of MONEI are implemented:
   
-  * `PA` **Pre-Authorize**\
-  In `authorize/3`.
-
-  * `CP` **Capture**\
-  In `capture/3`.
-
-  * `RF` **Refund**\
-  In `refund/3` and ~~also `void/2`~~.
-
-  * `RV` **Reversal**\
-  In `void/2`.
-
-  * `DB` **Debit**\
-  In `purchase/3`.
-  
-  * **Tokenization** and **Registrations**\
-  In `store/2` ~~and `unstore/2`~~.
+  | `type` | Action                       | Method        |
+  | ------ | ------                       | ------        |
+  | `PA`   | Pre-authorize                | `authorize/3` |
+  | `CP`   | Capture                      | `capture/3`   |
+  | `DB`   | Debit                        | `purchase/3`  |
+  | `RF`   | Refund                       | `refund/3`    |
+  | `RV`   | Reversal                     | `void/2`      |
+  |        | Tokenization / Registrations | `store/2`     |
 
   ## The `opts` argument
 
-  This is a `Keyword` list of optional arguments for transactions with the MONEI
-  gateway. The following keys are supported:
+  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
+  optional arguments for transactions with the MONEI gateway. The following keys
+  are supported:
 
   | Key                 | Remark | Status          |
   | ----                | ---    | ----            |
   | `billing_address`   |        | Not implemented |
-  | `shipping_address`  |        | Not implemented |
-  | `customer`          |        | Not implemented |
-  | `shipping_customer` |        | Not implemented |
-  | `merchant`          |        | Not implemented |
   | `cart`              |        | Not implemented |
-  | `invoice`           |        | Not implemented |
+  | `currency`          |        | **Implemented** |
   | `customParameters`  |        | Not implemented |
-  | `currency`          |        | Not implemented |
+  | `customer`          |        | Not implemented |
+  | `invoice`           |        | Not implemented |
+  | `merchant`          |        | Not implemented |
+  | `shipping_address`  |        | Not implemented |
+  | `shipping_customer` |        | Not implemented |
 
   ## MONEI _quirks_
 
@@ -56,12 +48,12 @@ defmodule Kuber.Hex.Gateways.Monei do
     - Rebill
   * [Recurring payments](https://docs.monei.net/recurring)
   * [Reporting](https://docs.monei.net/tutorials/reporting)
-  
   """
-  
-  use Kuber.Hex.Adapter, required_config: [:userId, :entityId, :password]
+
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:userId, :entityId, :password]
   import Poison, only: [decode: 1]
-  alias Kuber.Hex.{CreditCard, Response}
+  alias Gringotts.{CreditCard, Response}
   
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded",
@@ -94,8 +86,8 @@ defmodule Kuber.Hex.Gateways.Monei do
   Performs a (pre) Authorize operation.
 
   The authorization validates the `card` details with the banking network,
-  places a hold on the transaction `amount` in the customer’s issuing bank also
-  triggers risk management. Funds are not transferred.
+  places a hold on the transaction `amount` in the customer’s issuing bank and
+  also triggers risk management. Funds are not transferred.
 
   MONEI returns an ID string which can be used to:
 
@@ -149,10 +141,10 @@ defmodule Kuber.Hex.Gateways.Monei do
   end
 
   @doc """
-  Credits the merchant account with `amount` by debiting the account of the customer.
+  Transfers `amount` from the customer to the merchant.
   
-  MONEI attempts to debit the customer to accept a payment of `amount` with the
-  given `card`.
+  MONEI attempts to process a purchase on behalf of the customer, by debiting
+  `amount` from the customer's account by charging the customer's `card`.
   """
   @spec purchase(number, CreditCard, keyword) :: Response
   def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do purchase(amount / 1, card, opts) end
@@ -168,25 +160,25 @@ defmodule Kuber.Hex.Gateways.Monei do
   @doc """
   Voids the referenced payment.
 
-  This method attempts a reversal of the `paymentId` referencing either a
-  previous `purchase/3` or `authorize/3`.
+  This method attempts a reversal of the either a previous `purchase/3` or
+  `authorize/3` referenced by `paymentId`.
+
+  As a consequence, the customer will never see any booking on his
+  statement. Refer MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
 
   ## Voiding a previous authorization
   
-  MONEI will reverse the authorization by sending a "reversal request" to be
-  sent the payment source (card issuer) to clear the funds held against the
+  MONEI will reverse the authorization by sending a "reversal request" to the
+  payment source (card issuer) to clear the funds held against the
   authorization. If some of the authorized amount was captured, only the
   remaining amount is cleared. **[citation-needed]**
 
   ## Voiding a previous purchase
 
   MONEI will reverse the payment, by sending all the amount back to the
-  customer.
-
-  As a consequence, the customer will never see any booking on his
-  statement. Refer MONEI's [Backoffice
-  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
-  guide.
+  customer. Note that this is not the same as `refund/3`.
   """  
   @spec void(String.t, keyword) :: Response
   def void(paymentId, opts)
@@ -197,18 +189,21 @@ defmodule Kuber.Hex.Gateways.Monei do
   end
 
   @doc """
-  Credits the account of the customer with a reference to a prior transfer.
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-  MONEI can process a full or partial refund worth `amount`, referencing a
-  previous `purchase/3` or `capture/3`ed.
+  MONEI processes a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
 
-  The end customer will always see two bookings/records on his statement.  Refer
-  MONEI's [Backoffice
+  The end customer will always see two bookings/records on his statement.
+  Refer MONEI's [Backoffice
   Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
   guide.
   """
   @spec refund(number, String.t, keyword) :: Response
-  def refund(amount, paymentId, opts)
+  def refund(amount, paymentId, opts) when is_integer(amount) do
+    refund(amount / 1, paymentId, opts)
+  end
+  
   def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
     params = [paymentType: "RF",
               amount: :erlang.float_to_binary(amount, decimals: 2),
@@ -282,8 +277,13 @@ defmodule Kuber.Hex.Gateways.Monei do
   end
 
   @doc """
-  Parses MONEI's response and returns a `Response` struct in a `:ok`, `:error` tuple.
+  Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
   """
+  @spec respond(term) ::
+  {:ok, Response} |
+  {:error, Response}
+  def respond(monei_response)
+  
   def respond({:ok, %{status_code: 200, body: body}}) do
     case decode(body) do
       {:ok, decoded_json} -> case verification_result(decoded_json) do
@@ -322,5 +322,3 @@ defmodule Kuber.Hex.Gateways.Monei do
   defp currency(opts), do: opts[:currency] || @default_currency
   defp version(opts), do: opts[:api_version] || @version
 end
-
-

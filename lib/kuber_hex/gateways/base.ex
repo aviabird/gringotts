@@ -1,5 +1,5 @@
-defmodule Kuber.Hex.Gateways.Base do
-  alias Kuber.Hex.Response
+defmodule Gringotts.Gateways.Base do
+  alias Gringotts.Response
 
   defmacro __using__(_) do
     quote location: :keep do

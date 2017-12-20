@@ -1,8 +1,8 @@
-defmodule Kuber.Hex.Gateways.StripeTest do
+defmodule Gringotts.Gateways.StripeTest do
 
   use ExUnit.Case
 
-  alias Kuber.Hex.Gateways.Stripe
+  alias Gringotts.Gateways.Stripe
 
   @required_payment_attrs %{
     month: 12,
