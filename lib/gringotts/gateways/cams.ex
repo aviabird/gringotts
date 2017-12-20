@@ -1,78 +1,39 @@
 defmodule Gringotts.Gateways.Cams do
   @moduledoc ~S"""
-  Test it using test crediantials username:***testintegrationc***, password:***password9***
+    An API client for the [CAMS](https://www.centralams.com/) gateway.
+    For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).
 
-  The following features of CAMS are implemented:
+    Test it using test crediantials username:***testintegrationc***, password:***password9***
 
-  * **Purchase**  In  `purchase/3`
+    The following features of CAMS are implemented:
 
-  * **Authorize** In  `authorize/3`
+    * **Purchase**  In  `purchase/3`
 
-  * **Capture**   In  `capture/3`
+    * **Authorize** In  `authorize/3`
 
-  * **Refund**    In  `refund/3`
+    * **Capture**   In  `capture/3`
 
-  * **Void**      In  `void/2`
+    * **Refund**    In  `refund/3`
+
+    * **Void**      In  `void/2`
   
-  * **Verify**    In  `verify/2`
+    * **Verify**    In  `verify/2`
+  """
+  @live_url  "https://secure.centralams.com/gw/api/transact.php"
+  @supported_countries  ["US"]
+  @default_currency  "USD"
+  @supported_cardtypes  [:visa, :master, :american_express, :discover]
+  @homepage_url  "https://www.centralams.com/"
+  @display_name  "CAMS: Central Account Management System"
+  @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   
-  payment = %CreditCard{
-    number: "4111111111111111",
-    month: 11,
-    year: 2018,
-    first_name: "Longbob",
-    last_name: "Longsen",
-    verification_code: "123",
-    brand: "visa"
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
+  alias Gringotts.{
+  CreditCard,
+  Address,
+  Response
   }
-  credit_card = %CreditCard{
-    number: "4242424242424242",
-    month: 11,
-    year: 2018,
-    first_name: "Longbob",
-    last_name: "Longsen",
-    verification_code: "123",
-    brand: "visa"
-  }
-  address = %{
-    name:     "Jim Smith",
-    address1: "456 My Street",
-    address2: "Apt 1",
-    company:  "Widgets Inc",
-    city:     "Ottawa",
-    state:    "ON",
-    zip:      "K1C2N6",
-    country:  "CA",
-    phone:    "(555)555-5555",
-    fax:      "(555)555-6666"
-  }
-  options = [
-    config: %{
-              username: "testintegrationc",
-              password: "password9"
-            },
-    order_id: 1,
-    billing_address: address,
-    description: "Store Purchase",
-  ] 
-"""
-
-    @live_url  "https://secure.centralams.com/gw/api/transact.php"
-    @supported_countries  ["US"]
-    @default_currency  "USD"
-    @supported_cardtypes  [:visa, :master, :american_express, :discover]
-    @homepage_url  "https://www.centralams.com/"
-    @display_name  "CAMS: Central Account Management System"
-    @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
-  
-
-    use Gringotts.Gateways.Base
-    use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
-    alias Gringotts.{
-      CreditCard,
-      Address,
-      Response
-    }
       
   import Poison, only: [decode!: 1]
    
@@ -139,7 +100,7 @@ defmodule Gringotts.Gateways.Cams do
 
     
     Successful transaction can be refunded after settlement or any time.
-    It requires *transactionid* for refund the specified amount back to credit card holder. 
+    It requires *transactionid* for refund the specified amount back to authorized payment source. 
     Only purchased(sale) transactions can be refund based on thier `transactionid`.
     It take `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be refund and `authorization` is a response returned by `purchase/3` method.
@@ -155,8 +116,12 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   @doc """
-  Transaction can be cancled only before settlement.
-  It require *transactionid* for cancel the transaction.  
+    Use this method for cancel the transaction.
+    
+    
+    It is use to cancel the purchase(sale) transaction before settlement.
+    Authorised transaction can be canceled, but once it captured, it can not be canceled.
+    It requires *transactionid* to cancle transaction.Amount returned to the authorized payment source.
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do  
@@ -246,3 +211,42 @@ defmodule Gringotts.Gateways.Cams do
     |> Keyword.put(:authcode, String.to_integer(response_body["authcode"]))  
   end
 end
+# payment = %CreditCard{
+#   number: "4111111111111111",
+#   month: 11,
+#   year: 2018,
+#   first_name: "Longbob",
+#   last_name: "Longsen",
+#   verification_code: "123",
+#   brand: "visa"
+# }
+# credit_card = %CreditCard{
+#   number: "4242424242424242",
+#   month: 11,
+#   year: 2018,
+#   first_name: "Longbob",
+#   last_name: "Longsen",
+#   verification_code: "123",
+#   brand: "visa"
+# }
+# address = %{
+#   name:     "Jim Smith",
+#   address1: "456 My Street",
+#   address2: "Apt 1",
+#   company:  "Widgets Inc",
+#   city:     "Ottawa",
+#   state:    "ON",
+#   zip:      "K1C2N6",
+#   country:  "CA",
+#   phone:    "(555)555-5555",
+#   fax:      "(555)555-6666"
+# }
+# options = [
+#   config: %{
+#             username: "testintegrationc",
+#             password: "password9"
+#           },
+#   order_id: 1,
+#   billing_address: address,
+#   description: "Store Purchase",
+# ] 
