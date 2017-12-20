@@ -1,4 +1,28 @@
 defmodule Gringotts.Gateways.AuthorizeNet do
+
+  @moduledoc """
+  A module for working with the Authorize.net payment gateway. 
+  
+  The module provides a set of functions to perform transactions via this gateway for a merchant. 
+  To use this module you need to create an account with the Authorize.net gateway which will provide you with a
+  `name` and a `transactionKey`. You will need to configure these keys to use the module
+  functions.
+
+  [AuthorizeNet API reference](https://developer.authorize.net/api/reference/index.html)
+
+  The following set of functions have been provided for a transaction:
+
+  | `Action`  |  `Description`
+  | Authorize | To authorize the bank to charge the account and use it for payment.
+  | Capture   | To capture the given amount from an account for which, the 
+  |           |  transaction has already been authorized.
+  | Purchase  | To charge the account of a customer and transfer the funds to merchants
+  |           |  account.
+  | Refund    | To refund a settled transaction from the merchant to the customer account.
+  | void      | To void a transaction before the transaction is settled at merchant's side.
+  | store     | To store customer payment profile data.
+  | unstore   | To remove the customer payment profile data.
+  """
   import XmlBuilder
   import XmlToMap
 
@@ -19,8 +43,13 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   @response_type %{
     auth_response: "authenticateTestResponse",
-    transaction_response: "createTransactionResponse"
+    transaction_response: "createTransactionResponse",
+    error_response: "ErrorResponse",
+    customer_profile_response: "createCustomerProfileResponse",
+    customer_payment_profile_response: "createCustomerPaymentProfileResponse",
+    delete_customer_profile: "deleteCustomerProfileResponse"
   }
+
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
   alias Gringotts.{
@@ -33,68 +62,203 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   #----------------making requests to gateway
 
   @doc """
-    function to authorize the merchant using merchant name
-    and transactionKey
+  Charge a credit card.
+
+  Function to charge a user credit card for the specified amount. It performs authorize
+  and capture at the same time.
+  ## Required fields :
+      opts = [config: %{name:"", transactionKey: ""}]` taken from the configuration in your 
+    application
+  ## Optional Fields
+      opts = [order: %{invoiceNumber: ,description: },
+        refId: ,
+        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
+        tax: %{amount: , name: ,description: },
+        duty: %{amount: , name: ,description: },
+        shipping: %{amount: , name: ,description: },
+        poNumber: ,
+        customer: %{id: },
+        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
+        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
+        customerIP: ]
+
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
+        refId: "123456", 
+        order: %{invoiceNumber: "INV-12345", description: "Product Description"}, 
+        lineItem: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unitPrice: "45.00" }
+      ]
+      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
+      amount = 5
   """
-  def authenticate(opts) do
-    case Keyword.fetch(opts, :config) do
-      {:ok, config} ->
-        data = add_auth_request(config)
-        response_data = commit(:post, data)
-        respond(@response_type[:auth_response], response_data)
-      {:error, _} -> {:error, "config not found"}
-    end
-  end
-  
-  @doc """
-    Function to charge a user credit card for the specified amount,
-    according to the payment method provided(e.g. credit card, apple pay etc.)
-  """
+  @spec purchase(Float, CreditCard, Keyword) :: Tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
-    Use this method to authorize a card payment. To actually charge funds, a follow up with 
-    capture method needs to be done.
+  Authorize a credit card transaction.
+
+  Function to authorize a transaction for the specified amount. It needs to be 
+  followed up with a capture transaction to transfer the funds to merchant account.
+  ## Required fields :
+      opts = [config: %{name:"", transactionKey: ""}] taken from the configuration in your 
+    application
+  ## Optional Fields
+      opts = [order: %{invoiceNumber: ,description: },
+        refId: ,
+        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
+        tax: %{amount: , name: ,description: },
+        duty: %{amount: , name: ,description: },
+        shipping: %{amount: , name: ,description: },
+        poNumber: ,
+        customer: %{id: },
+        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
+        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
+        customerIP: ]
+
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
+        refId: "123456", 
+        order: %{invoiceNumber: "INV-12345", description: "Product Description"}, 
+        lineItem: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unitPrice: "45.00" }
+      ]
+      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
+      amount = 5
   """
+  @spec authorize(Float, CreditCard, Keyword) :: Tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
-    Use this method to capture funds for transactions which have been authorized,
-    requires transId of the authorize function response to be passed as id along with
-    the amount to be captured.
+  Capture a transaction.
+  
+  Function to capture an `amount` for an authorized transaction.
+  ## Required fields :
+      opts = [config: %{name:" ", transactionKey: " "}, ] taken from the configuration in your
+    application
+  ## Optional Fields
+      opts = [order: %{invoiceNumber: ,description: },
+        refId: ]
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
+        refId: "123456",
+        order: %{invoiceNumber: "INV-12345", description: "Product Description"}
+      ]
+      id = "transId of the authorize response"
+      amount = 5
   """
-  def capture(amount, id, opts) do
-    request_data = normal_capture(amount, id,  opts, @transaction_type[:capture])
+  @spec capture(String.t, Float, Keyword) :: Tuple
+  def capture(id, amount, opts) do
+    request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
-    Use this method to refund a customer for a transaction that was already settled
+  Refund `amount` for a settled transaction referenced by `id`.
+
+  Use this method to refund a customer for a transaction that was already settled, requires
+  transId of the transaction.
+  ## Required fields
+      opts = [config: %{name:" ", transactionKey: " "}, payment: %{card: %{number: ,year: , month:}}]
+  ## Optional fields
+      opts = [refId: ]
+
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"},
+        payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
+        refId: "123456",
+      ]
+      id = "trans id of the transaction to be refunded"
+      amount = 5
   """
+  @spec refund(Float, String.t, Keyword) :: Tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
   end
 
   @doc """
-    Use this method to cancel either an original transaction that is not settled or 
-    an entire order composed of more than one transaction. It can be submitted against
-    any other transaction type. Requires the transId of a request passed as id.
+  To void a transaction
+
+  Use this method to cancel either an original transaction that is not settled or 
+  an entire order composed of more than one transaction. It can be submitted against
+  any other transaction type. Requires the `transId` of a transaction passed as `id`.
+  ## Required Fields
+      opts = [config: %{name:" ", transactionKey: " "}]
+  ## Optional fields
+      opts = [refId: ]
+
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"},
+        refId: "123456",
+      ]
+      id = "trans id of the transaction to be void"
   """
+  @spec void(String.t, Keyword) :: Tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data)
-    respond(@response_type[:transaction_response], response_data)
+    respond(response_data)
+  end
+
+  @doc """
+  Store a customer payment profile.
+
+  Use this function to store the customer card information by creating a customer profile,
+  and in case the customer_profile_exists with gateway then by creating customer payment profile.
+
+  ## Required Fields
+      opts = [config: %{name:" ", transactionKey: " "},
+        profile: %{merchantCustomerId: ,description: ,email: }
+      ]
+  ## Optional Fields
+      opts = [
+        validationMode: , # testMode, liveMode
+        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
+        customerType: ,
+        customerProfileId: 
+        ]
+  ## Example
+      opts = [config: %{name: "your_name", transactionKey: "your_key"},
+        profile: %{merchantCustomerId: 123456 ,description: "test store",email: "test@gmail.com"},
+        validationMode: 'testMode'
+      ]
+      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+  """
+  @spec store(CreditCard, Keyword) :: Tuple
+  def store(card, opts) do
+    request_data = cond  do
+      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate 
+      true -> create_customer_profile(card, opts) |> generate
+    end
+    response_data = commit(:post, request_data)
+    respond(response_data)
+  end
+
+  @doc """
+  Remove a customer profile from the payment gateway.
+
+  Use this function to unstore the customer card information by deleting the customer profile
+  present. Requires the customer profile id.
+
+  ## Required Fields
+      opts = [config: %{name:" ", transactionKey: " "},
+      customerProfileId:
+      ]
+  """
+  @spec unstore(String.t, Keyword) :: Tuple
+  def unstore(customer_profile_id, opts) do
+    request_data = delete_customer_profile(customer_profile_id, opts)
+    response_data = commit(:post, request_data)
+    respond(response_data)
   end
 
   # method to make the api request with params
@@ -105,24 +269,37 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   # Function to return a response 
-  defp respond(response_type, {:ok, %{body: body, status_code: 200}}) do
+  defp respond({:ok, %{body: body, status_code: 200}}) do
     raw_response  = naive_map(body)
-    case response_type do
-      "authenticateTestResponse" ->
-        response_check(raw_response["authenticateTestResponse"], raw_response)
-      "createTransactionResponse" -> 
-        response_check(raw_response["createTransactionResponse"], raw_response)
+    cond do
+      raw_response[@response_type[:auth_response]] ->
+        response_check(raw_response[@response_type[:auth_response]], raw_response)
+      raw_response[@response_type[:transaction_response]] ->
+        response_check(raw_response[@response_type[:transaction_response]], raw_response)
+      raw_response[@response_type[:error_response]] ->
+        response_check(raw_response[@response_type[:error_response]], raw_response)
+      raw_response[@response_type[:customer_profile_response]] ->
+        response_check(@response_type[:customer_profile_response], raw_response)
+      raw_response[@response_type[:customer_payment_profile_response]] ->
+        response_check(@response_type[:customer_payment_profile_response], raw_response)
+      raw_response[@response_type[:delete_customer_profile]] ->
+        response_check(raw_response[@response_type[:delete_customer_profile]], raw_response)  
     end
   end
 
-  # Functions to send successful and error responses depending on message received 
+  defp respond({:error, %{body: body, status_code: code}}) do
+    {:error, Response.error(raw: body, code: code)}
+  end
+ 
+  # Functions to send successful and error responses depending on message received
   # from gateway.
+
   defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
     {:ok, Response.success(raw: raw_response)}
   end
 
   defp response_check( %{"messages" => %{"resultCode" => "Error"}}, raw_response) do
-    {:ok, Response.error(raw: raw_response)}
+    {:error, Response.error(raw: raw_response)}
   end
 
   #------------------- Helper functions for the interface functions------------------- 
@@ -178,6 +355,40 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     |> generate
   end
 
+  defp create_customer_payment_profile(card, opts) do
+    element(:createCustomerPaymentProfileRequest, %{xmlns: @aut_net_namespace},[
+      add_merchant_auth(opts[:config]),
+      element(:customerProfileId, opts[:customerProfileId]),
+      element(:paymentProfile, [
+        add_billing_info(opts),
+        add_payment_source(card)
+      ]),
+      element(:validationMode, opts[:validation_mode])
+    ])
+  end
+
+  defp create_customer_profile(card, opts) do
+    element(:createCustomerProfileRequest, %{xmlns: @aut_net_namespace}, [
+      add_merchant_auth(opts[:config]),
+      element(:profile, [
+        element(:merchantCustomerId, opts[:profile][:merchantCustomerId]),
+        element(:description, opts[:profile][:description]),
+        element(:email, opts[:profile][:description]),
+        element(:paymentProfiles, [
+          element(:customerType, opts[:customerType]),
+          add_payment_source(card)
+        ])
+      ])
+    ])
+  end
+
+  defp delete_customer_profile(id, opts) do
+    element(:deleteCustomerProfileRequest, %{xmlns: @aut_net_namespace},[
+      add_merchant_auth(opts[:config]),
+      element(:customerProfileId, id)
+    ])
+  end
+
   #--------------- XMl Builder functions for helper functions to assist 
   #---------------in attaching different tags for request
 
@@ -221,7 +432,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       element(:payment, [
         element(:creditCard, [
           element(:cardNumber, opts[:payment][:card][:number]),
-          element(:expirationDate, opts[:payment][:card][:expiration])
+          element(:expirationDate, join_string([opts[:payment][:card][:year], opts[:payment][:card][:month]], "-"))
         ])
       ]),
       add_ref_trans_id(id)
@@ -351,7 +562,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     element(:customerIP, opts[:customerIP])
   end
 
-  def join_string(list, symbol) do
+  defp join_string(list, symbol) do
     Enum.join(list, symbol)
   end
 end
