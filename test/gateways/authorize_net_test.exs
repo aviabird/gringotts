@@ -1,9 +1,9 @@
-defmodule Kuber.Hex.Gateways.AuthorizeNetTest do
+defmodule Gringotts.Gateways.AuthorizeNetTest do
   use ExUnit.Case, async: false
-  alias Kuber.Hex.Gateways.AuthorizeNet, as: Gateway
-  alias Kuber.Hex.Gateways.AuthorizeNetMock, as: MockServer
-  alias Kuber.Hex.CreditCard
-  alias Kuber.Hex.Gateways.AuthorizeNet, as: ANet
+  alias Gringotts.Gateways.AuthorizeNet, as: Gateway
+  alias Gringotts.Gateways.AuthorizeNetMock, as: MockServer
+  alias Gringotts.CreditCard
+  alias Gringotts.Gateways.AuthorizeNet, as: ANet
 
   @card %CreditCard {
     number: "5424000000000015",

@@ -1,4 +1,4 @@
-  defmodule Kuber.Hex.Gateways.AtuhtorizeNetMock do
+  defmodule Gringotts.Gateways.AtuhtorizeNetMock do
 
     def successful_response do
       
