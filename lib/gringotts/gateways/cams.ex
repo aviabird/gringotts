@@ -38,7 +38,7 @@ defmodule Gringotts.Gateways.Cams do
     Here `money` is required field which contains amount to be deducted. 
     Required fields in credit card are `Credit Card Number` & `Expiration Date`.
     Whereas `options` contains other information like billing address,order information etc. 
-    After successful transaction it returns response containing **authcode** & **transactionid**.
+    After successful transaction it returns response containing **transactionid**.
 
   ## Examples
       payment = %{
@@ -58,7 +58,10 @@ defmodule Gringotts.Gateways.Cams do
           |> add_invoice(money, options)
           |> add_payment(payment)
           |> add_address(payment, options)
-    commit("sale", post, options)
+          
+    response = commit("sale", post, options)
+    {:ok, response} = response
+    extract_auth([], response)  
   end
 
   @doc """
@@ -66,8 +69,8 @@ defmodule Gringotts.Gateways.Cams do
 
     `authorize/3` method only authorize the transaction,it does not transfer the funds.
     After authorized a transaction, we need to call `capture/3` method to complete the transaction.
-    After successful authorization it returns response containing **authcode** and **transactionid**.
-    We required **authcode**,**transactionid** and **money** for capturing transaction later on.
+    After successful authorization it returns response containing **transactionid**.
+    We required **transactionid** and **money** for capturing transaction later on.
     It perform operation by taking `money`, `payment` (credit card details) & `options` as parameters.
     Here `money` is required field which contains amount to be deducted. 
     Required fields in credit card are `Credit Card Number` & `Expiration Date`.
@@ -91,7 +94,10 @@ defmodule Gringotts.Gateways.Cams do
       |> add_invoice(money, options)
       |> add_payment(payment)
       |> add_address(payment, options)
-    commit("auth", post, options)
+
+     response = commit("auth", post, options)
+     {:ok, response} = response
+     extract_auth([], response)    
   end
  
   @doc """
@@ -99,13 +105,13 @@ defmodule Gringotts.Gateways.Cams do
 
     It takes `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
-    From response it takes `authcode` and `transactionid` for further processing. 
-    Both *money* and *authorization* are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
+    From response it takes `transactionid` for further processing. 
+    Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
   
   
   ## Examples
 
-      authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
+      authorization = "3904093075"
       options = [currency: "USD"]
       money   = 100
       
@@ -113,9 +119,8 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
-    post = []
-           |> extract_auth(authorization)
-           |> add_invoice(money,options)
+    post = [transactionid: authorization] 
+    add_invoice(post, money,options)
     commit("capture", post, options)
   end
  
@@ -127,12 +132,12 @@ defmodule Gringotts.Gateways.Cams do
     Only purchased(sale) transactions can be refund based on thier `transactionid`.
     It takes `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be refund and `authorization` is a response returned by `purchase/3` method.
-    From response it takes `authcode` and `transactionid` for further processing. 
-    Both *money* and *authorization* are required fields, whereas `options` are as same as `authorize/3`, `purchase/3` and `capture/3` methods.
+    From response it takes `transactionid` for further processing. 
+    Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3`, `purchase/3` and `capture/3` methods.
 
   ## Examples
 
-      authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
+      authorization = "3904093078"
       options = [currency: "USD"]
       money   = 100
       
@@ -140,9 +145,8 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
-    post = []
-           |> extract_auth(authorization)
-           |> add_invoice(money, options)
+    post = [transactionid: authorization] 
+    add_invoice(post, money,options)
     commit("refund", post, options)
   end
 
@@ -151,17 +155,17 @@ defmodule Gringotts.Gateways.Cams do
     
     It is use to cancel the purchase(sale) transaction before settlement.
     Authorised transaction can be canceled, but once it captured, it can not be canceled.
-    It requires *transactionid* to cancle transaction.Amount is returned to the authorized payment source.
+    It requires `transactionid` to cancle transaction.Amount is returned to the authorized payment source.
   ## Examples
 
-      authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
+      authorization = "3904093075"
       options = []
       
       iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Cams, authorization, options)
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do  
-    post = extract_auth([], authorization)
+    post = [transactionid: authorization] 
     commit("void", post, options)
   end
 
@@ -228,9 +232,8 @@ defmodule Gringotts.Gateways.Cams do
       { :error, "Some error has been occurred" }
   end
 
-  defp extract_auth(post,authorization) do
-    response_body = URI.decode_query(authorization)
-    Keyword.put([],:transactionid,String.to_integer(response_body["transactionid"]))
-    |> Keyword.put(:authcode, String.to_integer(response_body["authcode"]))  
+  defp extract_auth(post, response) do
+    response_body = URI.decode_query(response)
+    response_body["transactionid"]
   end
 end
