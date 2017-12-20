@@ -34,7 +34,6 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for performing purchase(sale) operation. 
 
-
     It perform operation by taking `money`, `payment`(credit card details) & `options` as parameters.
     Here `money` is required field which contains amount to be deducted. 
     Required fields in credit card are `Credit Card Number` & `Expiration Date`.
@@ -48,7 +47,7 @@ defmodule Gringotts.Gateways.Cams do
         verification_code: "123", brand: "visa"
       }
 
-      options = [currancy: "USD"]
+      options = [currency: "USD"]
       money   = 100
       
       iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
@@ -64,7 +63,6 @@ defmodule Gringotts.Gateways.Cams do
 
   @doc """
     Use this method for authorizing the credit card for particular transaction. 
-
 
     `authorize/3` method only authorize the transaction,it does not transfer the funds.
     After authorized a transaction, we need to call `capture/3` method to complete the transaction.
@@ -82,7 +80,7 @@ defmodule Gringotts.Gateways.Cams do
         verification_code: "123", brand: "visa"
       }
 
-      options = [currancy: "USD"]
+      options = [currency: "USD"]
       money   = 100
       
       iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
@@ -99,7 +97,6 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for capture the amount of the authorized transaction which is previously authorized by `authorize/3` method.
 
-
     It takes `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
     From response it takes `authcode` and `transactionid` for further processing. 
@@ -109,7 +106,7 @@ defmodule Gringotts.Gateways.Cams do
   ## Examples
 
       authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
-      options = [currancy: "USD"]
+      options = [currency: "USD"]
       money   = 100
       
       iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Cams, money, authorization, options)
@@ -125,7 +122,6 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for refund the amount for particular transaction. 
 
-    
     Successful transaction can be refunded after settlement or any time.
     It requires *transactionid* for refund the specified amount back to authorized payment source. 
     Only purchased(sale) transactions can be refund based on thier `transactionid`.
@@ -137,7 +133,7 @@ defmodule Gringotts.Gateways.Cams do
   ## Examples
 
       authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
-      options = [currancy: "USD"]
+      options = [currency: "USD"]
       money   = 100
       
       iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Cams, money, authorization, options)
@@ -153,10 +149,9 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for cancel the transaction.
     
-    
     It is use to cancel the purchase(sale) transaction before settlement.
     Authorised transaction can be canceled, but once it captured, it can not be canceled.
-    It requires *transactionid* to cancle transaction.Amount returned to the authorized payment source.
+    It requires *transactionid* to cancle transaction.Amount is returned to the authorized payment source.
   ## Examples
 
       authorization = "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3904093075&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100"
