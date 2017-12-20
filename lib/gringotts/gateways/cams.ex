@@ -18,11 +18,7 @@ defmodule Gringotts.Gateways.Cams do
     * **Void**      In  `void/2`
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
-  @supported_countries  ["US"]
   @default_currency  "USD"
-  @supported_cardtypes  [:visa, :master, :american_express, :discover]
-  @homepage_url  "https://www.centralams.com/"
-  @display_name  "CAMS: Central Account Management System"
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   
   use Gringotts.Gateways.Base
