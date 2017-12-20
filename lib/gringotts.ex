@@ -255,11 +255,9 @@ defmodule Gringotts do
   This should be done once the payment capture is done and you don't wish to make any
   further deductions for the same card.
 
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       customer_id = "random_customer"
 
       Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, customer_id)
-
   """
   def unstore(worker, gateway, customer_id, opts \\ []) do 
     validate_config(gateway)
