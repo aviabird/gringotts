@@ -1,0 +1,15 @@
+machine:
+  environment:
+    MIX_ENV: "test"
+general:
+  artifacts:
+    - "screenshots"
+dependencies:
+  pre:
+    - yes | mix deps.get
+    - yes | mix local.rebar
+    - set -ex
+test:
+  override:
+    - mix test
+    - mix coveralls.circle

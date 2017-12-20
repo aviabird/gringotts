@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Gateways.Cams do
+defmodule Gringotts.Gateways.Cams do
     @live_url  "https://secure.centralams.com/gw/api/transact.php"
     @supported_countries  ["US"]
     @default_currency  "USD"
@@ -8,9 +8,9 @@ defmodule Kuber.Hex.Gateways.Cams do
     @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   
 
-    use Kuber.Hex.Gateways.Base
-    use Kuber.Hex.Adapter, required_config: [:username, :password, :default_currency]
-    alias Kuber.Hex.{
+    use Gringotts.Gateways.Base
+    use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
+    alias Gringotts.{
       CreditCard,
       Address,
       Response

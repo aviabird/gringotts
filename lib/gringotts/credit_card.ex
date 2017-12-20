@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.CreditCard do
+defmodule Gringotts.CreditCard do
   @moduledoc ~S"""
   CreditCard module defines the struct for the credit cards. 
 

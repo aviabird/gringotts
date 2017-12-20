@@ -1,9 +1,9 @@
-defmodule Kuber.Hex.Gateways.AuthorizeNet do
+defmodule Gringotts.Gateways.AuthorizeNet do
   import XmlBuilder
   import XmlToMap
 
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:name, :transactionKey, :default_currency]
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:name, :transactionKey, :default_currency]
 
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
@@ -23,7 +23,7 @@ defmodule Kuber.Hex.Gateways.AuthorizeNet do
   }
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
     Address,
     Response

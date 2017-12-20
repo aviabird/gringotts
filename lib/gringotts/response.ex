@@ -1,4 +1,4 @@
-defmodule Kuber.Hex.Response do
+defmodule Gringotts.Response do
   @moduledoc ~S"""
   Module which defines the struct for response struct.
 

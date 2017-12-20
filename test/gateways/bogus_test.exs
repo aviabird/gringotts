@@ -1,8 +1,8 @@
-defmodule Kuber.Hex.Gateways.BogusTest do
+defmodule Gringotts.Gateways.BogusTest do
   use ExUnit.Case
 
-  alias Kuber.Hex.Response
-  alias Kuber.Hex.Gateways.Bogus, as: Gateway
+  alias Gringotts.Response
+  alias Gringotts.Gateways.Bogus, as: Gateway
 
   test "authorize" do
     {:ok, %Response{authorization: authorization, success: success}} =
@@ -38,22 +38,16 @@ defmodule Kuber.Hex.Gateways.BogusTest do
 
   test "store" do
     {:ok, %Response{success: success}} =
-        Gateway.store(%Kuber.Hex.CreditCard{}, [])
+        Gateway.store(%Gringotts.CreditCard{}, [])
 
     assert success
   end
 
   test "unstore with customer" do
     {:ok, %Response{success: success}} =
-        Gateway.unstore(1234, nil, [])
+        Gateway.unstore(1234, [])
 
     assert success
   end
-
-  test "unstore with card" do
-    {:ok, %Response{success: success}} =
-        Gateway.unstore(nil, 456, [])
-
-    assert success
-  end
+  
 end

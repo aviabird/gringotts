@@ -1,11 +1,12 @@
-defmodule Kuber.Hex.Gateways.StripeTest do
+defmodule Gringotts.Gateways.StripeTest do
 
   use ExUnit.Case
 
-  alias Kuber.Hex.Gateways.Stripe
+  alias Gringotts.Gateways.Stripe
 
   @required_payment_attrs %{
-    expiration: {2018, 12},
+    month: 12,
+    year: 2018,
     number: "4242424242424242",
     cvc:  "123"
   }

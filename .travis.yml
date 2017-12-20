@@ -1,0 +1,12 @@
+language: elixir
+elixir:
+  - 1.5.2
+otp_release:
+  - 20.1
+before_install:
+  - mix local.hex --force
+  - mix local.rebar --force
+  - mix deps.get
+script:
+  # - mix test
+  - mix coveralls.travis --trace
