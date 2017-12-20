@@ -5,7 +5,8 @@ defmodule Gringotts.Gateways.StripeTest do
   alias Gringotts.Gateways.Stripe
 
   @required_payment_attrs %{
-    expiration: {2018, 12},
+    month: 12,
+    year: 2018,
     number: "4242424242424242",
     cvc:  "123"
   }
