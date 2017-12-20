@@ -255,15 +255,13 @@ defmodule Gringotts do
   This should be done once the payment capture is done and you don't wish to make any
   further deductions for the same card.
 
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       customer_id = "random_customer"
 
-      Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, customer_id, id)
-
+      Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, customer_id)
   """
-  def unstore(worker, gateway, customer_id, card_id, opts \\ []) do 
+  def unstore(worker, gateway, customer_id, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:unstore, gateway, customer_id, card_id, opts})
+    call(worker, {:unstore, gateway, customer_id, opts})
   end
 
   # TODO: This is runtime error reporting fix this so that it does compile

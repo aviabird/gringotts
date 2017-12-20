@@ -31,17 +31,16 @@ defmodule Gringotts.Gateways.Stripe do
   opts must include the default currency.
 
   ## Examples
+      payment = %{
+        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+        postal_code: "11111"
+      }
 
-    payment = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
-  
-    opts = [currency: "usd"]
-    amount = 5
+      opts = [currency: "usd"]
+      amount = 5
 
-    Gringotts.Gateways.Stripe.authorize(amount, payment, opts)
+      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
   """
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -56,17 +55,16 @@ defmodule Gringotts.Gateways.Stripe do
   opts must include the default currency.
 
   ## Examples
+      payemnt = %{
+        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+        postal_code: "11111"
+      }
 
-    payemnt = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
-  
-    opts = [currency: "usd"]
-    amount = 5
+      opts = [currency: "usd"]
+      amount = 5
 
-    Gringotts.Gateways.Stripe.purchase(amount, payment, opts)
+      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
   """
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
@@ -85,13 +83,12 @@ defmodule Gringotts.Gateways.Stripe do
   remaining amount will be refunded back to the authorized 
   paymet source.
 
-  ## Examples  
-    
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    amount = 5
-    opts = []
+  ## Examples
+      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      amount = 5
+      opts = []
 
-    Gringotts.Gateways.Stripe.capture(id, amount, opts)
+      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Stripe, id, amount, opts)
   """
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
@@ -104,12 +101,11 @@ defmodule Gringotts.Gateways.Stripe do
 
   Returns the captured amount to the authorized payment source.
 
-  ## Examples  
-    
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    opts = []
+  ## Examples
+      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      opts = []
 
-    Gringotts.Gateways.Stripe.void(id, opts)
+      iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
   """
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
@@ -125,13 +121,12 @@ defmodule Gringotts.Gateways.Stripe do
   If the refunded amount is less than the captured amount, then
   remaining amount can be refunded again.
 
-  ## Examples  
-    
-    amount = 5
-    id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-    opts = []
+  ## Examples
+      amount = 5
+      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      opts = []
 
-    Gringotts.Gateways.Stripe.refund(amount, id, opts)
+      iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Stripe, amount, id, opts)
   """
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
@@ -145,17 +140,16 @@ defmodule Gringotts.Gateways.Stripe do
   Store the payment source, so that it can be used
   for capturing the amount at later stages.
 
-  ## Examples  
-    
-    payment = %{
-      expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-      street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-      postal_code: "11111"
-    }
+  ## Examples
+      payment = %{
+        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+        postal_code: "11111"
+      }
 
-    opts = []
+      opts = []
 
-    Gringotts.Gateways.Stripe.store(payment, opts)
+      iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Stripe, payment, opts)
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
@@ -170,11 +164,10 @@ defmodule Gringotts.Gateways.Stripe do
   so that it cannot be used again for capturing
   payments.
 
-  ## Examples  
-    
-    id = "cus_BwpLX2x4ecEUgD"
+  ## Examples
+      id = "cus_BwpLX2x4ecEUgD"
 
-    Gringotts.Gateways.Stripe.unstore(id)
+      iex> Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
   """
   @spec unstore(String.t) :: Map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
@@ -218,15 +211,10 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   defp card_params(%{} = card) do
-    {exp_year, exp_month} = case Map.has_key?(card, :expiration) do
-      true ->  card[:expiration]
-      false -> {nil, nil}
-    end
-
     [ "card[name]": card[:name],
       "card[number]": card[:number],
-      "card[exp_year]": exp_year,
-      "card[exp_month]": exp_month,
+      "card[exp_year]": card[:year],
+      "card[exp_month]": card[:month],
       "card[cvc]": card[:cvc]
     ]   
   end

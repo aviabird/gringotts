@@ -12,7 +12,7 @@ defmodule Gringotts.Gateways.Bogus do
   def purchase(_amount, _card_or_id, _opts),
     do: success()
 
-  def capture(id, _opts),
+  def capture(id, amount, _opts),
     do: success(id)
 
   def void(id, _opts),
@@ -24,11 +24,8 @@ defmodule Gringotts.Gateways.Bogus do
   def store(_card=%CreditCard{}, _opts),
     do: success()
 
-  def unstore(customer_id, nil, _opts),
+  def unstore(customer_id, _opts),
     do: success(customer_id)
-
-  def unstore(_customer_id, card_id, _opts),
-    do: success(card_id)
 
   defp success,
     do: {:ok, Response.success(authorization: random_string())}
