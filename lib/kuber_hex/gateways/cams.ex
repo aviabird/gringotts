@@ -124,7 +124,8 @@ defmodule Kuber.Hex.Gateways.Cams do
 
 
     It take `money`, `authorization` and `options` as parameters.
-    Here `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
+    Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
+    From response it takes `authcode` and `transactionid` for further processing. 
     Both *money* and *authorization* are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
   """
   @spec capture(number, String.t, Keyword) :: Response
@@ -136,8 +137,16 @@ defmodule Kuber.Hex.Gateways.Cams do
   end
  
   @doc """
-  Successful trasaction can be refunded after settlement or any time.
-  It require *transactionid* for refund the specified amount back to creditcard holder. 
+    Use this method for refund the amount for particular transaction. 
+
+    
+    Successful transaction can be refunded after settlement or any time.
+    It requires *transactionid* for refund the specified amount back to credit card holder. 
+    Only purchased(sale) transactions can be refund based on thier `transactionid`.
+    It take `money`, `authorization` and `options` as parameters.
+    Where `money` is a amount to be refund and `authorization` is a response returned by `purchase/3` method.
+    From response it takes `authcode` and `transactionid` for further processing. 
+    Both *money* and *authorization* are required fields, whereas `options` are as same as `authorize/3`, `purchase/3` and `capture/3` methods.
   """
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do

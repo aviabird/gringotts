@@ -148,8 +148,7 @@
     <a href="#refund/3">refund(money, authorization, options)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Successful trasaction can be refunded after settlement or any time.
-It require <em>transactionid</em> for refund the specified amount back to creditcard holder</p>
+    <div class="summary-synopsis"><p>Use this method for refund the amount for particular transaction</p>
 </div>
   
 </div>
@@ -285,7 +284,8 @@ It require <em>transactionid</em> for cancel the transaction</p>
   <section class="docstring">
     <p>  Use this method for capture the amount of the authorised transaction which is previously authorised by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method.</p>
 <p>  It take <code class="inline">money</code>, <code class="inline">authorization</code> and <code class="inline">options</code> as parameters.
-  Here <code class="inline">money</code> is a amount to be captured and <code class="inline">authorization</code> is a response returned by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method.
+  Where <code class="inline">money</code> is a amount to be captured and <code class="inline">authorization</code> is a response returned by <a href="#authorize/3"><code class="inline">authorize/3</code></a> method.
+  From response it takes <code class="inline">authcode</code> and <code class="inline">transactionid</code> for further processing. 
   Both <em>money</em> and <em>authorization</em> are required fields, whereas <code class="inline">options</code> are as same as <a href="#authorize/3"><code class="inline">authorize/3</code></a> and <a href="#purchase/3"><code class="inline">purchase/3</code></a> methods.</p>
 
   </section>
@@ -339,8 +339,14 @@ It require <em>transactionid</em> for cancel the transaction</p>
     
   </div>
   <section class="docstring">
-    <p>Successful trasaction can be refunded after settlement or any time.
-It require <em>transactionid</em> for refund the specified amount back to creditcard holder. </p>
+    <p>  Use this method for refund the amount for particular transaction. </p>
+<p>  Successful transaction can be refunded after settlement or any time.
+  It requires <em>transactionid</em> for refund the specified amount back to credit card holder. 
+  Only purchased(sale) transactions can be refund based on thier <code class="inline">transactionid</code>.
+  It take <code class="inline">money</code>, <code class="inline">authorization</code> and <code class="inline">options</code> as parameters.
+  Where <code class="inline">money</code> is a amount to be refund and <code class="inline">authorization</code> is a response returned by <a href="#purchase/3"><code class="inline">purchase/3</code></a> method.
+  From response it takes <code class="inline">authcode</code> and <code class="inline">transactionid</code> for further processing. 
+  Both <em>money</em> and <em>authorization</em> are required fields, whereas <code class="inline">options</code> are as same as <a href="#authorize/3"><code class="inline">authorize/3</code></a>, <a href="#purchase/3"><code class="inline">purchase/3</code></a> and <a href="#capture/3"><code class="inline">capture/3</code></a> methods.</p>
 
   </section>
 </div>
