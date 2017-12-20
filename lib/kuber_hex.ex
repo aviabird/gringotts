@@ -1,12 +1,12 @@
-defmodule Kuber.Hex do
+defmodule Gringotts do
   @moduledoc ~S"""
-  Kuber.Hex is a payment gateway integration library supporting many gateway integrations.
+  Gringotts is a payment gateway integration library supporting many gateway integrations.
   
-  Where the configuration for `Kuber.Hex` must be in your application
+  Where the configuration for `Gringotts` must be in your application
   environment, usually defined in your `config/config.exs`:
       
-      config :kuber_hex, Kuber.Hex.Gateways.Stripe,
-        adapter: Kuber.Hex.Gateways.Stripe,
+      config :Gringotts, Gringotts.Gateways.Stripe,
+        adapter: Gringotts.Gateways.Stripe,
         api_key: "sk_test_vIX41hC0sdfBKrPWQerLuOMld",
         default_currency: "USD"
 
@@ -28,10 +28,10 @@ defmodule Kuber.Hex do
     > This option is going to be removed in our next version.
 
   ### Gateway Name
-    eg: Kuber.Hex.Gateways.Stripe
+    eg: Gringotts.Gateways.Stripe
 
     This option specifies which payment gateway this request should be called for.
-    Since `Kuber.Hex` supports multiple payment gateway integrations at the same time
+    Since `Gringotts` supports multiple payment gateway integrations at the same time
     so this information get's critical.
 
   ### Amount
@@ -86,7 +86,7 @@ defmodule Kuber.Hex do
 
       @options [currency: "usd"]
 
-      Kuber.Hex.purchase(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, @payment, @options)
+      Gringotts.purchase(:payment_worker, Gringotts.Gateways.Stripe, 5, @payment, @options)
 
   This method is expected to authorize payment and transparently trigger eventual 
   settlement. Preferably it is implemented as a single call to the gateway, 
@@ -118,7 +118,7 @@ defmodule Kuber.Hex do
 
       @options [currency: "usd"]
 
-      Kuber.Hex.authorize(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, @payment, @options)
+      Gringotts.authorize(:payment_worker, Gringotts.Gateways.Stripe, 5, @payment, @options)
   """
   def authorize(worker, gateway, amount, card, opts \\ []) do
     validate_config(gateway)
@@ -152,7 +152,7 @@ defmodule Kuber.Hex do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Kuber.Hex.capture(:payment_worker, Kuber.Hex.Gateways.Stripe, id, 5)
+      Gringotts.capture(:payment_worker, Gringotts.Gateways.Stripe, id, 5)
   """
   def capture(worker, gateway, id, amount, opts \\ []) do 
     validate_config(gateway)
@@ -181,7 +181,7 @@ defmodule Kuber.Hex do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Kuber.Hex.void(:payment_worker, Kuber.Hex.Gateways.Stripe, id)
+      Gringotts.void(:payment_worker, Gringotts.Gateways.Stripe, id)
 
   """
   def void(worker, gateway, id, opts \\ []) do 
@@ -208,7 +208,7 @@ defmodule Kuber.Hex do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Kuber.Hex.refund(:payment_worker, Kuber.Hex.Gateways.Stripe, 5, id)
+      Gringotts.refund(:payment_worker, Gringotts.Gateways.Stripe, 5, id)
   """
   def refund(worker, gateway, amount, id, opts \\ []) do 
     validate_config(gateway)
@@ -217,10 +217,10 @@ defmodule Kuber.Hex do
 
   @doc """
   Tokenizes a supported payment method in the gateway's vault. If the gateway 
-  conflates tokenization with customer management, `Kuber.Hex` should hide all 
+  conflates tokenization with customer management, `Gringotts` should hide all 
   customer management and any customer identifier(s) within the token returned. 
   It's certainly legitimate to have a library that interacts with all the features 
-  in a gateway's vault, but `Kuber.Hex` is not the right place for it.
+  in a gateway's vault, but `Gringotts` is not the right place for it.
 
   It's critical that `store` returns a token that can be used against `purchase` 
   and `authorize`. Currently the standard is to return the token in the 
@@ -241,7 +241,7 @@ defmodule Kuber.Hex do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Kuber.Hex.store(:payment_worker, Kuber.Hex.Gateways.Stripe, @payment)
+      Gringotts.store(:payment_worker, Gringotts.Gateways.Stripe, @payment)
   """
   def store(worker, gateway, card, opts \\ []) do 
     validate_config(gateway)
@@ -258,7 +258,7 @@ defmodule Kuber.Hex do
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       customer_id = "random_customer"
 
-      Kuber.Hex.unstore(:payment_worker, Kuber.Hex.Gateways.Stripe, customer_id, id)
+      Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, customer_id, id)
 
   """
   def unstore(worker, gateway, customer_id, card_id, opts \\ []) do 
@@ -270,7 +270,7 @@ defmodule Kuber.Hex do
   # time error reporting.
   defp validate_config(gateway) do
     # Keep the key name and adapter the same in the config in application
-    config = Application.get_env(:kuber_hex, gateway)
+    config = Application.get_env(:Gringotts, gateway)
     gateway.validate_config(config)
   end
 end

@@ -1,7 +1,7 @@
-defmodule Kuber.Hex.Gateways.Bogus do
-  use Kuber.Hex.Gateways.Base
+defmodule Gringotts.Gateways.Bogus do
+  use Gringotts.Gateways.Base
 
-  alias Kuber.Hex.{
+  alias Gringotts.{
     CreditCard,
     Response
   }

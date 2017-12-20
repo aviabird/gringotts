@@ -1,18 +1,6 @@
-defmodule Kuber.Hex.Gateways.Cams do
-  @live_url  "https://secure.centralams.com/gw/api/transact.php"
-  @supported_countries  ["US"]
-  @default_currency  ["USD","AUD"]
-  @money_format "cents"
-  @supported_cardtypes  [:visa, :master, :american_express, :discover]
-  @homepage_url  "https://www.centralams.com/"
-  @display_name  "CAMS: Central Account Management System"
-  @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
-
-@moduledoc ~S"""
-  An API client for the [CAMS](https://www.centralams.com/) gateway.
-  For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).
-
-  Test it using test crediantials username:***testintegrationc***, password:***password9***
+defmodule Gringotts.Gateways.Cams do
+   @moduledoc ~S"""
+    Test it using test crediantials username:***testintegrationc***, password:***password9***
 
   The following features of CAMS are implemented:
 
@@ -28,54 +16,63 @@ defmodule Kuber.Hex.Gateways.Cams do
   
   * **Verify**    In  `verify/2` 
 """
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:username, :password, :default_currency]
-  alias Kuber.Hex.{
-    CreditCard,
-    Address,
-    Response
-  }
-  #   @doc """
-  #       payment = %CreditCard{
-  #       number: "4111111111111111",
-  #       month: 11,
-  #       year: 2018,
-  #       first_name: "Longbob",
-  #       last_name: "Longsen",
-  #       verification_code: "123",
-  #       brand: "visa"
-  #     }
-  #       credit_card = %CreditCard{
-  #       number: "4242424242424242",
-  #       month: 11,
-  #       year: 2018,
-  #       first_name: "Longbob",
-  #       last_name: "Longsen",
-  #       verification_code: "123",
-  #       brand: "visa"
-  #     }
-  #     address = %{
-  #       name:     "Jim Smith",
-  #       address1: "456 My Street",
-  #       address2: "Apt 1",
-  #       company:  "Widgets Inc",
-  #       city:     "Ottawa",
-  #       state:    "ON",
-  #       zip:      "K1C2N6",
-  #       country:  "CA",
-  #       phone:    "(555)555-5555",
-  #       fax:      "(555)555-6666"
-  #     }
-  #     options = [
-  #       config: %{
-  #                 username: "testintegrationc",
-  #                 password: "password9"
-  #               },
-  #       order_id: 1,
-  #       billing_address: address,
-  #       description: "Store Purchase",
-  #     ]
-  # """
+    @live_url  "https://secure.centralams.com/gw/api/transact.php"
+    @supported_countries  ["US"]
+    @default_currency  "USD"
+    @supported_cardtypes  [:visa, :master, :american_express, :discover]
+    @homepage_url  "https://www.centralams.com/"
+    @display_name  "CAMS: Central Account Management System"
+    @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
+  
+
+    use Gringotts.Gateways.Base
+    use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
+    alias Gringotts.{
+      CreditCard,
+      Address,
+      Response
+    }
+      @doc """
+          payment = %CreditCard{
+          number: "4111111111111111",
+          month: 11,
+          year: 2018,
+          first_name: "Longbob",
+          last_name: "Longsen",
+          verification_code: "123",
+          brand: "visa"
+        }
+        credit_card = %CreditCard{
+          number: "4242424242424242",
+          month: 11,
+          year: 2018,
+          first_name: "Longbob",
+          last_name: "Longsen",
+          verification_code: "123",
+          brand: "visa"
+        }
+        address = %{
+          name:     "Jim Smith",
+          address1: "456 My Street",
+          address2: "Apt 1",
+          company:  "Widgets Inc",
+          city:     "Ottawa",
+          state:    "ON",
+          zip:      "K1C2N6",
+          country:  "CA",
+          phone:    "(555)555-5555",
+          fax:      "(555)555-6666"
+        }
+        options = [
+          config: %{
+                    username: "testintegrationc",
+                    password: "password9"
+                  },
+          order_id: 1,
+          billing_address: address,
+          description: "Store Purchase",
+        ]
+    """
   import Poison, only: [decode!: 1]
    
   @doc """
