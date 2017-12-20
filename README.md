@@ -1,9 +1,15 @@
-Gringotts
-=================
+<p align="center">
+  <a href="" target='_blank'>
+    <img alt="Gringotts Logo" title="Gringotts Logo" src="https://res.cloudinary.com/ashish173/image/upload/v1513770454/gringotts_logo.png" width="200">
+  </a>
+</p>
 
-[![Build](https://travis-ci.org/aviabird/gringotts.svg?branch=master)](https://travis-ci.org/aviabird/gringotts) [![Coverage](https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master)](https://coveralls.io/github/aviabird/gringotts?branch=master) [![Inline docs](http://inch-ci.org/github/aviabird/gringotts.svg?branch=master)](http://inch-ci.org/github/aviabird/gringotts)
-
-Payment processing library for Elixir. Based on [Shopify's](http://shopify.com) [ActiveMerchant](http://github.com/Shopify/active_merchant) ruby gem.
+<p align="center">
+  Gringotts is a payment processing library in Elixir integrating various payment gateways, this draws motivation for shopify's <a href="https://github.com/activemerchant/active_merchant">activemerchant</a> gem.
+</p>
+<p align="center">
+ <a href="https://travis-ci.org/aviabird/gringotts"><img src="https://travis-ci.org/aviabird/gringotts.svg?branch=master"  alt='Build Status' /></a>  <a href='https://coveralls.io/github/aviabird/gringotts?branch=master'><img src='https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master' alt='Coverage Status' /></a> <a href="https://inch-ci.org/github/aviabird/gringotts"><img src="http://inch-ci.org/github/aviabird/gringotts.svg?branch=master" alt="Docs coverage"></img></a>
+</p>
 
 A simple and unified API to access dozens of different payment
 gateways with very different internal APIs is what Gringotts has to offer you.
