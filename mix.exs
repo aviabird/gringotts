@@ -5,7 +5,7 @@ defmodule Gringotts.Mixfile do
     [
       app: :gringotts,
       version: "0.0.2",
-      description: "Credit card processing library",
+      description: description(),
       package: [
         contributors: ["Aviabird Technologies"],
         licenses: ["MIT"],
@@ -55,7 +55,16 @@ defmodule Gringotts.Mixfile do
       {:elixir_xml_to_map, "~> 0.1"},
       {:excoveralls, "~> 0.7", only: :test},
       {:credo, "~> 0.3", only: [:dev, :test]},
-      {:inch_ex, only: :docs}
+      {:inch_ex, only: :docs},
+      {:dialyxir, "~> 0.3", only: [:dev]}
     ]
+  end
+
+  defp description do
+    """
+    Gringotts is a payment processing library in Elixir integrating 
+    various payment gateways, this draws motivation for shopify's 
+    activemerchant ruby gem.
+    """
   end
 end

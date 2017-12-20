@@ -4,19 +4,22 @@ defmodule Gringotts.Response do
 
   Response struct is a standard response from public API to the application.
 
-  TODO: Add the response struct detail about the attributes in the struct
-
     It mostly has such as:-
       * `success`: boolean indicating the status of the transaction
       * `authorization`: token which is used to issue requests without the card info
-      * `code`: status code for the response
-      * `reason`: reason for the error if it happens
-      * `avs_result`: TODO: add this
+      * `status_code`: response code
+      * `error_code`: error code if there is error else nil
+      * `message`: message related to the status of the response
+      * `avs_result`: result for address verfication
       * `cvc_result`: result for cvc verification 
-      * `raw`: TODO: add this
+      * `params`: original raw response from the gateway
+      * `fraud_review`: information related to fraudulent transactions
   """
   
-  defstruct [:success, :authorization, :code, :reason, :avs_result, :cvc_result, :raw]
+  defstruct [
+    :success, :authorization, :status_code, :error_code, :message, 
+    :avs_result, :cvc_result, :params, :fraud_review
+  ]
 
   def success(opts \\ []) do
     new(true, opts)
