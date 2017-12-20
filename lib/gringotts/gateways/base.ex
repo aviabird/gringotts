@@ -1,34 +1,40 @@
 defmodule Gringotts.Gateways.Base do
   alias Gringotts.Response
 
-  @doc false
   defmacro __using__(_) do
     quote location: :keep do
+      @doc false
       def purchase(_amount, _card_or_id, _opts)  do
         not_implemented()
       end
 
+      @doc false
       def authorize(_amount, _card_or_id, _opts)  do
         not_implemented()
       end
 
-      def capture(_id, _opts) do
+      @doc false
+      def capture(_id, _amount, _opts) do
         not_implemented()
       end
 
+      @doc false
       def void(_id, _opts) do
         not_implemented()
       end
 
+      @doc false
       def refund(_amount, _id, _opts) do
         not_implemented()
       end
 
+      @doc false
       def store(_card, _opts) do
         not_implemented()
       end
 
-      def unstore(_customer_id, _card_id, _opts) do
+      @doc false
+      def unstore(_customer_id, _opts) do
         not_implemented()
       end
 
@@ -58,7 +64,7 @@ defmodule Gringotts.Gateways.Base do
         {:error, Response.error(code: :not_implemented)}
       end
 
-      defoverridable [purchase: 3, authorize: 3, capture: 2, void: 2, refund: 3, store: 2, unstore: 3]
+      defoverridable [purchase: 3, authorize: 3, capture: 3, void: 2, refund: 3, store: 2, unstore: 2]
     end
   end
 end
