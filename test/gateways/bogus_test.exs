@@ -22,7 +22,7 @@ defmodule Gringotts.Gateways.BogusTest do
 
   test "capture" do
     {:ok, %Response{authorization: authorization, success: success}} =
-        Gateway.capture(1234, [])
+        Gateway.capture(1234, 5, [])
 
     assert success
     assert authorization != nil

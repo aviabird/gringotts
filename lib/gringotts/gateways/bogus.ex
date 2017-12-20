@@ -12,7 +12,7 @@ defmodule Gringotts.Gateways.Bogus do
   def purchase(_amount, _card_or_id, _opts),
     do: success()
 
-  def capture(id, _opts),
+  def capture(id, amount, _opts),
     do: success(id)
 
   def void(id, _opts),
