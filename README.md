@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  Gringotts is a payment processing library in Elixir integrating various payment gateways, this draws motivation for shopify's [activemerchant](https://github.com/activemerchant/active_merchant) gem.
+  Gringotts is a payment processing library in Elixir integrating various payment gateways, this draws motivation for shopify's <a href="https://github.com/activemerchant/active_merchant">activemerchant</a> gem.
 </p>
 <p align="center">
-  [![Build](https://travis-ci.org/aviabird/gringotts.svg?branch=master)](https://travis-ci.org/aviabird/gringotts) [![Coverage](https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master)](https://coveralls.io/github/aviabird/gringotts?branch=master)
+ <a href="https://travis-ci.org/aviabird/gringotts"><img src="https://travis-ci.org/aviabird/gringotts.svg?branch=master" alt='Build Status'></a>  <a href='https://coveralls.io/github/aviabird/gringotts?branch=master'><img src='https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master' alt='Coverage Status' /></a> <a href="https://inch-ci.org/github/aviabird/gringotts"><img src="http://inch-ci.org/github/aviabird/gringotts.svg?branch=master" alt="Docs coverage"></img></a>
 </p>
 
 A simple and unified API to access dozens of different payment
