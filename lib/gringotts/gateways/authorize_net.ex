@@ -94,7 +94,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec purchase(Float, CreditCard, Keyword) :: Tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -131,7 +131,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec authorize(Float, CreditCard, Keyword) :: Tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -156,7 +156,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec capture(String.t, Float, Keyword) :: Tuple
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -181,7 +181,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec refund(Float, String.t, Keyword) :: Tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -205,7 +205,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec void(String.t, Keyword) :: Tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -239,7 +239,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate 
       true -> create_customer_profile(card, opts) |> generate
     end
-    response_data = commit(:post, request_data)
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
@@ -256,14 +256,14 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   """
   @spec unstore(String.t, Keyword) :: Tuple
   def unstore(customer_profile_id, opts) do
-    request_data = delete_customer_profile(customer_profile_id, opts)
-    response_data = commit(:post, request_data)
+    request_data = delete_customer_profile(customer_profile_id, opts) |> generate
+    response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
   # method to make the api request with params
-  defp commit(method, payload) do
-    path = @test_url
+  defp commit(method, payload, opts) do
+    path = base_url(opts)
     headers = @header
     HTTPoison.request(method, path, payload, headers)
   end
@@ -279,9 +279,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       raw_response[@response_type[:error_response]] ->
         response_check(raw_response[@response_type[:error_response]], raw_response)
       raw_response[@response_type[:customer_profile_response]] ->
-        response_check(@response_type[:customer_profile_response], raw_response)
+        response_check(raw_response[@response_type[:customer_profile_response]], raw_response)
       raw_response[@response_type[:customer_payment_profile_response]] ->
-        response_check(@response_type[:customer_payment_profile_response], raw_response)
+        response_check(raw_response[@response_type[:customer_payment_profile_response]], raw_response)
       raw_response[@response_type[:delete_customer_profile]] ->
         response_check(raw_response[@response_type[:delete_customer_profile]], raw_response)  
     end
@@ -302,7 +302,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     {:error, Response.error(raw: raw_response)}
   end
 
-  #------------------- Helper functions for the interface functions------------------- 
+  #------------------- Helper functions for the interface functions-------------------
 
   # function for formatting the request as an xml for purchase and authorize method
   defp add_auth_purchase(amount, payment, opts, transaction_type) do
@@ -334,7 +334,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   
   #function to format the request for normal refund
   defp normal_refund(amount, id, opts, transaction_type) do
-    element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
+    element(:createTransactionRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
       add_refund_transaction_request(amount, id, opts, transaction_type),
@@ -344,7 +344,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   #function to format the request for normal void operation
   defp normal_void(id, opts, transaction_type) do
-    element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
+    element(:createTransactionRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
       element(:transactionRequest, [
@@ -375,7 +375,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         element(:description, opts[:profile][:description]),
         element(:email, opts[:profile][:description]),
         element(:paymentProfiles, [
-          element(:customerType, opts[:customerType]),
+          element(:customerType, (if opts[:customerType], do: opts[:customerType], else: "individual")),
           add_payment_source(card)
         ])
       ])
@@ -565,4 +565,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   defp join_string(list, symbol) do
     Enum.join(list, symbol)
   end
+  
+  defp base_url(opts) do
+    cond do
+      opts[:mode] == "test" -> @test_url
+      true -> @production_url
+    end  
+  end
+
 end
