@@ -6,7 +6,7 @@ defmodule GringottsTest do
 
   defmodule FakeGateway do
     use Gringotts.Adapter, required_config: [:some_auth_info]
-    
+
     def authorize(100, :card, _) do
       :authorization_response
     end
@@ -37,7 +37,7 @@ defmodule GringottsTest do
   end
 
   setup_all do
-    Application.put_env(:Gringotts, GringottsTest.FakeGateway, [
+    Application.put_env(:gringotts, GringottsTest.FakeGateway, [
           adapter: GringottsTest.FakeGateway,
           some_auth_info: :merchant_secret_key])
     :ok
