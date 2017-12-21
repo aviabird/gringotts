@@ -568,8 +568,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   
   defp base_url(opts) do
     cond do
-      opts[:mode] == "test" -> @test_url
-      true -> @production_url
+      opts[:config][:mode] == "prod" -> @production_url
+      opts[:config][:mode] == "test" -> @test_url
+      true -> @test_url
     end  
   end
 
