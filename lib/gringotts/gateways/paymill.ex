@@ -1,4 +1,17 @@
 defmodule Gringotts.Gateways.Paymill do
+  @moduledoc """
+  An Api Client for the [PAYMILL](https://www.paymill.com/) gateway.
+
+  For refernce see [PAYMILL's API (v2.1) documentation](https://developers.paymill.com/API/index)
+
+  The following features of PAYMILL are implemented:
+
+  | Action                       | Method        |
+  | ------                       | ------        |
+  | Authorize                    | `authorize/3` |
+  | Capture                      | `capture/3`   |
+  | Purchase                     | `purchase/3`  |
+  """
   use Gringotts.Gateways.Base
   alias Gringotts.{ CreditCard, Address, Response}
 
@@ -20,21 +33,71 @@ defmodule Gringotts.Gateways.Paymill do
      parse_card_response(response)
   end
 
+  @doc """
+  Authorize a card with particular amount and return a token in response
+
+  ### Example
+      amount = 100
+
+      card = %CreditCard{
+        first_name: "Sagar",
+        last_name: "Karwande",
+        number: "4111111111111111",
+        month: 12,
+        year: 2018,
+        verification_code: 123
+      }
+
+      options = []
+
+      iex> Paymill.authorize(amount, card, options)
+  """
   @spec authorize(number, String.t | CreditCard, Keyword) :: Response
   def authorize(amount, card_or_token, options) do
     Keyword.put(options, :money, amount)
     action_with_token(:authorize, amount, card_or_token, options)
   end
 
+  @doc """
+  Purchase with a card
+
+  ### Example
+      amount = 100
+
+      card = %CreditCard{
+        first_name: "Sagar",
+        last_name: "Karwande",
+        number: "4111111111111111",
+        month: 12,
+        year: 2018,
+        verification_code: 123
+      }
+
+      options = []
+
+      iex> Paymill.purchase(amount, card, options)
+  """
   @spec purchase(number, CreditCard, Keyword) :: Response
   def purchase(amount, card, options) do
     Keyword.put(options, :money, amount)
     action_with_token(:purchase, amount, card, options)
   end
 
+  @doc """
+  Capture a particular amount with authorization token
+
+  ### Example
+      amount = 100
+
+      token = "preauth_14c7c5268eb155a599f0"
+
+      options = []
+
+      iex> Paymill.capture(amount, token, options)
+  """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(amount, authorization, options) do
-    post = add_amount([], amount, options) ++ [{"token", authorization}]
+    post = add_amount([], amount, options) ++ [{"preauthorization", authorization}]
 
     commit(:post, "transactions", post, options)
   end
