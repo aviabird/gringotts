@@ -1,18 +1,19 @@
-defmodule Kuber.Hex.Gateways.Trexle do
-
+defmodule Gringotts.Gateways.Trexle do
+  
+  @moduledoc """
+  Functions supported for working with Trexle payment gateway:
+  *
+  *
+  """
 	@base_url "https://core.trexle.com/api/v1/"
   @currency "USD"
   @email "john@trexle.com"
   @ip_address "66.249.79.118"
   @description "Store Purchase 1437598192"
 
-  use Kuber.Hex.Gateways.Base
-  use Kuber.Hex.Adapter, required_config: [:api_key,:default_currency]
+  use Gringotts.Gateways.Base
+  use Gringotts.Adapter, required_config: [:api_key,:default_currency]
 
-  alias Kuber.Hex.{
-    CreditCard,
-    Address
-  }
 
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -24,6 +25,11 @@ defmodule Kuber.Hex.Gateways.Trexle do
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
+  end
+
+  def capture() do
+    
+    
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
@@ -51,7 +57,7 @@ defmodule Kuber.Hex.Gateways.Trexle do
     ]   
   end
 
-  # TODO: change the hardcoded api key to dynamic
+
   defp commit(method, path, params \\ [], opts \\ []) do
 
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
