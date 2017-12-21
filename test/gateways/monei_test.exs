@@ -50,10 +50,12 @@ defmodule Gringotts.Gateways.MoneiTest do
   # A new Bypass instance is needed per test, so that we can do parallel tests
   setup do
     bypass = Bypass.open
-    auth = %{userId: "8a829417539edb400153c1eae83932ac",
-             password: "6XqRtMGS2N",
-             entityId: "8a829417539edb400153c1eae6de325e",
-             test_url: "http://localhost:#{bypass.port}"}
+    auth = %{
+      userId: "8a829417539edb400153c1eae83932ac",
+      password: "6XqRtMGS2N",
+      entityId: "8a829417539edb400153c1eae6de325e",
+      test_url: "http://localhost:#{bypass.port}"
+    }
     {:ok, bypass: bypass, auth: auth}
   end
 

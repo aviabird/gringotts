@@ -64,6 +64,12 @@ defmodule Gringotts do
 
     > This is passed as is to the gateway and not modified, usually it comes back in the 
     response object intact.
+
+  ### Sandbox Account
+     To test the api with your sandbox or test account, options list should have the
+     following key value pair.
+
+     `[{mode: "test"}]`
   """
   
   import GenServer, only: [call: 2]
