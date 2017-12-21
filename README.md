@@ -16,6 +16,8 @@ gateways with very different internal APIs is what Gringotts has to offer you.
 
 ## Installation
 
+[![Join the chat at https://gitter.im/aviabird/gringotts](https://badges.gitter.im/aviabird/gringotts.svg)](https://gitter.im/aviabird/gringotts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### From hex.pm
 
 Make the following changes to the `mix.exs` file.
