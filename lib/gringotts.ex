@@ -2,9 +2,26 @@ defmodule Gringotts do
   @moduledoc ~S"""
   Gringotts is a payment gateway integration library supporting many gateway integrations.
   
-  Where the configuration for `Gringotts` must be in your application
-  environment, usually defined in your `config/config.exs`:
-      
+  ## Configuration
+  
+  The configuration for `Gringotts` must be in your application environment, 
+  usually defined in your `config/config.exs` and are **mandatory**:
+
+  **Global Configuration**
+  
+  The global configuration sets the library level configurations to interact with the gateway.
+  If the mode is not set then by 'default' the sandbox account is selected.
+
+  To integrate with the sandbox account set.
+      config :gringotts, :global_config,
+        mode: "test"
+  To integrate with the live account set.
+      config :gringotts, :global_config,
+        mode: "prod"
+
+  **Gateway Configuration**
+
+  The gateway level configurations are for fields related to a specific gateway. 
       config :Gringotts, Gringotts.Gateways.Stripe,
         adapter: Gringotts.Gateways.Stripe,
         api_key: "sk_test_vIX41hC0sdfBKrPWQerLuOMld",
@@ -64,12 +81,6 @@ defmodule Gringotts do
 
     > This is passed as is to the gateway and not modified, usually it comes back in the 
     response object intact.
-
-  ### Sandbox Account
-     To test the api with your sandbox or test account, options list should have the
-     following key value pair.
-
-     `[{mode: "test"}]`
   """
   
   import GenServer, only: [call: 2]
