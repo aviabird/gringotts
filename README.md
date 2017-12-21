@@ -17,7 +17,26 @@ gateways with very different internal APIs is what Gringotts has to offer you.
 ## Installation
 
 ### From hex.pm
-TODO: add this once the api is hosted on hexpm
+
+Make the following changes to the `mix.exs` file.
+
+Add gringotts to the list of dependencies.
+```elixir
+def deps do
+  [
+    {:gringotts, "~> 1.0"}
+  ]
+end
+```
+
+Add gringotts to the list of applications to be started.
+```elixir
+def application do
+  [
+    extra_applications: [:gringotts]
+  ]
+end
+```
 
 ## Usage
 
