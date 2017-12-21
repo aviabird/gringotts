@@ -20,7 +20,6 @@ defmodule Gringotts.Gateways.Cams do
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @default_currency  "USD"
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
-  
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
   alias Gringotts.{
@@ -28,9 +27,8 @@ defmodule Gringotts.Gateways.Cams do
   Address,
   Response
   }
-      
-  import Poison, only: [decode!: 1]
-   
+  
+  import Poison, only: [decode!: 1] 
   @doc """
     Use this method for performing purchase(sale) operation. 
 
@@ -58,10 +56,7 @@ defmodule Gringotts.Gateways.Cams do
           |> add_invoice(money, options)
           |> add_payment(payment)
           |> add_address(payment, options)
-          
-    response = commit("sale", post, options)
-    {:ok, response} = response
-    extract_auth([], response)  
+    commit("sale", post, options)
   end
 
   @doc """
@@ -94,10 +89,7 @@ defmodule Gringotts.Gateways.Cams do
       |> add_invoice(money, options)
       |> add_payment(payment)
       |> add_address(payment, options)
-
-     response = commit("auth", post, options)
-     {:ok, response} = response
-     extract_auth([], response)    
+    commit("auth", post, options)
   end
  
   @doc """
@@ -119,8 +111,9 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
-    post = [transactionid: authorization] 
-    add_invoice(post, money,options)
+    post = []
+        |> extract_auth(authorization)
+        |> add_invoice(money, options)
     commit("capture", post, options)
   end
  
@@ -145,8 +138,9 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
-    post = [transactionid: authorization] 
-    add_invoice(post, money,options)
+    post = []
+        |> extract_auth(authorization)
+        |> add_invoice(money, options)
     commit("refund", post, options)
   end
 
@@ -165,7 +159,7 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do  
-    post = [transactionid: authorization] 
+    post = extract_auth([], authorization)
     commit("void", post, options)
   end
 
@@ -174,7 +168,7 @@ defmodule Gringotts.Gateways.Cams do
   defp add_invoice(post, money, options) do
     post  
     |> Keyword.put(:amount, money) 
-    |> Keyword.put(:currency,(options[:currency] || @default_currency))
+    |> Keyword.put(:currency, (options[:currency] || @default_currency))
   end
 
   defp add_payment(post, payment) do   
@@ -193,7 +187,7 @@ defmodule Gringotts.Gateways.Cams do
     |> Keyword.put(:firstname, payment.first_name)
     |> Keyword.put(:lastname, payment.last_name)
 
-    if(options[:billing_address]) do
+    if options[:billing_address] do
       address = options[:billing_address]
       post
       |> Keyword.put(:address1 , address[:address1])
@@ -209,7 +203,7 @@ defmodule Gringotts.Gateways.Cams do
   defp join_month(payment) do
      payment.month 
      |> to_string
-     |> String.pad_leading(2,"0")
+     |> String.pad_leading(2, "0")
   end
 
   defp commit(action, params, options) do 
@@ -219,9 +213,9 @@ defmodule Gringotts.Gateways.Cams do
              |> Keyword.put(:password, options[:config][:password])
              |> Keyword.put(:username, options[:config][:username])
              |> params_to_string
-                 
-    HTTPoison.post(url, params, @headers)
-    |>respond
+    url       
+      |> HTTPoison.post(params, @headers)
+      |> respond
   end
 
   defp respond({:ok, %{body: body, status_code: 200}}) do
@@ -229,11 +223,11 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   defp respond({:error, %HTTPoison.Error{reason: reason}}) do
-      { :error, "Some error has been occurred" }
+    {:error, "Some error has been occurred"}
   end
 
   defp extract_auth(post, response) do
     response_body = URI.decode_query(response)
-    response_body["transactionid"]
+    Keyword.put([],:transactionid,response_body["transactionid"]) 
   end
 end
