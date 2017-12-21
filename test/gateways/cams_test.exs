@@ -50,7 +50,7 @@ defmodule Gringotts.Gateways.CamsTest do
     billing_address: @address,
     description: "Store Purchase",
   ]
-  
+
   @money 100
   @bad_money "G"
 
@@ -83,31 +83,4 @@ defmodule Gringotts.Gateways.CamsTest do
       end
     end
   end
-  # describe "authorize" do
-  #   test "test_successful_authorize_and_capture" do
-  #     {:ok, response} = Gateway.authorize(@money, @payment, @options)
-  #     result = URI.decode_query(response)
-  #     assert result["responsetext"] == "SUCCESS" 
-
-  #     {:ok, capture_resp} = Gateway.capture(@money, response, @options)
-  #     result = URI.decode_query(response)
-  #     assert result["responsetext"] == "SUCCESS" 
-  #   end
-
-  #   test "test_failed_authorize" do
-  #     {:ok, response} = Gateway.authorize(@money, @bad_payment, @options)
-  #     result = URI.decode_query(response)
-  #     assert String.contains?(result["responsetext"], "Invalid Credit Card Number") 
-  #   end
-
-  #   test "test_partial_capture" do
-  #     {:ok, response} = Gateway.authorize(@money + 5, @payment, @options)
-  #     result = URI.decode_query(response)
-  #     assert result["responsetext"] == "SUCCESS" 
-
-  #     {:ok, capture_resp} = Gateway.capture(@money - 1, response, @options)
-  #     result = URI.decode_query(response)
-  #     assert result["responsetext"] == "SUCCESS" 
-  #   end
-  # end
 end

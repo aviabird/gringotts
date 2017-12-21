@@ -23,6 +23,8 @@ defmodule Gringotts.Gateways.CamsMock do
 		 request_url: "https://secure.centralams.com/gw/api/transact.php",
 		 status_code: 200}}
 	end
- 
 end
-    
+
+
+
+
