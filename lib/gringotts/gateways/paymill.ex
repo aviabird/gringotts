@@ -51,7 +51,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Paymill, card, options)
+      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Paymill, amount, card, options)
   """
   @spec authorize(number, String.t | CreditCard, Keyword) :: Response
   def authorize(amount, card_or_token, options) do
@@ -76,7 +76,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Paymill, card, options)
+      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Paymill, amount, card, options)
   """
   @spec purchase(number, CreditCard, Keyword) :: Response
   def purchase(amount, card, options) do
@@ -94,7 +94,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Paymill, token, options)
+      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Paymill, token, amount, options)
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(amount, authorization, options) do
