@@ -57,8 +57,8 @@ defmodule Gringotts.Gateways.Monei do
   Your Application config **must include the `:userId`, `:entityId`, `:password`
   fields** and would look something like this:
   
-      config :kuber_hex, Kuber.Hex.Gateways.Monei,
-        adapter: Kuber.Hex.Gateways.Monei,
+      config :gringotts, Gringotts.Gateways.Monei,
+        adapter: Gringotts.Gateways.Monei,
         userId: "your_secret_user_id",
         password: "your_secret_password",
         entityId: "your_secret_channel_id"
