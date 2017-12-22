@@ -10,19 +10,20 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   [AuthorizeNet API reference](https://developer.authorize.net/api/reference/index.html)
 
-  The following set of functions have been provided for a transaction:
+  The following set of functions for Authorize.Net have been provided:
 
-  | `Action`  |  `Description`
-  | Authorize | To authorize the bank to charge the account and use it for payment.
-  | Capture   | To capture the given amount from an account for which, the 
-  |           |  transaction has already been authorized.
-  | Purchase  | To charge the account of a customer and transfer the funds to merchants
-  |           |  account.
-  | Refund    | To refund a settled transaction from the merchant to the customer account.
-  | void      | To void a transaction before the transaction is settled at merchant's side.
-  | store     | To store customer payment profile data.
-  | unstore   | To remove the customer payment profile data.
+  | Action                                       | Method        |
+  | ------                                       | ------        |
+  | Authorize a Credit Card                      | `authorize/3` |
+  | Capture a Previously Authorized Amount       | `capture/3`   |
+  | Charge a Credit Card                         | `purchase/3`  |
+  | Refund a transaction                         | `refund/3`    |
+  | Void a Transaction                           | `void/2`      |
+  | Create Customer Profile                      | `store/2`     |
+  | Create Customer Payment Profile              |  `store/2`    |
+  | Delete Customer Profile                      | `unstore/2`   |
   """
+
   import XmlBuilder
   import XmlToMap
 
@@ -65,22 +66,36 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Charge a credit card.
 
   Function to charge a user credit card for the specified amount. It performs authorize
-  and capture at the same time.
-  ## Required fields :
-      opts = [config: %{name:"", transactionKey: ""}]` taken from the configuration in your 
-    application
+  and capture at the same time. 
+  For this transaction Authorize.Net returns `transId` which can be used to:
+  
+  * `refund/3` a settled transaction.   
+  * `void/2` a transaction.
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ,
-        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
-        tax: %{amount: , name: ,description: },
-        duty: %{amount: , name: ,description: },
-        shipping: %{amount: , name: ,description: },
-        poNumber: ,
-        customer: %{id: },
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerIP: ]
+      opts = [
+        order: %{ invoiceNumber: String, description: String },
+        refId: String,
+        lineitems: %{
+          itemId: String, name: String, description: String, 
+          quantity: Integer, unitPrice: Float
+        },
+        tax: %{ amount: Float, name: String, description: String },
+        duty: %{ amount: String, name: String, description: String },
+        shipping: %{ amount: String, name: String, description: String },
+        poNumber: String,
+        customer: %{ id: String },
+        billTo: %{ 
+          firstName: String, lastName: String, company: String,
+          address: String, city: String, state: String, zip: String, 
+          country: String 
+        },
+        shipTo: %{
+          firstName: String, lastName: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customerIP: String
+      ]
 
   ## Example
       opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
@@ -103,21 +118,36 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   Function to authorize a transaction for the specified amount. It needs to be 
   followed up with a capture transaction to transfer the funds to merchant account.
-  ## Required fields :
-      opts = [config: %{name:"", transactionKey: ""}] taken from the configuration in your 
-    application
+  
+  For this transaction Authorize.Net returns a `transId` which can be use for:
+  * `capture/3` an authorized transaction.
+  * `refund/3` a settled transaction.   
+  * `void/2` a transaction.
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ,
-        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
-        tax: %{amount: , name: ,description: },
-        duty: %{amount: , name: ,description: },
-        shipping: %{amount: , name: ,description: },
-        poNumber: ,
-        customer: %{id: },
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerIP: ]
+      opts = [
+        order: %{ invoiceNumber: String, description: String },
+        refId: String,
+        lineitems: %{
+          itemId: String, name: String, description: String,
+          quantity: Integer, unitPrice: Float
+        },
+        tax: %{ amount: Float, name: String, description: String },
+        duty: %{ amount: String, name: String, description: String },
+        shipping: %{ amount: String, name: String, description: String },
+        poNumber: String,
+        customer: %{ id: String },
+        billTo: %{ 
+          firstName: String, lastName: String, company: String,
+          address: String, city: String, state: String, zip: String, 
+          country: String 
+        },
+        shipTo: %{
+          firstName: String, lastName: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customerIP: String
+      ]
 
   ## Example
       opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
@@ -139,12 +169,17 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Capture a transaction.
   
   Function to capture an `amount` for an authorized transaction.
-  ## Required fields :
-      opts = [config: %{name:" ", transactionKey: " "}, ] taken from the configuration in your
-    application
+
+  For this transaction Authorize.Net returns a `transId` which can be use for:
+  * `refund/3` a settled transaction.
+  * `void/2` a transaction.
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ]
+      opts = [
+        order: %{ invoiceNumber: String, description: String},
+        refId: String 
+      ]
+  
   ## Example
       opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
         refId: "123456",
@@ -166,9 +201,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Use this method to refund a customer for a transaction that was already settled, requires
   transId of the transaction.
   ## Required fields
-      opts = [config: %{name:" ", transactionKey: " "}, payment: %{card: %{number: ,year: , month:}}]
+      opts = [
+        payment: %{ card: %{ number: String, year: Integer, month: Integer } }
+      ]
   ## Optional fields
-      opts = [refId: ]
+      opts = [refId: String]
 
   ## Example
       opts = [config: %{name: "your_name", transactionKey: "your_key"},
@@ -191,10 +228,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Use this method to cancel either an original transaction that is not settled or 
   an entire order composed of more than one transaction. It can be submitted against
   any other transaction type. Requires the `transId` of a transaction passed as `id`.
-  ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "}]
+
   ## Optional fields
-      opts = [refId: ]
+      opts = [refId: String]
 
   ## Example
       opts = [config: %{name: "your_name", transactionKey: "your_key"},
@@ -213,21 +249,25 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Store a customer payment profile.
 
   Use this function to store the customer card information by creating a customer profile,
-  and in case the customer_profile_exists with gateway then by creating customer payment profile.
+  and in case the customer_profile_exists with gateway then by creating customer payment profile 
+  which requires `customerProfileId`.
 
   ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "},
-        profile: %{merchantCustomerId: ,description: ,email: }
+      opts = [
+        profile: %{ merchantCustomerId: String, description: String,email: String }
       ]
   ## Optional Fields
       opts = [
-        validationMode: , # testMode, liveMode
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerType: ,
-        customerProfileId: 
-        ]
+        validationMode: String,
+        billTo: %{
+          firstName: String, lastName: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customerType: String,
+        customerProfileId: String
+      ]
   ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"},
+      opts = [config: %{ name: "your_name", transactionKey: "your_key" },
         profile: %{merchantCustomerId: 123456 ,description: "test store",email: "test@gmail.com"},
         validationMode: 'testMode'
       ]
@@ -250,8 +290,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   present. Requires the customer profile id.
 
   ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "},
-      customerProfileId:
+      opts = [
+        customerProfileId: String
       ]
   """
   @spec unstore(String.t, Keyword) :: Tuple
