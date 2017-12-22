@@ -5,7 +5,7 @@ defmodule Gringotts.Gateways.Trexle do
   *
   *
   """
-	@base_url "https://core.trexle.com/api/v1/"
+  @base_url "https://core.trexle.com/api/v1/"
   @currency "USD"
   @email "john@trexle.com"
   @ip_address "66.249.79.118"
@@ -27,20 +27,33 @@ defmodule Gringotts.Gateways.Trexle do
     commit(:post, "charges", params, opts)
   end
 
-  def capture() do
-    
-    
+  @spec capture(String.t, Float, List) :: Map
+  def capture(charge_token, amount, opts \\ []) do
+    params = [amount: amount]
+    commit(:put, "charges/#{charge_token}/capture", params, opts)
+  end
+  
+  @spec refund(Float, String.t, List) :: Map 
+  def refund(amount, charge_token, opts \\ []) do
+    params = [amount: amount]
+    commit(:post, "charges/#{charge_token}/refunds", params, opts)
+  end
+
+  @spec store(Map, List) :: Map
+  def store(payment, opts \\ []) do
+    params = [email: @email]++card_params(payment)
+    commit(:post, "customers", params, opts)
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-      [] 
-      ++ [capture: capture]
-      ++ [amount: amount]
-      ++ [currency: @currency]
-      ++ [email: @email]
-      ++ [ip_address: @ip_address]
-      ++ [description: @description]
-      ++ card_params(payment)
+    [
+      capture: capture,
+      amount: amount,
+      currency: @currency,
+      email: @email,
+      ip_address: @ip_address,
+      description: @description
+    ]++ card_params(payment)
   end
 
   defp card_params(%{} = card) do
@@ -66,7 +79,6 @@ defmodule Gringotts.Gateways.Trexle do
     options = [hackney: [basic_auth: {opts[:config][:api_key], "password"}]]
     url = "#{@base_url}/#{path}"
     response = HTTPoison.request(method, url, data, headers, options)
-    format_response(response)
   end
 
   defp format_response(response) do
