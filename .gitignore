@@ -5,4 +5,8 @@ erl_crash.dump
 NOTES
 doc
 .elixir_ls
+<<<<<<< 3810c13bdf8267f49032176bec6da96e5383daaf
 cover
+=======
+
+>>>>>>> capture,refund and store method implemented
