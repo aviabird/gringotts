@@ -339,7 +339,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> store_result = Gringotts.store(:payment_worker, Gringotts.Gateways.Monei, card, opts)
   """
   @spec store(CreditCard.t, keyword) :: {:ok | :error, Response}
-  def store(card = %CreditCard{}, opts) do
+  def store(%CreditCard{} = card, opts) do
     params = card_params(card)
     auth_info = Keyword.fetch!(opts, :config)
     commit(:post, "registrations", params, auth_info)
@@ -377,10 +377,11 @@ defmodule Gringotts.Gateways.Monei do
                    "authentication.entityId": opts[:entityId]]
     body = params ++ auth_params
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
-    case method do
-      :post -> HTTPoison.post(url, {:form, body}, @default_headers) |> respond
-      :delete -> HTTPoison.delete(url  <> "?" <> URI.encode_query(auth_params)) |> respond
-    end
+    network_response = case method do
+                         :post -> HTTPoison.post(url, {:form, body}, @default_headers)
+                         :delete -> HTTPoison.delete(url  <> "?" <> URI.encode_query(auth_params))
+                       end
+    respond(network_response)
   end
 
   # Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
@@ -405,7 +406,7 @@ defmodule Gringotts.Gateways.Monei do
     {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
   end
 
-  defp verification_result(data = %{"result" => result}) do
+  defp verification_result(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
     code = result["code"]
     results = [code: code,
@@ -415,9 +416,10 @@ defmodule Gringotts.Gateways.Monei do
                avs_result: [address: address, zip_code: zip_code],
                raw: data]
 
-    cond do
-      String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) -> {:ok, results}
-      true -> {:error, [{:reason, result["description"]} | results]}
+    if String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
+      {:ok, results}
+    else
+      {:error, [{:reason, result["description"]} | results]}
     end
   end
 
