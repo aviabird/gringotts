@@ -169,8 +169,9 @@ defmodule Gringotts.Gateways.MoneiTest do
     {:ok, response} = Gateway.void("7214344252e11af79c0b9e7b4f3f6234", [config: auth])
     assert response.code == "000.100.110"
   end
-  
-  test "respond   | various scenarios." do
+
+  @tag :skip
+  test "respond   | various scenarios, can't test a private function." do
     json_200 = %HTTPoison.Response{body: @auth_success, status_code: 200}
     json_not_200 = %HTTPoison.Response{body: @auth_success, status_code: 300}
     html_200 = %HTTPoison.Response{body: ~s[<html></html>\n], status_code: 200}
@@ -184,5 +185,6 @@ end
 defmodule Gringotts.Gateways.MoneiDocTest do
   use ExUnit.Case, async: true
 
-  doctest Gringotts.Gateways.Monei
+  # doctest Gringotts.Gateways.Monei
+  # doctests will never work. Track progress: https://github.com/aviabird/gringotts/issues/37
 end
