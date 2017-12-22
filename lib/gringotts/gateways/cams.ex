@@ -15,6 +15,25 @@ defmodule Gringotts.Gateways.Cams do
     | Purchase                     | `purchase/3`  |
     | Refund                       | `refund/3`    |
     | Cancel                       | `void/2`      |
+
+
+  ## The `opts` argument
+
+    Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
+    optional arguments for transactions with the Cams gateway. The following keys
+    are supported:
+    
+    | Key                 | Remark | Status          |
+    | ----                | ---    | ----            |
+    | `billing_address`   |        | Not implemented |
+    | `address`           |     	 | Not implemented |
+    | `currency`          |        | **Implemented** |
+    | `order_id`  				|        | Not implemented |
+    | `description`       |        | Not implemented |
+
+  > All these keys are being implemented, track progress in
+  > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
+
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @default_currency  "USD"
@@ -107,8 +126,8 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
-		post = [transactionid:  authorization]
-    			|> add_invoice(money, options)
+    post = [transactionid:  authorization]
+          |> add_invoice(money, options)
     commit("capture", post, options)
   end
  
@@ -153,7 +172,7 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do  
-		post = [transactionid:  authorization]
+    post = [transactionid:  authorization]
     commit("void", post, options)
   end
 
@@ -219,44 +238,44 @@ defmodule Gringotts.Gateways.Cams do
   defp respond({:error, %HTTPoison.Error{reason: reason}}) do
     {:error, "Some error has been occurred"}
   end
-
+ @doc false
   defmodule ResponseHandler do
     alias Gringotts.Response
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
-    	body = URI.decode_query(body)
-			[]
-			|> set_authorization(body)
-			|> set_success(body)
-			|> set_message(body)
-			|> set_params(body)
-			|> set_error_code(body)	
-			|> handle_opts()	 
+      body = URI.decode_query(body)
+      []
+      |> set_authorization(body)
+      |> set_success(body)
+      |> set_message(body)
+      |> set_params(body)
+      |> set_error_code(body)	
+      |> handle_opts()	 
     end
 
     defp set_authorization(opts, %{"transactionid" => id}) do
-			opts ++ [authorization: id]  
+      opts ++ [authorization: id]  
     end
-		
-		defp set_message(opts, %{"responsetext" => message}) do
-			opts ++ [message: message]
-		end
-		
-		defp handle_opts(opts) do
-			{:ok, Response.success(opts)}
-		end
-		
-		defp set_params(opts, body) do
-			opts ++ [params: body]
-		end
+    
+    defp set_message(opts, %{"responsetext" => message}) do
+      opts ++ [message: message]
+    end
+    
+    defp handle_opts(opts) do
+      {:ok, Response.success(opts)}
+    end
+    
+    defp set_params(opts, body) do
+      opts ++ [params: body]
+    end
 
-		defp set_error_code(opts, %{"response_code" => response_code}) do
-			opts ++ [error_code: response_code]
-		end
+    defp set_error_code(opts, %{"response_code" => response_code}) do
+      opts ++ [error_code: response_code]
+    end
 
-		defp set_success(opts, %{"response_code" => response_code}) do
-			opts ++ [success: response_code == "100"]
-		end
+    defp set_success(opts, %{"response_code" => response_code}) do
+      opts ++ [success: response_code == "100"]
+    end
 
   end
 end
