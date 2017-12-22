@@ -12,7 +12,7 @@ defmodule Gringotts.Gateways.Stripe do
   | Reversal                     | `void/2`      |
   | Debit                        | `purchase/3`  |
   | Store                        | `store/2`     |
-  | Unstore                      | 'unstore/2'   |
+  | Unstore                      | `unstore/2`   |
 
   ## The `opts` argument
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
