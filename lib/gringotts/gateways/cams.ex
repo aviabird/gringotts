@@ -31,8 +31,8 @@ defmodule Gringotts.Gateways.Cams do
     | `order_id`  				|        | Not implemented |
     | `description`       |        | Not implemented |
 
-  > All these keys are being implemented, track progress in
-  > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
+    > All these keys are being implemented, track progress in
+    > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
 
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"

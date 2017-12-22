@@ -3,7 +3,7 @@ defmodule Gringotts.Gateways.CamsTest do
   Code.require_file "../mocks/cams_mock.exs", __DIR__
   use ExUnit.Case ,async: false
 	alias Gringotts.{
-    CreditCard
+    CreditCard, Response
   }
   alias Gringotts.Gateways.CamsMock , as: MockResponse 
 	alias Gringotts.Gateways.Cams, as: Gateway
@@ -60,9 +60,8 @@ defmodule Gringotts.Gateways.CamsTest do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> 
         MockResponse.successful_purchase_response end] do
-        {:ok, response} = Gateway.purchase(@money, @payment, @options)
-        result = URI.decode_query(response)
-        assert result["responsetext"] == "SUCCESS" 
+          {:ok, %Response{success: result }} = Gateway.purchase(@money, @payment, @options)
+        assert result 
       end
     end
 
@@ -70,10 +69,8 @@ defmodule Gringotts.Gateways.CamsTest do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> 
         MockResponse.failed_purchase_with_bad_credit_card end] do
-        {:ok, response} = Gateway.purchase(@money, @bad_payment, @options)
-        result = URI.decode_query(response)
-        assert String.contains?(result["responsetext"], 
-        "Invalid Credit Card Number") 
+          {:ok, %Response{message: result }} = Gateway.purchase(@money, @bad_payment, @options)
+          assert String.contains?(result,  "Invalid Credit Card Number") 
       end
     end
     
@@ -81,9 +78,8 @@ defmodule Gringotts.Gateways.CamsTest do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.failed_purchase_with_bad_money end] do
-        {:ok, response} = Gateway.purchase(@bad_money, @payment, @options)
-        result = URI.decode_query(response)
-        assert String.contains?(result["responsetext"], "Invalid amount") 
+        {:ok, %Response{message: result }} = Gateway.purchase(@bad_money, @payment, @options)
+        assert String.contains?(result, "Invalid amount") 
       end
     end
   end
