@@ -1,23 +1,65 @@
 defmodule Gringotts.Gateways.Stripe do
-
-  @moduledoc """
-  Functions for working with Stripe payment gateway. Through this API you can:
-
-  * Authorize payment source and use it later for payment.
-  * Purchase with payment source.
-  * Capture a payment for already authorized payment source.
-  * Void the payment for payment source.
-  * Refund amount to payment source.
-  * Store payment source for making purchases later.
-  * Unstore payment source.
   
-  Stripe API reference: https://stripe.com/docs/api
+  @moduledoc """
+  Stripe gateway implementation. For reference see [Stripe's API documentation](https://stripe.com/docs/api).
+  The following features of Stripe are implemented:
+  
+  | Action                       | Method        |
+  | ------                       | ------        |
+  | Pre-authorize                | `authorize/3` |
+  | Capture                      | `capture/3`   |
+  | Refund                       | `refund/3`    |
+  | Reversal                     | `void/2`      |
+  | Debit                        | `purchase/3`  |
+  | Store                        | `store/2`     |
+  | Unstore                      | 'unstore/2'   |
+
+  ## The `opts` argument
+  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
+  optional arguments for transactions with the Stripe gateway. The following keys
+  are supported:
+  
+  | Key                    | Remark | Status           |
+  | ----                   | ---    | ----             |
+  | `currency`             |        | **Implemented**  |  
+  | `capture`              |        | **Implemented**  |
+  | `description`          |        | **Implemented**  |
+  | `metadata`             |        | **Implemented**  |
+  | `receipt_email`        |        | **Implemented**  |
+  | `shipping`             |        | **Implemented**  |
+  | `customer`             |        | **Implemented**  |
+  | `source`               |        | **Implemented**  |
+  | `statement_descriptor` |        | **Implemented**  |
+  | `charge`               |        | **Implemented**  |
+  | `reason`               |        | **Implemented**  |
+  | `account_balance`      |        | Not implemented  |
+  | `business_vat_id`      |        | Not implemented  |
+  | `coupon`               |        | Not implemented  |
+  | `default_source`       |        | Not implemented  |
+  | `email`                |        | Not implemented  |
+  | `shipping`             |        | Not implemented  |
+  
+  ## Registering your Stripe account at `Gringotts`
+  After [making an account on Stripe](https://stripe.com/), head
+  to the dashboard and find your account `secrets` in the `API` section.
+  
+  ## Here's how the secrets map to the required configuration parameters for Stripe:
+  | Config parameter | Stripe secret  |
+  | -------          | ----           |
+  | `:secret_key`    | **Secret key** |
+  
+  Your Application config must look something like this:
+  
+      config :gringotts, Gringotts.Gateways.Stripe,
+          adapter: Gringotts.Gateways.Stripe,
+          secret_key: "your_secret_key",
+          default_currency: "usd"
   """
 
   @base_url "https://api.stripe.com/v1"
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:api_key, :default_currency]
+  use Gringotts.Adapter, required_config: [:secret_key, :default_currency]
 
   alias Gringotts.{
     CreditCard,
@@ -25,20 +67,30 @@ defmodule Gringotts.Gateways.Stripe do
   }
 
   @doc """
-  Authorize payment source.
+  Performs a (pre) Authorize operation.
 
-  Authorize the payment source for a customer or card using amount and opts.
-  opts must include the default currency.
+  The authorization validates the card details with the banking network,
+  places a hold on the transaction amount in the customer’s issuing bank and
+  also triggers risk management. Funds are not transferred.
+  
+  Stripe returns an `charge_id` which should be stored at your side and can be used later to:
+  * `capture/3` an amount.
+  * `void/2` a pre-authorization.
+  
+  ## Note
+  Uncaptured charges expire in 7 days. For more information, [see authorizing charges and settling later](https://support.stripe.com/questions/can-i-authorize-a-charge-and-then-wait-to-settle-it-later).
 
-  ## Examples
-      payment = %{
-        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-        postal_code: "11111"
-      }
+  ## Example
+  The following session shows how one would (pre) authorize a payment of $10 on a sample `card`.
+  
+      iex> payment = %{
+            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+            postal_code: "11111"
+          }
 
-      opts = [currency: "usd"]
-      amount = 5
+      iex> opts = [currency: "usd"]
+      iex> amount = 10
 
       iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
   """
@@ -49,20 +101,23 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Purchase with payment source.
+  Transfers amount from the customer to the merchant.
+  
+  Stripe attempts to process a purchase on behalf of the customer, by debiting
+  amount from the customer's account by charging the customer's card.
+  
+  ## Example
+  The following session shows how one would process a payment in one-shot,
+  without (pre) authorization.
 
-  Purchase with the payment source using amount and opts.
-  opts must include the default currency.
+      iex> payemnt = %{
+            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+            postal_code: "11111"
+          }
 
-  ## Examples
-      payemnt = %{
-        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-        postal_code: "11111"
-      }
-
-      opts = [currency: "usd"]
-      amount = 5
+      iex> opts = [currency: "usd"]
+      iex> amount = 5
 
       iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
   """
@@ -73,20 +128,22 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Captures a payment.
+  Captures a pre-authorized amount.
 
-  Captures a payment with already authorized payment source.
-  Once the charge is captured, it cannot be captured again.
-  Amount less than or equal to authorized amount can be captured
-  but not more than that.
-  If less amount is captured than the authorized amount, then
-  remaining amount will be refunded back to the authorized 
-  paymet source.
+  Amount is transferred to the merchant account by Stripe when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `charge_id`.
 
-  ## Examples
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-      amount = 5
-      opts = []
+  ## Note
+  Stripe allows partial captures and release the remaining amount back to the payment source. Thus, the same
+  pre-authorisation `charge_id` cannot be used to perform multiple captures.
+
+  ## Example
+  The following session shows how one would (partially) capture a previously
+  authorized a payment worth $10 by referencing the obtained `charge_id`.
+      
+      iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      iex> amount = 5
+      iex> opts = []
 
       iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Stripe, id, amount, opts)
   """
@@ -97,13 +154,29 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Voids the payment.
+  Voids the referenced payment.
+  
+  This method attempts a reversal of the either a previous `purchase/3` or
+  `authorize/3` referenced by `charge_id`.
+  As a consequence, the customer will never see any booking on his
+  statement.
 
-  Returns the captured amount to the authorized payment source.
+  ## Voiding a previous authorization
+  Stripe will reverse the authorization by sending a "reversal request" to the
+  payment source (card issuer) to clear the funds held against the
+  authorization.
 
-  ## Examples
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-      opts = []
+  ## Voiding a previous purchase
+  Stripe will reverse the payment, by sending all the amount back to the
+  customer. Note that this is not the same as `refund/3`.
+  
+  ## Example
+  The following session shows how one would void a previous (pre)
+  authorization. Remember that our `capture/3` example only did a partial
+  capture.
+      
+      iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      iex> opts = []
 
       iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
   """
@@ -114,17 +187,18 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Refunds the amount.
+  Refunds the amount to the customer's card with reference to a prior transfer.
 
-  Returns the captured amount to the authorized payment source.
-  Less than or equal to the captured amount can be refunded.
-  If the refunded amount is less than the captured amount, then
-  remaining amount can be refunded again.
+  Stripe processes a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
 
-  ## Examples
-      amount = 5
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-      opts = []
+  ## Example
+  The following session shows how one would refund a previous purchase (and
+  similarily for captures).
+      
+      iex> amount = 5
+      iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+      iex> opts = []
 
       iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Stripe, amount, id, opts)
   """
@@ -135,19 +209,22 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Stores the payment source.
+  Stores the payment-source data for later use.
+  
+  Stripe can store the payment-source details, for example card which can be used to effectively 
+  to process One-Click and Recurring_ payments, and return a `customer_id` for reference.
 
-  Store the payment source, so that it can be used
-  for capturing the amount at later stages.
+  ## Example
+  The following session shows how one would store a card (a payment-source) for
+  future use.
+      
+      iex> payment = %{
+            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
+            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+            postal_code: "11111"
+          }
 
-  ## Examples
-      payment = %{
-        expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-        street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
-        postal_code: "11111"
-      }
-
-      opts = []
+      iex> opts = []
 
       iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Stripe, payment, opts)
   """
@@ -158,14 +235,15 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   @doc """
-  Unstore the stored payment source.
+  Deletes previously stored payment-source data.
 
-  Unstore the already stored payment source,
+  Deletes the already stored payment source,
   so that it cannot be used again for capturing
   payments.
 
   ## Examples
-      id = "cus_BwpLX2x4ecEUgD"
+  The following session shows how one would unstore a already stored payment source.
+      iex> id = "cus_BwpLX2x4ecEUgD"
 
       iex> Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
   """
