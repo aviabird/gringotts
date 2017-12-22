@@ -82,7 +82,9 @@ defmodule Gringotts.Gateways.Monei do
           + You could use the same config or update it the with your "secrets"
           that you see in `Dashboard > Sub-accounts` as described
           [above](#module-registering-your-monei-account-at-gringotts).
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and aliases to it:
+
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
+  aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
   iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
@@ -155,14 +157,12 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would (pre) authorize a payment of $40 on the sample `card`.
+  The following session shows how one would (pre) authorize a payment of $40 on a sample `card`.
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> auth_result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
       iex> auth_result.id # This is the authorization ID
-
-  > **What `card` and `opts` are these? Where are they defined?**
-  >
-  > Just save them once in your session as described [above](#module-following-the-examples).
   """
   @spec authorize(number, CreditCard, keyword) :: Response
   def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
@@ -196,6 +196,8 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would (partially) capture a previously
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(:payment_worker, Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
   @spec capture(number, String.t, keyword) :: Response
@@ -223,6 +225,8 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
   """
   @spec purchase(number, CreditCard, keyword) :: Response
@@ -265,6 +269,8 @@ defmodule Gringotts.Gateways.Monei do
   authorization. Remember that our `capture/3` example only did a partial
   capture.
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> void_result = Gringotts.void(:payment_worker, Gringotts.Gateways.Monei, auth_result.id, opts)
   """  
   @spec void(String.t, keyword) :: Response
@@ -291,6 +297,8 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would refund a previous purchase (and
   similarily for captures).
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(:payment_worker, Gringotts.Gateways.Monei, purchase_result.id, opts)
   """
   @spec refund(number, String.t, keyword) :: Response
@@ -326,6 +334,8 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would store a card (a payment-source) for
   future use.
 
+      iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> store_result = Gringotts.store(:payment_worker, Gringotts.Gateways.Monei, card, opts)
   """
   @spec store(CreditCard, keyword) :: Response
