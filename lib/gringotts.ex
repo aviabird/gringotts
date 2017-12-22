@@ -14,10 +14,10 @@ defmodule Gringotts do
 
   To integrate with the sandbox account set.
       config :gringotts, :global_config,
-        mode: "test"
+        mode: :test
   To integrate with the live account set.
       config :gringotts, :global_config,
-        mode: "prod"
+        mode: :prod
 
   **Gateway Configuration**
 

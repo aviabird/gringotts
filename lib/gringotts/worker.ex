@@ -82,7 +82,7 @@ defmodule Gringotts.Worker do
   end
 
   defp set_gateway_and_config(request_gateway) do
-    global_config = Application.get_env(:gringotts, :global_config) || [mode: "test"]
+    global_config = Application.get_env(:gringotts, :global_config) || [mode: :test]
     gateway_config = Application.get_env(:gringotts, request_gateway)
     {request_gateway, Keyword.merge(global_config, gateway_config)}
   end
