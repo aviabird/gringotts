@@ -30,10 +30,15 @@ defmodule Gringotts.Gateways.Cams do
     | `order_id`  				|        | Not implemented |
     | `description`       |        | Not implemented |
 
+<<<<<<< HEAD
     All these keys are being implemented, track progress in
     [issue #42](https://github.com/aviabird/gringotts/issues/42)!
 
   ## Configuration parameters for Cams:
+=======
+    > All these keys are being implemented, track progress in
+    > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
+>>>>>>> 1890c4c... Modified test cases according to response
 
     | Config parameter | Cams secret   |
     | -------          | ----          |
