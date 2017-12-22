@@ -1,32 +1,28 @@
 defmodule Gringotts.Gateways.Cams do
   @moduledoc ~S"""
-    An API client for the [CAMS](https://www.centralams.com/) gateway.
-    For referance you can test gateway operations [CAMS API SANDBOX] (https://secure.centralams.com).
+    A module for working with the Cams payment gateway.
 
-    Test it using test crediantials username:***testintegrationc***, password:***password9***
+    An API client for the [CAMS](https://www.centralams.com/) gateway.
+    For referance you can test gateway operations [CAMS API TEST MODE](https://secure.centralams.com).
+    Test it using test crediantials **username:** `testintegrationc`, **password:** `password9`
 
     The following features of CAMS are implemented:
 
-    * **Purchase**  In  `purchase/3`
-
-    * **Authorize** In  `authorize/3`
-
-    * **Capture**   In  `capture/3`
-
-    * **Refund**    In  `refund/3`
-
-    * **Void**      In  `void/2`
+    | Action                       | Method        |
+    | ------                       | ------        |
+    | Authorize                    | `authorize/3` |
+    | Capture                      | `capture/3`   |
+    | Purchase                     | `purchase/3`  |
+    | Refund                       | `refund/3`    |
+    | Cancel                       | `void/2`      |
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @default_currency  "USD"
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
-  alias Gringotts.{
-  CreditCard,
-  Address,
-  Response
-  }
+  alias Gringotts.{CreditCard, Address, Response}
+  alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
   
   import Poison, only: [decode!: 1] 
   @doc """
@@ -111,9 +107,8 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
-    post = []
-        |> extract_auth(authorization)
-        |> add_invoice(money, options)
+		post = [transactionid:  authorization]
+    			|> add_invoice(money, options)
     commit("capture", post, options)
   end
  
@@ -138,8 +133,7 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
-    post = []
-        |> extract_auth(authorization)
+    post = [transactionid:  authorization]
         |> add_invoice(money, options)
     commit("refund", post, options)
   end
@@ -159,7 +153,7 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do  
-    post = extract_auth([], authorization)
+		post = [transactionid:  authorization]
     commit("void", post, options)
   end
 
@@ -215,7 +209,7 @@ defmodule Gringotts.Gateways.Cams do
              |> params_to_string
     url       
       |> HTTPoison.post(params, @headers)
-      |> respond
+      |> ResponseParser.parse
   end
 
   defp respond({:ok, %{body: body, status_code: 200}}) do
@@ -226,8 +220,44 @@ defmodule Gringotts.Gateways.Cams do
     {:error, "Some error has been occurred"}
   end
 
-  defp extract_auth(post, response) do
-    response_body = URI.decode_query(response)
-    Keyword.put([],:transactionid,response_body["transactionid"]) 
+  defmodule ResponseHandler do
+    alias Gringotts.Response
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
+    	body = URI.decode_query(body)
+			[]
+			|> set_authorization(body)
+			|> set_success(body)
+			|> set_message(body)
+			|> set_params(body)
+			|> set_error_code(body)	
+			|> handle_opts()	 
+    end
+
+    defp set_authorization(opts, %{"transactionid" => id}) do
+			opts ++ [authorization: id]  
+    end
+		
+		defp set_message(opts, %{"responsetext" => message}) do
+			opts ++ [message: message]
+		end
+		
+		defp handle_opts(opts) do
+			{:ok, Response.success(opts)}
+		end
+		
+		defp set_params(opts, body) do
+			opts ++ [params: body]
+		end
+
+		defp set_error_code(opts, %{"response_code" => response_code}) do
+			opts ++ [error_code: response_code]
+		end
+
+		defp set_success(opts, %{"response_code" => response_code}) do
+			opts ++ [success: response_code == "100"]
+		end
+
   end
 end
+

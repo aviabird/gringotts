@@ -43,9 +43,9 @@ defmodule Gringotts.Gateways.CamsTest do
   }
   @options  [
     config: %{
-              username: "testintegrationc",
-              password: "password9"
-            },
+      username: "testintegrationc",
+      password: "password9"
+    },
     order_id: 0001,
     billing_address: @address,
     description: "Store Purchase",
@@ -58,7 +58,8 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "test_sucessful_purchase" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) -> MockResponse.successful_purchase_response end] do
+      [post: fn(_url, _body, _headers) -> 
+        MockResponse.successful_purchase_response end] do
         {:ok, response} = Gateway.purchase(@money, @payment, @options)
         result = URI.decode_query(response)
         assert result["responsetext"] == "SUCCESS" 
@@ -67,16 +68,19 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "test_bad_card_failed_purchase" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_credit_card end] do
+      [post: fn(_url, _body, _headers) -> 
+        MockResponse.failed_purchase_with_bad_credit_card end] do
         {:ok, response} = Gateway.purchase(@money, @bad_payment, @options)
         result = URI.decode_query(response)
-        assert String.contains?(result["responsetext"], "Invalid Credit Card Number") 
+        assert String.contains?(result["responsetext"], 
+        "Invalid Credit Card Number") 
       end
     end
     
     test "test_bad_money_failed_purchase" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_money end] do
+      [post: fn(_url, _body, _headers) ->
+        MockResponse.failed_purchase_with_bad_money end] do
         {:ok, response} = Gateway.purchase(@bad_money, @payment, @options)
         result = URI.decode_query(response)
         assert String.contains?(result["responsetext"], "Invalid amount") 
