@@ -55,7 +55,7 @@ defmodule Gringotts.Gateways.Trexle do
     number: "5200828282828210",
     expiry_month: 1,
     expiry_year: 2018,
-    cvc: "123",
+    cvc:  "123",
     address_line1: "456 My Street",
     address_city: "Ottawa",
     address_postcode: "K1C2N6",
@@ -135,7 +135,7 @@ defmodule Gringotts.Gateways.Trexle do
   @doc """
   Refunds the amount to the customer's card with reference to a prior transfer.
 
-  Trexle processes a full or partial refund worth `amount`, referencing a
+  Trexle processes a full or partial refund worth `amount`,referencing a
   previous `purchase/3` or `capture/3`.
 
   Multiple refund can be performed for the same charge token from purchase or capture done before performing refund action unless the cumulative amount is less than the amount given while authorizing.
@@ -147,7 +147,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   iex> token = "charge_668d3e169b27d4938b39246cb8c0890b0bd84c3c"
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" , description: "Store Purchase 1437598192"]
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", description: "Store Purchase 1437598192"]
 
   iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Trexle, amount, token, options)
   ```
@@ -178,7 +178,7 @@ defmodule Gringotts.Gateways.Trexle do
     address_country: "CA"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", description: "Store Purchase 1437598192"]
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" , description: "Store Purchase 1437598192"]
 
   iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Trexle, card, options)
   ```
@@ -194,10 +194,10 @@ defmodule Gringotts.Gateways.Trexle do
     [
       capture: capture,
       amount: amount,
-      currency: opts[:config][:default_currency],
-      email: opts[:email],
-      ip_address: opts[:ip_address],
-      description: opts[:description]
+      currency: @currency,
+      email: @email,
+      ip_address: @ip_address,
+      description: @description
     ]++ card_params(payment)
   end
 
