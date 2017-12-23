@@ -19,7 +19,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   }
 
   setup_all do
-    Application.put_env(:Gringotts, Gringotts.Gateways.Monei, [adapter: Gringotts.Gateways.Monei,
+    Application.put_env(:gringotts, Gringotts.Gateways.Monei, [adapter: Gringotts.Gateways.Monei,
                                                                userId: "8a8294186003c900016010a285582e0a",
                                                                password: "hMkqf2qbWf",
                                                                entityId: "8a82941760036820016010a28a8337f6"])
@@ -58,7 +58,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   end
 
   test "Environment setup" do
-    config = Application.get_env(:Gringotts, Gringotts.Gateways.Monei)
+    config = Application.get_env(:gringotts, Gringotts.Gateways.Monei)
     assert config[:adapter] == Gringotts.Gateways.Monei
   end
 

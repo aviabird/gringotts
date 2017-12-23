@@ -8,7 +8,7 @@ before_install:
   - mix local.rebar --force
   - mix deps.get
 script:
-  - mix coveralls.travis --trace
+  - mix coveralls.travis --include integration
 after_script:
   - MIX_ENV=docs mix deps.get
   - MIX_ENV=docs mix inch.report
