@@ -62,6 +62,70 @@ defmodule Gringotts.Gateways.TrexleTest do
         assert response.status_code == 400
       end
     end
+
+    test "test_for_purchase_with_valid_amount" do
+
+    end
+
+    test "test_for_purchase_with_invalid_amount" do
+      
+    end
   end 
+
+  describe "authorize" do
+
+    test "test_for_authorize_with_valid_card" do
+
+    end
+
+    test "test_for_authorize_with_invalid_card" do
+
+    end
+
+    test "test_for_authorize_with_valid_email" do
+
+    end
+
+    test "test_for_authorize_with_invalid_email" do
+
+    end
+
+  end
+
+  describe "refund" do
+
+    test "test_for_refund_with_valid_amount" do
+
+    end
+
+    test "test_for_refund_with_invalid_amount" do
+
+    end
+
+  end
+
+  describe "capture" do
+
+    test "test_for_refund_with_valid_chargetoken" do
+
+    end
+
+    test "test_for_refund_with_invalid_chargetoken" do
+
+    end
+
+  end
+
+  describe "store" do
+  
+    test "test_for_store_with_valid_card" do
+
+    end
+
+    test "test_for_store_with_invalid_card" do
+
+    end
+
+  end
 
 end

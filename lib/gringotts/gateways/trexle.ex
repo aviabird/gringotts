@@ -6,14 +6,10 @@ defmodule Gringotts.Gateways.Trexle do
   *
   """
   @base_url "https://core.trexle.com/api/v1/"
-  @currency "USD"
-  @email "john@trexle.com"
-  @ip_address "66.249.79.118"
-  @description "Store Purchase 1437598192"
 
+  alias Gringotts.Gateways.Trexle.ResponseHandler, as: ResponseParser
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key,:default_currency]
-
 
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -49,10 +45,10 @@ defmodule Gringotts.Gateways.Trexle do
     [
       capture: capture,
       amount: amount,
-      currency: @currency,
-      email: @email,
-      ip_address: @ip_address,
-      description: @description
+      currency: opts[:currency],
+      email: opts[:email],
+      ip_address: opts[:ip_address],
+      description: opts[:description]
     ]++ card_params(payment)
   end
 
@@ -70,23 +66,24 @@ defmodule Gringotts.Gateways.Trexle do
     ]   
   end
 
-
   defp commit(method, path, params \\ [], opts \\ []) do
-
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
     data = params_to_string(params)
     options = [hackney: [basic_auth: {opts[:config][:api_key], "password"}]]
     url = "#{@base_url}/#{path}"
-    response = HTTPoison.request(method, url, data, headers, options)
+    response = HTTPoison.request!(method, url, data, headers, options)
+    format_response(response)
   end
 
   defp format_response(response) do
-    case response do
-      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!
+    case {:ok,response} do
+      {:ok, %HTTPoison.Response{status_code: 201 }} -> {:ok,response}
+      {:ok, %HTTPoison.Response{status_code: 200 }} -> {:ok,response}
+      {:ok, %HTTPoison.Response{status_code: 400 }} -> {:error,response}
+      {:ok, %HTTPoison.Response{status_code: 401 }} -> {:error,response}
       _ -> %{"error" => "something went wrong, please try again later"}
     end
   end
-
 
 end

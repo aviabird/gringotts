@@ -2,7 +2,7 @@
 
     def valid_card_purchase_response do
       {:ok,
-       %HTTPoison.Response{body: "{\"response\":{\"token\":\"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72\",\"success\":true,\"captured\":false}}",
+        %HTTPoison.Response{body: "{\"response\":{\"token\":\"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72\",\"success\":true,\"captured\":false}}",
         headers: [{"Date", "Fri, 22 Dec 2017 11:57:28 GMT"},
          {"Content-Type", "application/json; charset=UTF-8"},
          {"ETag", "W/\"5a9f44c457a4fdd0478c82ec1af64816\""},
@@ -14,8 +14,8 @@
     end
 
     def invalid_card_purchase_response do
-      {:ok,
-       %HTTPoison.Response{body: "{\"error\":\"Payment failed\",\"detail\":\"Your card's expiration year is invalid.\"}",
+      {:error,
+        %HTTPoison.Response{body: "{\"error\":\"Payment failed\",\"detail\":\"Your card's expiration year is invalid.\"}",
         headers: [{"Date", "Fri, 22 Dec 2017 13:20:50 GMT"},
          {"Content-Type", "application/json; charset=UTF-8"},
          {"Cache-Control", "no-cache"},
