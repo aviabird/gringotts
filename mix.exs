@@ -8,6 +8,7 @@ defmodule Gringotts.Mixfile do
       description: description(),
       package: [
         contributors: ["Aviabird Technologies"],
+        maintainers: ["Pankaj Rawat"],
         licenses: ["MIT"],
         links: %{github: "https://github.com/aviabird/gringotts"}
       ],
