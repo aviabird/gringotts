@@ -77,7 +77,7 @@ defmodule Gringotts.Gateways.WireCard do
       test: true
     ] 
   """
-  @spec authorize(Integer | Float, CreditCard | String.t, Keyword) :: { :ok, Map }
+  @spec authorize(Integer | Float, CreditCard.t | String.t, Keyword) :: { :ok, Map }
   def authorize(money, payment_method, options \\ [])
 
   def authorize(money, %CreditCard{} = creditcard, options) do
@@ -183,7 +183,7 @@ defmodule Gringotts.Gateways.WireCard do
     the returned authorization/GuWID usable in later transactions
     with +options[:recurring] = 'Repeated'+.
   """
-  @spec store(CreditCard, Keyword) :: { :ok, Map }
+  @spec store(CreditCard.t, Keyword) :: { :ok, Map }
   def store(%CreditCard{} = creditcard, options \\ []) do
     options = options 
                 |> Keyword.put(:credit_card, creditcard) 
