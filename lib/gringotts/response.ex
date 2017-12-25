@@ -17,7 +17,7 @@ defmodule Gringotts.Response do
   """
   
   defstruct [
-    :success, :authorization, :status_code, :error_code, :message, 
+    :success, :authorization, :status_code, :error_code, :message,
     :avs_result, :cvc_result, :params, :fraud_review
   ]
 

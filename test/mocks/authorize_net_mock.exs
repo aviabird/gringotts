@@ -297,8 +297,25 @@
        status_code: 200}}     
     end
 
-    def network_error_response do
-      body = "no response error"
-      {:error, %{body: body, status_code: 500}}
+    def customer_payment_profile_success_response do
+      {:ok,
+      %HTTPoison.Response{body: "﻿<?xml version=\"1.0\" encoding=\"utf-8\"?><createCustomerPaymentProfileResponse xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\"><messages><resultCode>Ok</resultCode><message><code>I00001</code><text>Successful.</text></message></messages><customerProfileId>1814012002</customerProfileId><customerPaymentProfileId>1808670005</customerPaymentProfileId><validationDirectResponse>1,1,1,(TESTMODE) This transaction has been approved.,000000,P,0,none,Test transaction for ValidateCustomerPaymentProfile.,1.00,CC,auth_only,none,,,,,,,,,,,email@example.com,,,,,,,,,0.00,0.00,0.00,FALSE,none,EA9FD49A9501D0415FE26BAEF9FD8B2C,,,,,,,,,,,,,XXXX0015,MasterCard,,,,,,,,,,,,,,,,,</validationDirectResponse></createCustomerPaymentProfileResponse>",
+       headers: [{"Cache-Control", "private"},
+        {"Content-Type", "application/xml; charset=utf-8"},
+        {"X-OPNET-Transaction-Trace",
+         "a2_b6b84b43-d399-4dde-bc12-fb1f8ccf4b27-51156-17537805"},
+        {"Access-Control-Allow-Origin", "*"},
+        {"Access-Control-Allow-Methods", "PUT,OPTIONS,POST,GET"},
+        {"Access-Control-Allow-Headers",
+         "x-requested-with,cache-control,content-type,origin,method,SOAPAction"},
+        {"Access-Control-Allow-Credentials", "true"}, {"X-Cnection", "close"},
+        {"Content-Length", "828"}, {"Date", "Thu, 28 Dec 2017 13:54:20 GMT"},
+        {"Connection", "keep-alive"}],
+       request_url: "https://apitest.authorize.net/xml/v1/request.api",
+       status_code: 200}}
+    end
+    
+    def netwok_error_non_existent_domain do
+      {:error, %HTTPoison.Error{id: nil, reason: :nxdomain}}
     end
   end
