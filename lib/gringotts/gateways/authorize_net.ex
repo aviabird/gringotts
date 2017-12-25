@@ -86,6 +86,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:name, :transaction_key]
 
+  alias Gringotts.Gateways.AuthorizeNet.ResponseHandler
+
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
   @header [{"Content-Type", "text/xml"}]
@@ -98,20 +100,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     void: "voidTransaction"
   }
 
-  @response_type %{
-    auth_response: "authenticateTestResponse",
-    transaction_response: "createTransactionResponse",
-    error_response: "ErrorResponse",
-    customer_profile_response: "createCustomerProfileResponse",
-    customer_payment_profile_response: "createCustomerPaymentProfileResponse",
-    delete_customer_profile: "deleteCustomerProfileResponse"
-  }
-
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
   alias Gringotts.{
     CreditCard,
-    Address,
     Response
   }
 
@@ -163,9 +155,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(Float, CreditCard.t, Keyword.t) :: tuple
+  @spec purchase(float, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
   def purchase(amount, payment, opts) do
-    request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
+    request_data =
+      add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
@@ -216,9 +209,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.authorize(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec authorize(Float, CreditCard.t, Keyword.t) :: tuple
+  @spec authorize(float, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
   def authorize(amount, payment, opts) do
-    request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
+    request_data = 
+      add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
@@ -232,7 +226,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     * `refund/3` a settled transaction.
     * `void/2` a transaction.
   
-  ## Quirks
+  ## Notes
   * If a `capture` transaction needs to `void` then it should be done before it is settled. For AuthorieNet
     all the transactions are settled after 24 hours.
   
@@ -253,7 +247,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> id = "123456"
       iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
-  @spec capture(String.t, Float, Keyword.t) :: tuple
+  @spec capture(String.t, float, Keyword.t) :: {:ok | :error, Response.t}
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     response_data = commit(:post, request_data, opts)
@@ -283,7 +277,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
-  @spec refund(Float, String.t, Keyword.t) :: tuple
+  @spec refund(float, String.t, Keyword.t) :: {:ok | :error, Response.t}
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data, opts)
@@ -307,7 +301,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> id = "123456"
       iex> result = Gringotts.void(Gringotts.Gateways.AuthorizeNet, id, opts)
   """
-  @spec void(String.t, Keyword.t) :: tuple
+  @spec void(String.t, Keyword.t) :: {:ok | :error, Response.t}
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data, opts)
@@ -322,8 +316,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   can create customer payment profile by passing the `customer_profile_id` in the `opts`.
   The gateway also provide a provision for a `validation mode`, there are two modes `liveMode`
   and `testMode`, to know more about modes [see](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile).
+  By default `validation mode` is set to `testMode`.
   
-  ## Quirks
+  ## Notes
   * The current version of this library supports only `credit card` as the payment profile.
   * If a customer profile is created without the card info, then to create a payment profile
     `card` info needs to be passed alongwith `cutomer_profile_id` to create it.
@@ -335,7 +330,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   ## Optional Fields
       opts = [
         validation_mode: String,
-        billTo: %{
+        bill_to: %{
           first_name: String, last_name: String, company: String, address: String,
           city: String, state: String, zip: String, country: String
         },
@@ -350,11 +345,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
       iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, card, opts)
   """
-  @spec store(CreditCard.t, Keyword.t) :: tuple
+  @spec store(CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
   def store(card, opts) do
-    request_data = cond  do
-      opts[:customer_profile_id] -> card |> create_customer_payment_profile(opts) |> generate
-      true -> card |> create_customer_profile(opts) |> generate
+    request_data = if opts[:customer_profile_id] do
+      card |> create_customer_payment_profile(opts) |> generate
+    else
+      card |> create_customer_profile(opts) |> generate
     end
     response_data = commit(:post, request_data, opts)
     respond(response_data)
@@ -372,7 +368,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, id, opts)
   """
   
-  @spec unstore(String.t, Keyword.t) :: tuple
+  @spec unstore(String.t, Keyword.t) :: {:ok | :error, Response.t}
   def unstore(customer_profile_id, opts) do
     request_data = customer_profile_id |> delete_customer_profile(opts) |> generate
     response_data = commit(:post, request_data, opts)
@@ -386,38 +382,31 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     HTTPoison.request(method, path, payload, headers)
   end
 
-  # Function to return a response 
+  # Function to return a response
   defp respond({:ok, %{body: body, status_code: 200}}) do
     raw_response  = naive_map(body)
-    cond do
-      raw_response[@response_type[:auth_response]] ->
-        response_check(raw_response[@response_type[:auth_response]], raw_response)
-      raw_response[@response_type[:transaction_response]] ->
-        response_check(raw_response[@response_type[:transaction_response]], raw_response)
-      raw_response[@response_type[:error_response]] ->
-        response_check(raw_response[@response_type[:error_response]], raw_response)
-      raw_response[@response_type[:customer_profile_response]] ->
-        response_check(raw_response[@response_type[:customer_profile_response]], raw_response)
-      raw_response[@response_type[:customer_payment_profile_response]] ->
-        response_check(raw_response[@response_type[:customer_payment_profile_response]], raw_response)
-      raw_response[@response_type[:delete_customer_profile]] ->
-        response_check(raw_response[@response_type[:delete_customer_profile]], raw_response)  
-    end
+    response_type = ResponseHandler.check_response_type(raw_response)
+    response_check(raw_response[response_type], raw_response)
   end
 
-  defp respond({:error, %{body: body, status_code: code}}) do
-    {:error, Response.error(raw: body, code: code)}
+  defp respond({:ok, %{body: body, status_code: code}}) do
+    {:error, Response.error(params: body, error_code: code)}
   end
- 
+
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    IO.inspect error
+    {:error, Response.error(error_code: error.id, message: "HTTPoison says '#{error.reason}'")}
+  end
+
   # Functions to send successful and error responses depending on message received
   # from gateway.
 
   defp response_check(%{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
-    {:ok, Response.success(raw: raw_response)}
+    {:ok, ResponseHandler.parse_gateway_success(raw_response)}
   end
 
   defp response_check(%{"messages" => %{"resultCode" => "Error"}}, raw_response) do
-    {:error, Response.error(raw: raw_response)}
+    {:error, ResponseHandler.parse_gateway_error(raw_response)}
   end
 
   #------------------- Helper functions for the interface functions-------------------
@@ -432,7 +421,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
        ])
     |> generate
   end
-  
+
   # function for formatting the request for  normal capture
   defp normal_capture(amount, id, opts, transaction_type) do
     :createTransactionRequest
@@ -444,13 +433,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     |> generate
   end
 
-  # function to format the request as an xml for the authenticate method
-  defp add_auth_request(opts) do
-    :authenticateTestRequest
-    |> element(%{xmlns: @aut_net_namespace}, [add_merchant_auth(opts[:config])])
-    |> generate
-  end
-  
   #function to format the request for normal refund
   defp normal_refund(amount, id, opts, transaction_type) do
     :createTransactionRequest
@@ -484,7 +466,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         add_billing_info(opts),
         add_payment_source(card)
       ]),
-      element(:validationMode, opts[:validation_mode])
+      element(:validationMode, 
+        (if opts[:validation_mode], do: opts[:validation_mode], else: "testMode")
+      )
     ])
   end
 
@@ -496,10 +480,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         element(:description, opts[:profile][:description]),
         element(:email, opts[:profile][:description]),
         element(:paymentProfiles, [
-          element(:customerType, (if opts[:customer_type], do: opts[:customer_type], else: "individual")),
+          element(:customerType,
+            (if opts[:customer_type], do: opts[:customer_type], else: "individual")
+          ),
+          add_billing_info(opts),
           add_payment_source(card)
-        ])
-      ])
+        ]),
+      ]),
+      element(:validationMode, 
+        (if opts[:validation_mode], do: opts[:validation_mode], else: "testMode")
+      )      
     ])
   end
 
@@ -553,7 +543,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       element(:payment, [
         element(:creditCard, [
           element(:cardNumber, opts[:payment][:card][:number]),
-          element(:expirationDate, join_string([opts[:payment][:card][:year], opts[:payment][:card][:month]], "-"))
+          element(:expirationDate, 
+            join_string([opts[:payment][:card][:year], opts[:payment][:card][:month]], "-")
+          )
         ])
       ]),
       add_ref_trans_id(id)
@@ -688,11 +680,87 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
   
   defp base_url(opts) do
-    cond do
-      opts[:config][:mode] == :prod -> @production_url
-      opts[:config][:mode] == :test -> @test_url
-      true -> @test_url
-    end  
+    if opts[:config][:mode] == :prod do
+      @production_url
+    else 
+      @test_url
+    end
   end
 
+  defmodule ResponseHandler do
+    @moduledoc false
+    alias Gringotts.Response
+    
+    @response_type %{
+      auth_response: "authenticateTestResponse",
+      transaction_response: "createTransactionResponse",
+      error_response: "ErrorResponse",
+      customer_profile_response: "createCustomerProfileResponse",
+      customer_payment_profile_response: "createCustomerPaymentProfileResponse",
+      delete_customer_profile: "deleteCustomerProfileResponse"
+    }
+
+    def parse_gateway_success(raw_response) do
+      response_type = check_response_type(raw_response)
+      message = raw_response[response_type]["messages"]["message"]["text"]
+      avs_result = raw_response[response_type]["transactionResponse"]["avsResultCode"]
+      cvc_result = raw_response[response_type]["transactionResponse"]["cavvResultCode"]
+
+      []
+        |> status_code(200)
+        |> set_message(message)
+        |> set_avs_result(avs_result)
+        |> set_cvc_result(cvc_result)
+        |> set_params(raw_response)
+        |> set_success(true)
+        |> handle_opts
+    end
+
+    def parse_gateway_error(raw_response) do
+      response_type = check_response_type(raw_response)
+      
+      {message, error_code} = if raw_response[response_type]["transactionResponse"]["errors"] do
+        {raw_response[response_type]["messages"]["message"]["text"] <> " " <>
+          raw_response[response_type]["transactionResponse"]["errors"]["error"]["errorText"],
+        raw_response[response_type]["transactionResponse"]["errors"]["error"]["errorCode"]}
+      else
+        {raw_response[response_type]["messages"]["message"]["text"],
+        raw_response[response_type]["messages"]["message"]["code"]}
+      end
+
+      []
+        |> status_code(200)
+        |> set_message(message)
+        |> set_error_code(error_code)
+        |> set_params(raw_response)
+        |> set_success(false)
+        |> handle_opts
+    end
+
+    def check_response_type(raw_response) do
+      cond do
+        raw_response[@response_type[:transaction_response]] -> "createTransactionResponse"
+        raw_response[@response_type[:error_response]] -> "ErrorResponse"
+        raw_response[@response_type[:customer_profile_response]] -> "createCustomerProfileResponse"
+        raw_response[@response_type[:customer_payment_profile_response]] -> "createCustomerPaymentProfileResponse"
+        raw_response[@response_type[:delete_customer_profile]] -> "deleteCustomerProfileResponse"
+      end
+    end
+    
+    defp set_success(opts, value), do: opts ++ [success: value] 
+    defp status_code(opts, code), do: opts ++ [status_code: code]
+    defp set_message(opts, message), do: opts ++ [message: message]
+    defp set_avs_result(opts, result), do: opts ++ [avs_result: result]
+    defp set_cvc_result(opts, result), do: opts ++ [cvc_result: result]
+    defp set_params(opts, raw_response), do: opts ++ [params: raw_response]
+    defp set_error_code(opts, code), do: opts ++ [error_code: code]
+    
+    defp handle_opts(opts) do
+      case Keyword.fetch(opts, :success) do
+        {:ok, true} -> Response.success(opts)
+        {:ok, false} -> Response.error(opts)
+      end
+    end
+
+  end
 end
