@@ -33,15 +33,15 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   ]
 
   describe "purchase" do
-    test "test_successful_purchase" do
-      with_mock HTTPoison, 
+    test "successful response" do
+      with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_purchase_response end] do
           {:ok, response} = ANet.purchase(@amount, @card, @opts)
           assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
       end
     end
 
-    test "test_bad_amount_purchase" do
+    test "with bad amount" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_amount_purchase_response end] do
         {:error, response} = ANet.purchase(@bad_amount, @card, @opts)
@@ -49,7 +49,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       end
     end
 
-    test "test_bad_card_purchase" do
+    test "with bad card" do
       with_mock HTTPoison, 
         [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_card_purchase_response end] do
           {:error, response} = ANet.purchase(@amount, @bad_card, @opts)
@@ -62,6 +62,12 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         assert {:error, response} = ANet.purchase(@amount, @card, @opts)
       end
     end
+  end
+
+  describe "authorize" do
+    test "successful response" do
+      with_mock
+    end 
   end
 
 end
