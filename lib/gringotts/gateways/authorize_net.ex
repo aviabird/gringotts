@@ -338,7 +338,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec store(CreditCard.t, Keyword) :: Tuple
   def store(card, opts) do
     request_data = cond  do
-      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate 
+      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate
       true -> create_customer_profile(card, opts) |> generate
     end
     response_data = commit(:post, request_data, opts)
