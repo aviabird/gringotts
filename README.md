@@ -45,7 +45,7 @@ This simple example demonstrates how a purchase can be made using a person's cre
 Add configs in `config/config.exs` file.
 
 ```elixir
-config :Gringotts, Gringotts.Gateways.Stripe,
+config :gringotts, Gringotts.Gateways.Stripe,
   adapter: Gringotts.Gateways.Stripe,
   api_key: "YOUR_KEY",
   default_currency: "USD"
