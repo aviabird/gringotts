@@ -16,7 +16,6 @@ defmodule Gringotts.Gateways.Cams do
     | Refund                       | `refund/3`    |
     | Cancel                       | `void/2`      |
 
-
   ## The `opts` argument
 
     Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
@@ -26,14 +25,13 @@ defmodule Gringotts.Gateways.Cams do
     | Key                 | Remark | Status          |
     | ----                | ---    | ----            |
     | `billing_address`   |        | Not implemented |
-    | `address`           |      	| Not implemented |
+    | `address`           |      	 | Not implemented |
     | `currency`          |        | **Implemented** |
-    | `order_id`  				 |        | Not implemented |
+    | `order_id`  				|        | Not implemented |
     | `description`       |        | Not implemented |
 
-    > All these keys are being implemented, track progress in
-    > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
-
+    All these keys are being implemented, track progress in
+    [issue #42](https://github.com/aviabird/gringotts/issues/42)!
 
   ## Configuration parameters for Cams:
 
@@ -54,11 +52,12 @@ defmodule Gringotts.Gateways.Cams do
   @default_currency  "USD"
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:username, :password, :default_currency]
+  use Gringotts.Adapter,
+  required_config: [:username, :password, :default_currency]
   alias Gringotts.{CreditCard, Address, Response}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
-  
-  import Poison, only: [decode!: 1] 
+
+  import Poison, only: [decode!: 1]
   @doc """
     Use this method for performing purchase(sale) operation. 
 
@@ -121,7 +120,7 @@ defmodule Gringotts.Gateways.Cams do
       |> add_address(payment, options)
     commit("auth", post, options)
   end
- 
+
   @doc """
     Use this method for capture the amount of the authorized transaction which is previously authorized by `authorize/3` method.
 
@@ -145,7 +144,7 @@ defmodule Gringotts.Gateways.Cams do
           |> add_invoice(money, options)
     commit("capture", post, options)
   end
- 
+
   @doc """
     Use this method for refund the amount for particular transaction. 
 
@@ -186,25 +185,25 @@ defmodule Gringotts.Gateways.Cams do
       iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Cams, authorization, options)
   """
   @spec void(String.t, Keyword) :: Response
-  def void(authorization , options) do  
+  def void(authorization , options) do
     post = [transactionid:  authorization]
     commit("void", post, options)
   end
 
   # private methods
-  
+
   defp add_invoice(post, money, options) do
-    post  
-    |> Keyword.put(:amount, money) 
+    post
+    |> Keyword.put(:amount, money)
     |> Keyword.put(:currency, (options[:currency] || @default_currency))
   end
 
-  defp add_payment(post, payment) do   
-    exp_month = join_month(payment) 
-    exp_year = payment.year 
-               |> to_string() 
+  defp add_payment(post, payment) do
+    exp_month = join_month(payment)
+    exp_year = payment.year
+               |> to_string()
                |> String.slice(-2..-1)
-    post 
+    post
     |> Keyword.put(:ccnumber, payment.number)
     |> Keyword.put(:ccexp, "#{exp_month}#{exp_year}")
     |> Keyword.put(:cvv, payment.verification_code)
@@ -214,7 +213,6 @@ defmodule Gringotts.Gateways.Cams do
     post
     |> Keyword.put(:firstname, payment.first_name)
     |> Keyword.put(:lastname, payment.last_name)
-
     if options[:billing_address] do
       address = options[:billing_address]
       post
@@ -224,36 +222,28 @@ defmodule Gringotts.Gateways.Cams do
       |> Keyword.put(:state, address[:state])
       |> Keyword.put(:zip, address[:zip])
       |> Keyword.put(:country, address[:country])
-      |> Keyword.put(:phone, address[:phone])      
+      |> Keyword.put(:phone, address[:phone])
     end
   end
 
   defp join_month(payment) do
-     payment.month 
+     payment.month
      |> to_string
      |> String.pad_leading(2, "0")
   end
 
-  defp commit(action, params, options) do 
+  defp commit(action, params, options) do
     url = @live_url
     params = params
              |> Keyword.put(:type, action)
              |> Keyword.put(:password, options[:config][:password])
              |> Keyword.put(:username, options[:config][:username])
              |> params_to_string
-    url       
+    url
       |> HTTPoison.post(params, @headers)
       |> ResponseParser.parse
   end
 
-  defp respond({:ok, %{body: body, status_code: 200}}) do
-    {:ok, body}
-  end
-
-  defp respond({:error, %HTTPoison.Error{reason: reason}}) do
-    {:error, "Some error has been occurred"}
-  end
- @doc false
   defmodule ResponseHandler do
     alias Gringotts.Response
 
@@ -264,22 +254,22 @@ defmodule Gringotts.Gateways.Cams do
       |> set_success(body)
       |> set_message(body)
       |> set_params(body)
-      |> set_error_code(body)	
-      |> handle_opts()	 
+      |> set_error_code(body)
+      |> handle_opts()
     end
 
     defp set_authorization(opts, %{"transactionid" => id}) do
-      opts ++ [authorization: id]  
+      opts ++ [authorization: id]
     end
-    
+
     defp set_message(opts, %{"responsetext" => message}) do
       opts ++ [message: message]
     end
-    
+
     defp handle_opts(opts) do
       {:ok, Response.success(opts)}
     end
-    
+
     defp set_params(opts, body) do
       opts ++ [params: body]
     end
@@ -294,4 +284,3 @@ defmodule Gringotts.Gateways.Cams do
 
   end
 end
-
