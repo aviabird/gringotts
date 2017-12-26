@@ -59,7 +59,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     {:ok, bypass: bypass, auth: auth}
   end
 
-  describe "core      |" do
+  describe "core" do
     @tag :skip
     test "with unsupported currency.",
       %{bypass: bypass, auth: auth} do
@@ -85,7 +85,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "authorize |" do
+  describe "authorize" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
@@ -109,7 +109,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "purchase  |" do
+  describe "purchase" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
@@ -119,7 +119,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "store     |" do
+  describe "store" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once bypass, "POST", "/v1/registrations", fn conn ->
         Plug.Conn.resp(conn, 200, @store_success)
@@ -130,7 +130,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "capture   |" do
+  describe "capture" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(
         bypass,
@@ -144,7 +144,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "refund    |" do
+  describe "refund" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(
         bypass,
@@ -172,7 +172,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
 
-  describe "void      |" do
+  describe "void" do
     test "when all is good", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(
         bypass,
@@ -187,7 +187,7 @@ defmodule Gringotts.Gateways.MoneiTest do
   end
 
   @tag :skip
-  test "respond   | various scenarios, can't test a private function." do
+  test "respond various scenarios, can't test a private function." do
     json_200 = %HTTPoison.Response{body: @auth_success, status_code: 200}
     json_not_200 = %HTTPoison.Response{body: @auth_success, status_code: 300}
     html_200 = %HTTPoison.Response{body: ~s[<html></html>\n], status_code: 200}
