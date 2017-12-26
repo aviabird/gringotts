@@ -253,7 +253,7 @@ defmodule Gringotts.Gateways.Stripe do
   # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-    optional_params(opts) 
+    optional_params(opts)
       ++ [capture: capture]
       ++ amount_params(amount)
       ++ source_params(payment, opts)
@@ -265,10 +265,10 @@ defmodule Gringotts.Gateways.Stripe do
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
 
-  defp source_params(%{} = payment, opts) do
+  defp source_params(%CreditCard{} = card, opts) do
     params = 
-      card_params(payment) ++ 
-      address_params(payment)
+      card_params(card) ++ 
+      address_params(opts[:address])
 
     response = create_card_token(params, opts)
 
@@ -288,18 +288,24 @@ defmodule Gringotts.Gateways.Stripe do
     end
   end
 
-  defp card_params(%{} = card) do
+  defp source_params(_, opts), do: []
+
+  defp card_params(%CreditCard{} = card) do
+    card = Map.from_struct(card)
+
     [ "card[name]": card[:name],
       "card[number]": card[:number],
       "card[exp_year]": card[:year],
       "card[exp_month]": card[:month],
-      "card[cvc]": card[:cvc]
+      "card[cvc]": card[:verification_code]
     ]   
   end
 
   defp card_params(_), do: []
 
-  defp address_params(%{} = address) do
+  defp address_params(%Address{} = address) do
+    address = Map.from_struct(address)
+
     [ "card[address_line1]": address[:street1],
       "card[address_line2]": address[:street2],
       "card[address_city]":  address[:city],
@@ -314,13 +320,16 @@ defmodule Gringotts.Gateways.Stripe do
   defp commit(method, path, params \\ [], opts \\ []) do
     auth_token = "Bearer " <> opts[:config][:api_key]
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
+   
     data = params_to_string(params)
     response = HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
     format_response(response)
   end
 
   defp optional_params(opts) do
-    Keyword.delete(opts, :config)
+    opts
+      |> Keyword.delete(:config)
+      |> Keyword.delete(:address)
   end
 
   defp format_response(response) do
