@@ -194,10 +194,10 @@ defmodule Gringotts.Gateways.Trexle do
     [
       capture: capture,
       amount: amount,
-      currency: @currency,
-      email: @email,
-      ip_address: @ip_address,
-      description: @description
+      currency: opts[:config][:default_currency],
+      email: opts[:email],
+      ip_address: opts[:ip_address],
+      description: opts[:description]
     ]++ card_params(payment)
   end
 
