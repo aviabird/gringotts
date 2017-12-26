@@ -27,7 +27,7 @@ defmodule Gringotts.Gateways.Cams do
     | `billing_address`   |        | Not implemented |
     | `address`           |      	 | Not implemented |
     | `currency`          |        | **Implemented** |
-    | `order_id`  				 |        | Not implemented |
+    | `order_id`  				|        | Not implemented |
     | `description`       |        | Not implemented |
 
     All these keys are being implemented, track progress in
@@ -330,4 +330,3 @@ defmodule Gringotts.Gateways.Cams do
 
   end
 end
-
