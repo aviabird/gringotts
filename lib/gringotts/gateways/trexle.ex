@@ -9,7 +9,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   alias Gringotts.Gateways.Trexle.ResponseHandler, as: ResponseParser
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:api_key,:default_currency]
+  use Gringotts.Adapter, required_config: [:api_key, :default_currency]
 
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -37,7 +37,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
-    params = [email: opts[:email]]++card_params(payment)
+    params = [email: opts[:email]] ++ card_params(payment)
     commit(:post, "customers", params, opts)
   end
 
@@ -49,11 +49,12 @@ defmodule Gringotts.Gateways.Trexle do
       email: opts[:email],
       ip_address: opts[:ip_address],
       description: opts[:description]
-    ]++ card_params(payment)
+    ] ++ card_params(payment)
   end
 
   defp card_params(%{} = card) do
-    [ "card[name]": card[:name],
+    [ 
+      "card[name]": card[:name],
       "card[number]": card[:number],
       "card[expiry_year]": card[:expiry_year],
       "card[expiry_month]": card[:expiry_month],
@@ -77,11 +78,11 @@ defmodule Gringotts.Gateways.Trexle do
   end
 
   defp format_response(response) do
-    case {:ok,response} do
-      {:ok, %HTTPoison.Response{status_code: 201 }} -> {:ok,response}
-      {:ok, %HTTPoison.Response{status_code: 200 }} -> {:ok,response}
-      {:ok, %HTTPoison.Response{status_code: 400 }} -> {:error,response}
-      {:ok, %HTTPoison.Response{status_code: 401 }} -> {:error,response}
+    case {:ok, response} do
+      {:ok, %HTTPoison.Response{status_code: 201}} -> {:ok, response}
+      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, response}
+      {:ok, %HTTPoison.Response{status_code: 400}} -> {:error, response}
+      {:ok, %HTTPoison.Response{status_code: 401}} -> {:error, response}
       _ -> %{"error" => "something went wrong, please try again later"}
     end
   end

@@ -55,7 +55,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
   describe "validation arguments check" do
     test "with no currency passed in config" do              
-      assert_raise ArgumentError,fn ->
+      assert_raise ArgumentError, fn ->
         Trexle.validate_config(@invalid_opts)    
       end
     end
