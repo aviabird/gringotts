@@ -22,18 +22,33 @@ defmodule Gringotts.Gateways.Cams do
     Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
     optional arguments for transactions with the Cams gateway. The following keys
     are supported:
-    
+  
     | Key                 | Remark | Status          |
     | ----                | ---    | ----            |
     | `billing_address`   |        | Not implemented |
-    | `address`           |     	 | Not implemented |
+    | `address`           |      	| Not implemented |
     | `currency`          |        | **Implemented** |
-    | `order_id`  				|        | Not implemented |
+    | `order_id`  				 |        | Not implemented |
     | `description`       |        | Not implemented |
 
     > All these keys are being implemented, track progress in
     > [issue #42](https://github.com/aviabird/gringotts/issues/42)!
 
+
+  ## Configuration parameters for Cams:
+
+    | Config parameter | Cams secret   |
+    | -------          | ----          |
+    | `:username`      | **Username**  |
+    | `:password`      | **Password**  |
+  
+  Your Application config **must include the `:username`, `:password`
+  fields** and would look something like this: 
+   
+      config :gringotts, Gringotts.Gateways.Cams,
+      adapter: Gringotts.Gateways.Cams,
+      username: "your_secret_user_name",
+      password: "your_secret_password",
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @default_currency  "USD"
