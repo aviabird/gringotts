@@ -122,12 +122,14 @@ defmodule Gringotts.Gateways.Cams do
 
   @doc """
     Use this method for capture the amount of the authorized transaction which is previously authorized by `authorize/3` method.
-
+    
+    Transaction captures flag existing authorizations for settlement. Only authorizations can be captured. Captures
+    can be submitted for an amount equal to or less than the original authorization.
     It takes `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
     From response it takes `transactionid` for further processing. 
     Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
-  
+    Capture with less than original amount, can be captured once, remaining amount needs to be refund back to original payment source.  
   
   ## Examples
 
@@ -194,7 +196,7 @@ defmodule Gringotts.Gateways.Cams do
   defp add_invoice(post, money, options) do
     post
     |> Keyword.put(:amount, money)
-    |> Keyword.put(:currency, (options[:currency] || @default_currency))
+    |> Keyword.put(:currency, (options[:config][:currency]))
   end
 
   defp add_payment(post, payment) do
