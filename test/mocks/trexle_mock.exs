@@ -68,6 +68,10 @@
       request_url: "https://core.trexle.com/api/v1//charges", status_code: 400} 
     end
 
+    def test_for_authorize_with_missing_ip_address do
+      %{"error" => "something went wrong, please try again later"}
+    end
+
     def test_for_refund_with_valid_token do 
       %HTTPoison.Response{body: "{\"response\":{\"token\":\"refund_a86a757cc6bdabab50d6ebbfcdcd4db4e04198dd\",\"success\":true,\"amount\":50,\"charge\":\"charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b\",\"status_message\":\"Transaction approved\"}}",
       headers: [{"Date", "Sat, 23 Dec 2017 18:55:41 GMT"},

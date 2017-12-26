@@ -40,11 +40,18 @@ defmodule Gringotts.Gateways.TrexleTest do
   @invalid_token "30"
 
   @opts [
-    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4",default_currency: "usd"}, 
+    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "usd"}, 
     email: "john@trexle.com",
     ip_address: "66.249.79.118", 
     description: "Store Purchase 1437598192"
   ]
+
+  @missingip_opts [
+    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "usd"}, 
+    email: "john@trexle.com",
+    description: "Store Purchase 1437598192"
+  ]
+
 
   @invalid_opts [
     config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4"}, 
@@ -109,6 +116,14 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)  
         assert response.status_code == 400
+      end
+    end
+
+    test "with missing ip address" do
+      with_mock HTTPoison,
+      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
+        response = Trexle.authorize(@amount, @valid_card, @missingip_opts) 
+        assert response == %{"error" => "something went wrong, please try again later"}
       end
     end
   end
