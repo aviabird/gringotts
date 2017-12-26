@@ -52,7 +52,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec purchase(number, CreditCard, Keyword) :: Response
+  @spec purchase(number, CreditCard.t, Keyword) :: Response
   def purchase(money, payment, options) do
     post = []
           |> add_invoice(money, options)
@@ -88,7 +88,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec authorize(number, CreditCard, Keyword) :: Response
+  @spec authorize(number, CreditCard.t, Keyword) :: Response
   def authorize(money, payment, options) do
     post = []
       |> add_invoice(money, options)
