@@ -57,7 +57,6 @@
       request_url: "https://core.trexle.com/api/v1//charges", status_code: 400} 
     end
 
-
     def test_for_authorize_with_invalid_amount do
       %HTTPoison.Response{body: "{\"error\":\"Payment failed\",\"detail\":\"Amount must be at least 50 cents\"}",
       headers: [{"Date", "Sat, 23 Dec 2017 18:40:10 GMT"},
