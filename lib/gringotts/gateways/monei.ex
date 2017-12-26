@@ -164,7 +164,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> auth_result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
-  @spec authorize(number, CreditCard, keyword) :: Response
+  @spec authorize(number, CreditCard.t, keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) when is_integer(amount) do
     authorize(amount / 1, card, opts)
   end
@@ -200,7 +200,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(:payment_worker, Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
-  @spec capture(number, String.t, keyword) :: Response
+  @spec capture(number, String.t, keyword) :: {:ok | :error, Response}
   def capture(amount, paymentId, opts)
   def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
     capture(amount / 1, paymentId, opts)
@@ -229,7 +229,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
   """
-  @spec purchase(number, CreditCard, keyword) :: Response
+  @spec purchase(number, CreditCard.t, keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do purchase(amount / 1, card, opts) end
   
   def purchase(amount, card = %CreditCard{}, opts) when is_float(amount) do
@@ -273,7 +273,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> void_result = Gringotts.void(:payment_worker, Gringotts.Gateways.Monei, auth_result.id, opts)
   """  
-  @spec void(String.t, keyword) :: Response
+  @spec void(String.t, keyword) :: {:ok | :error, Response}
   def void(paymentId, opts)
   def void(<<paymentId::bytes-size(32)>>, opts) do
     params = [paymentType: "RV"]
@@ -301,7 +301,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(:payment_worker, Gringotts.Gateways.Monei, purchase_result.id, opts)
   """
-  @spec refund(number, String.t, keyword) :: Response
+  @spec refund(number, String.t, keyword) :: {:ok | :error, Response}
   def refund(amount, paymentId, opts) when is_integer(amount) do
     refund(amount / 1, paymentId, opts)
   end
@@ -338,7 +338,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2019, month: 12, verification_code:  "123", brand: "VISA"}
       iex> store_result = Gringotts.store(:payment_worker, Gringotts.Gateways.Monei, card, opts)
   """
-  @spec store(CreditCard, keyword) :: Response
+  @spec store(CreditCard.t, keyword) :: {:ok | :error, Response}
   def store(card = %CreditCard{}, opts) do
     params = card_params(card)
     auth_info = Keyword.fetch!(opts, :config)
@@ -352,7 +352,7 @@ defmodule Gringotts.Gateways.Monei do
 
   Deletes previously stored payment-source data.
   """
-  @spec unstore(String.t, keyword) :: Response
+  @spec unstore(String.t, keyword) :: {:ok | :error, Response}
   def unstore(<<registrationId::bytes-size(32)>>, opts) do
     auth_info = Keyword.fetch!(opts, :config)
     commit(:delete, "registrations/#{registrationId}", [], auth_info)
@@ -370,9 +370,7 @@ defmodule Gringotts.Gateways.Monei do
   end
 
   # Makes the request to MONEI's network.
-  @spec commit(atom, String.t, keyword, keyword) ::
-  {:ok, HTTPoison.Response} |
-  {:error, HTTPoison.Error}
+  @spec commit(atom, String.t, keyword, map) :: {:ok | :error, Response}
   defp commit(method, endpoint, params, opts) do
     auth_params = ["authentication.userId": opts[:userId],
                    "authentication.password": opts[:password],
@@ -386,9 +384,7 @@ defmodule Gringotts.Gateways.Monei do
   end
 
   # Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
-  @spec respond(term) ::
-  {:ok, Response} |
-  {:error, Response}
+  @spec respond(term) :: {:ok | :error, Response}
   defp respond(monei_response)
   
   defp respond({:ok, %{status_code: 200, body: body}}) do

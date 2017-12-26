@@ -91,7 +91,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
       amount = 5
   """
-  @spec purchase(Float, CreditCard, Keyword) :: Tuple
+  @spec purchase(Float, CreditCard.t, Keyword) :: Tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data, opts)
@@ -128,7 +128,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
       amount = 5
   """
-  @spec authorize(Float, CreditCard, Keyword) :: Tuple
+  @spec authorize(Float, CreditCard.t, Keyword) :: Tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data, opts)
@@ -233,7 +233,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
       card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
   """
-  @spec store(CreditCard, Keyword) :: Tuple
+  @spec store(CreditCard.t, Keyword) :: Tuple
   def store(card, opts) do
     request_data = cond  do
       opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate 
