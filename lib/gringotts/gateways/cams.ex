@@ -1,8 +1,7 @@
 defmodule Gringotts.Gateways.Cams do
   @moduledoc ~S"""
     A module for working with the Cams payment gateway.
-
-    An API client for the [CAMS](https://www.centralams.com/) gateway.
+    
     For referance you can test gateway operations [CAMS API TEST MODE](https://secure.centralams.com).
     Test it using test crediantials **username:** `testintegrationc`, **password:** `password9`
 
@@ -40,8 +39,8 @@ defmodule Gringotts.Gateways.Cams do
     | `:username`      | **Username**  |
     | `:password`      | **Password**  |
   
-  Your Application config **must include the `:username`, `:password`
-  fields** and would look something like this: 
+  > Your Application config **must include the `:username`, `:password`
+  > fields** and would look something like this: 
    
       config :gringotts, Gringotts.Gateways.Cams,
       adapter: Gringotts.Gateways.Cams,
@@ -210,12 +209,13 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   defp add_address(post, payment, options) do
-    post
+    post = post
     |> Keyword.put(:firstname, payment.first_name)
     |> Keyword.put(:lastname, payment.last_name)
+
     if options[:billing_address] do
       address = options[:billing_address]
-      post
+      post = post
       |> Keyword.put(:address1 , address[:address1])
       |> Keyword.put(:address2, address[:address2])
       |> Keyword.put(:city, address[:city])
@@ -245,8 +245,10 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   defmodule ResponseHandler do
+    @moduledoc false
     alias Gringotts.Response
 
+    @doc false
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = URI.decode_query(body)
       []
