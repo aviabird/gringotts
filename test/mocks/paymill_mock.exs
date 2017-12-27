@@ -68,4 +68,22 @@ defmodule Gringotts.Gateways.PaymillMock do
       request_url: "https://api.paymill.com/v2.1/preauthorizations/preauth_028b0d40a6465099a123",
       status_code: 404}}
   end
+
+  def successful_refund() do
+    {:ok, %HTTPoison.Response{body: "{\"mode\":\"test\",\"data\":{\"updated_at\":1514408064,\"transaction\":{\"updated_at\":1514408064,\"status\":\"refunded\",\"short_id\":\"0000.9999.0000\",\"response_code\":20000,\"refunds\":[\"refund_1840867e0632e776d307\"],\"preauthorization\":null,\"payment\":\"pay_0a22787c797a150f40ad32fc\",\"origin_amount\":100,\"mandate_reference\":null,\"livemode\":false,\"is_refundable\":false,\"is_markable_as_fraud\":true,\"is_fraud\":false,\"invoices\":[],\"id\":\"tran_8e3c8746b274c89930cd2a38ed43\",\"fees\":[],\"description\":\"\",\"currency\":\"EUR\",\"created_at\":1514408006,\"client\":\"client_d9a15a3bc9edd53b7d3b\",\"app_id\":null,\"amount\":0},\"status\":\"refunded\",\"short_id\":\"0000.9999.0000\",\"response_code\":20000,\"reason\":null,\"livemode\":false,\"id\":\"refund_1840867e0632e776d307\",\"description\":null,\"created_at\":1514408064,\"app_id\":null,\"amount\":100}}",
+      request_url: "https://api.paymill.com/v2.1/refunds/tran_8e3c8746b274c89930cd2a38ed43",
+      status_code: 200}}
+  end
+
+  def refund_with_invalid_trans_token() do
+    {:ok, %HTTPoison.Response{body: "{\"exception\":\"transaction_not_found\",\"error\":\"Transaction not found\"}",
+      request_url: "https://api.paymill.com/v2.1/refunds/tran_8e3c8746b274c89930cd2a38e123",
+      status_code: 404}}
+  end
+
+  def refund_with_high_amount() do
+    {:ok, %HTTPoison.Response{body: "{\"exception\":\"refund_amount_to_high\",\"error\":\"Amount to high\"}",
+      request_url: "https://api.paymill.com/v2.1/refunds/tran_d9df8ae460354befe6aee6916fbf",
+      status_code: 400}}
+  end
 end
