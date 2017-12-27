@@ -126,12 +126,35 @@ defmodule Gringotts.Gateways.PaymillTest do
   end
 
   describe "purchase/2" do
+
     test "with valid token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.successful_purchase end] do
+
+        {:ok, response} = Paymill.purchase(100, "tok_59f35a89e96dee1ceb6b437317be", @options)
+
+        assert response.success
+        assert response.status_code == 200
+        assert response.error_code == 20000
+        assert response.message == "Operation successful"
+      end
     end
+
     test "with invalid token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.purchase_with_invalid_card_token end] do
+
+        {:error, response} = Paymill.purchase(100, "tok_59f35a89e96dee1ceb6b437317be", @options)
+
+        refute response.success
+        assert response.status_code == 403
+        assert response.error_code == 40102
+        assert response.message == "Card expired or not yet valid"
+      end
     end
-    test "with already existing payments" do
-    end
+
   end
 
   describe "void/2" do

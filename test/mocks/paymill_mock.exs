@@ -44,4 +44,16 @@ defmodule Gringotts.Gateways.PaymillMock do
      request_url: "https://api.paymill.com/v2.1/transactions",
      status_code: 404}}
   end
+
+  def successful_purchase() do
+    {:ok, %HTTPoison.Response{body: "{\"mode\":\"test\",\"data\":{\"updated_at\":1514400803,\"status\":\"closed\",\"short_id\":\"0000.9999.0000\",\"response_code\":20000,\"refunds\":null,\"preauthorization\":null,\"payment\":{\"updated_at\":1514400802,\"type\":\"creditcard\",\"last4\":\"1111\",\"is_usable_for_preauthorization\":true,\"is_recurring\":true,\"id\":\"pay_9a09b497432463b3a6ee1ad1\",\"expire_year\":\"2018\",\"expire_month\":\"12\",\"created_at\":1514400802,\"country\":\"DE\",\"client\":\"client_75b88daa13b3d547accd\",\"card_type\":\"visa\",\"card_holder\":\"Sagar Karwande\",\"app_id\":null},\"origin_amount\":100,\"mandate_reference\":null,\"livemode\":false,\"is_refundable\":true,\"is_markable_as_fraud\":true,\"is_fraud\":false,\"invoices\":[],\"id\":\"tran_9d4db278fbf8ef2e997ef42c0a55\",\"fees\":[],\"description\":\"\",\"currency\":\"EUR\",\"created_at\":1514400802,\"client\":{\"updated_at\":1514400802,\"subscription\":null,\"payment\":[\"pay_9a09b497432463b3a6ee1ad1\"],\"id\":\"client_75b88daa13b3d547accd\",\"email\":null,\"description\":null,\"created_at\":1514400802,\"app_id\":null},\"app_id\":null,\"amount\":100}}",
+      request_url: "https://api.paymill.com/v2.1/transactions",
+      status_code: 200}}
+  end
+
+  def purchase_with_invalid_card_token do
+    {:ok, %HTTPoison.Response{body: "{\"mode\":\"test\",\"data\":{\"updated_at\":1514401924,\"status\":\"failed\",\"short_id\":null,\"response_code\":40102,\"refunds\":null,\"preauthorization\":null,\"payment\":{\"updated_at\":1514401923,\"type\":\"creditcard\",\"last4\":\"\",\"is_usable_for_preauthorization\":true,\"is_recurring\":true,\"id\":\"pay_0e39722b8afa3be3beeaa372\",\"expire_year\":\"\",\"expire_month\":\"\",\"created_at\":1514401923,\"country\":null,\"client\":\"client_51998977a73051f2b0da\",\"card_type\":null,\"card_holder\":\"\",\"app_id\":null},\"origin_amount\":100,\"mandate_reference\":null,\"livemode\":false,\"is_refundable\":false,\"is_markable_as_fraud\":true,\"is_fraud\":false,\"invoices\":[],\"id\":\"tran_3a6cc404cdb1c26065977d988ecd\",\"fees\":[],\"description\":\"\",\"currency\":\"EUR\",\"created_at\":1514401924,\"client\":{\"updated_at\":1514401923,\"subscription\":null,\"payment\":[\"pay_0e39722b8afa3be3beeaa372\"],\"id\":\"client_51998977a73051f2b0da\",\"email\":null,\"description\":null,\"created_at\":1514401923,\"app_id\":null},\"app_id\":null,\"amount\":100}}",
+      request_url: "https://api.paymill.com/v2.1/transactions",
+      status_code: 403}}
+  end
 end
