@@ -188,13 +188,46 @@ defmodule Gringotts.Gateways.PaymillTest do
   end
 
   describe "refund/3" do
+
     test "with valid transaction token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.successful_refund end] do
+
+        {:ok, response} = Paymill.refund(100, "tran_8e3c8746b274c89930cd2a38ed43", @options)
+
+        assert response.success
+        assert response.status_code == 200
+        assert response.error_code == 20_000
+        assert response.message == "Operation successful"
+      end
     end
+
     test "with invalid transaction token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.refund_with_invalid_trans_token end] do
+
+        {:error, response} = Paymill.refund(100, "tran_8e3c8746b274c89930cd2a38e123", @options)
+
+        refute response.success
+        assert response.status_code == 404
+        assert response.message == "Transaction not found"
+      end
     end
-    test "with hight amount than the transaction amount" do
+
+    test "with high amount than the transaction amount" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.refund_with_high_amount end] do
+
+        {:error, response} = Paymill.refund(400, "tran_d9df8ae460354befe6aee6916fbf", @options)
+
+        refute response.success
+        assert response.status_code == 400
+        assert response.message == "Amount to high"
+      end
     end
-    test "with partial amount" do
-    end
+
   end
 end
