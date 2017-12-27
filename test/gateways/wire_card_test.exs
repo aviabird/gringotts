@@ -116,4 +116,78 @@ defmodule Gringotts.Gateways.WireCardTest do
     test "test_failed_void" do
     end
   end
+
+  describe "testing for different scenarios" do
+    @tag :pending
+    test "test_no_error_if_no_state_is_provided_in_address" do
+    end
+
+    @tag :pending
+    test "test_no_error_if_no_address_provided" do
+    end
+
+    @tag :pending
+    test "test_description_trucated_to_32_chars_in_authorize" do
+    end
+
+    @tag :pending
+    test "test_description_trucated_to_32_chars_in_purchase" do
+    end
+
+    @tag :pending
+    test "test_description_is_ascii_encoded_since_wirecard_does_not_like_utf_8" do 
+    end
+
+    @tag :pending
+    test "test_failed_avs_response_message" do
+    end
+
+    @tag :pending
+    test "test_failed_amex_avs_response_code" do
+    end
+
+    @tag :pending
+    test "test_commerce_type_option" do
+    end
+
+    @tag :pending
+    test "test_store_sets_recurring_transaction_type_to_initial" do
+    end
+
+    @tag :pending
+    test "test_store_sets_amount_to_100_by_default" do
+    end
+
+    @tag :pending
+    test "test_store_sets_amount_to_amount_from_options" do
+    end
+
+    @tag :pending
+    test "test_authorization_using_reference_sets_proper_elements" do
+    end
+
+    @tag :pending
+    test "test_purchase_using_reference_sets_proper_elements" do
+    end
+
+    @tag :pending
+    test "test_authorization_with_recurring_transaction_type_initial" do
+    end
+
+    @tag :pending
+    test "test_purchase_using_with_recurring_transaction_type_initial" do
+    end
+
+    @tag :pending
+    test "test_system_error_response" do      
+    end
+
+    @tag :pending
+    test "test_system_error_response_without_job" do      
+    end
+
+    @tag :pending
+    test "test_transcript_scrubbing" do
+    end
+  end
 end
