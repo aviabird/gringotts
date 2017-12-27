@@ -30,22 +30,22 @@ defmodule Gringotts.Gateways.StripeTest do
   @optional_opts [address: @address]
 
   describe "authorize/3" do
-    test "should authorize wth card and required opts attrs" do
-      amount = 5
-      response = Stripe.authorize(amount, @card, @required_opts ++ @optional_opts)
+    # test "should authorize wth card and required opts attrs" do
+    #   amount = 5
+    #   response = Stripe.authorize(amount, @card, @required_opts ++ @optional_opts)
 
-      assert Map.has_key?(response, "id")
-      assert response["amount"] == 500
-      assert response["captured"] == false
-      assert response["currency"] == "usd"
-    end
+    #   assert Map.has_key?(response, "id")
+    #   assert response["amount"] == 500
+    #   assert response["captured"] == false
+    #   assert response["currency"] == "usd"
+    # end
 
-    test "should not authorize if card is not passed" do
-      amount = 5
-      response = Stripe.authorize(amount, %{}, @required_opts ++ @optional_opts)
+    # test "should not authorize if card is not passed" do
+    #   amount = 5
+    #   response = Stripe.authorize(amount, %{}, @required_opts ++ @optional_opts)
 
-      assert Map.has_key?(response, "error")
-    end
+    #   assert Map.has_key?(response, "error")
+    # end
 
     # test "should not authorize if required opts not present" do
     #   amount = 5
