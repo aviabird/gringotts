@@ -329,7 +329,6 @@ defmodule Gringotts.Gateways.Stripe do
   defp commit(method, path, params \\ [], opts \\ []) do
     auth_token = "Bearer " <> opts[:config][:secret_key]
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
-   
     data = params_to_string(params)
     response = HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
     format_response(response)
