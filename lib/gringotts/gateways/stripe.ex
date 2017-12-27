@@ -253,11 +253,18 @@ defmodule Gringotts.Gateways.Stripe do
   # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-    optional_params(opts)
+    params = optional_params(opts)
       ++ [capture: capture]
       ++ amount_params(amount)
       ++ source_params(payment, opts)
+
+    params
+    |> Keyword.has_key?(:currency)
+    |> with_currency(params, opts[:config])
   end
+
+  def with_currency(true, params, config), do: params
+  def with_currency(false, params, config), do: [{:currency, config[:default_currency]} | params]
 
   defp create_card_token(params, opts) do
     commit(:post, "tokens", params, opts)
@@ -318,9 +325,8 @@ defmodule Gringotts.Gateways.Stripe do
   defp address_params(_), do: []
 
   defp commit(method, path, params \\ [], opts \\ []) do
-    auth_token = "Bearer " <> opts[:config][:api_key]
+    auth_token = "Bearer " <> opts[:config][:secret_key]
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
-   
     data = params_to_string(params)
     response = HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
     format_response(response)
