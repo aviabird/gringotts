@@ -119,6 +119,13 @@ defmodule Gringotts.Gateways.Paymill do
     commit(:delete, "preauthorizations/#{authorization}", [], options)
   end
 
+  @spec refund(number, String.t, Keyword) :: {:ok | :error, Response}
+  def refund(amount, authorization, options) do
+    post = [amount: amount]
+
+    commit(:post, "refunds/#{authorization}", post, options)
+  end
+
   @doc false
   @spec authorize_with_token(number, String.t(), Keyword) :: term
   def authorize_with_token(money, card_token, options) do

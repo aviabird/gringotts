@@ -35,7 +35,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         assert response.success
         assert response.status_code == 200
-        assert response.error_code == 20000
+        assert response.error_code == 20_000
       end
     end
 
@@ -48,7 +48,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         refute response.success
         assert response.status_code == 200
-        assert response.error_code == 50800
+        assert response.error_code == 50_800
         assert response.message == "Preauthorisation failed"
       end
     end
@@ -93,7 +93,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         assert response.success
         assert response.status_code == 200
-        assert response.error_code == 20000
+        assert response.error_code == 20_000
       end
     end
 
@@ -136,7 +136,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         assert response.success
         assert response.status_code == 200
-        assert response.error_code == 20000
+        assert response.error_code == 20_000
         assert response.message == "Operation successful"
       end
     end
@@ -150,7 +150,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         refute response.success
         assert response.status_code == 403
-        assert response.error_code == 40102
+        assert response.error_code == 40_102
         assert response.message == "Card expired or not yet valid"
       end
     end
@@ -168,7 +168,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
         assert response.success
         assert response.status_code == 200
-        assert response.error_code == 50810
+        assert response.error_code == 50_810
         assert response.message == "Authorisation has been voided"
       end
     end
