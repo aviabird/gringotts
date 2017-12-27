@@ -56,4 +56,16 @@ defmodule Gringotts.Gateways.PaymillMock do
       request_url: "https://api.paymill.com/v2.1/transactions",
       status_code: 403}}
   end
+
+  def successful_void do
+    {:ok, %HTTPoison.Response{body: "{\"mode\":\"test\",\"data\":{\"updated_at\":1514405187,\"transaction\":{\"updated_at\":1514405187,\"status\":\"failed\",\"short_id\":null,\"response_code\":50810,\"refunds\":null,\"preauthorization\":\"preauth_028b0d40a6465099a774\",\"payment\":\"pay_d9eef5928b69760cd60c4784\",\"origin_amount\":200,\"mandate_reference\":null,\"livemode\":false,\"is_refundable\":false,\"is_markable_as_fraud\":true,\"is_fraud\":false,\"invoices\":[],\"id\":\"tran_2b8f2196ba52cc9c7e56d86d5bd4\",\"fees\":[],\"description\":null,\"currency\":\"INR\",\"created_at\":1514405146,\"client\":\"client_436f5667c0835f3adf2c\",\"app_id\":null,\"amount\":200},\"status\":\"deleted\",\"payment\":{\"updated_at\":1514396441,\"type\":\"creditcard\",\"last4\":\"1111\",\"is_usable_for_preauthorization\":true,\"is_recurring\":true,\"id\":\"pay_d9eef5928b69760cd60c4784\",\"expire_year\":\"2020\",\"expire_month\":\"3\",\"created_at\":1514396441,\"country\":\"DE\",\"client\":\"client_436f5667c0835f3adf2c\",\"card_type\":\"visa\",\"card_holder\":\"Sagar Karwande\",\"app_id\":null},\"livemode\":false,\"id\":\"preauth_028b0d40a6465099a774\",\"description\":null,\"currency\":\"INR\",\"created_at\":1514405146,\"client\":{\"updated_at\":1514396441,\"subscription\":null,\"payment\":[\"pay_d9eef5928b69760cd60c4784\"],\"id\":\"client_436f5667c0835f3adf2c\",\"email\":null,\"description\":null,\"created_at\":1514396441,\"app_id\":null},\"app_id\":null,\"amount\":\"200\"}}",
+      request_url: "https://api.paymill.com/v2.1/preauthorizations/preauth_028b0d40a6465099a774",
+      status_code: 200}}
+  end
+
+  def void_with_invalid_auth_token do
+    {:ok, %HTTPoison.Response{body: "{\"exception\":\"preauthorization_not_found\",\"error\":\"Preauthorization was not found\"}",
+      request_url: "https://api.paymill.com/v2.1/preauthorizations/preauth_028b0d40a6465099a123",
+      status_code: 404}}
+  end
 end
