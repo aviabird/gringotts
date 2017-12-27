@@ -41,18 +41,20 @@ defmodule Gringotts.Gateways.CamsTest do
     phone:    "(555)555-5555",
     fax:      "(555)555-6666"
   }
-  @options  [
+  @options [
     config: %{
       username: "testintegrationc",
       password: "password9"
     },
     order_id: 0001,
     billing_address: @address,
-    description: "Store Purchase",
+    description: "Store Purchase"
   ]
 
   @money 100
   @bad_money "G"
+  @authorization "3921111362"
+  @bad_authorization "300000000"
 
   describe "purchase" do
 
@@ -111,7 +113,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_capture end] do
         {:ok, %Response{message: result}} = Gateway.
-        capture(@money, "3921111362", @options)
+        capture(@money, @authorization, @options)
         assert result == "SUCCESS"
       end
     end
@@ -130,7 +132,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_capture end] do
         {:ok, %Response{message: result}} = Gateway.
-        capture(@money - 1, "3921111362", @options)
+        capture(@money - 1, @authorization, @options)
         assert result == "SUCCESS"
       end
     end
@@ -147,7 +149,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.invalid_transaction_id end] do
         {:ok, %Response{message: result}} = Gateway.
-        capture(@money, "3921111369", @options)
+        capture(@money, @bad_authorization, @options)
         assert String.contains?(result, "Transaction not found")
       end
     end
@@ -163,7 +165,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.more_than_authorization_amount end] do
         {:ok, %Response{message: result}} = Gateway
-        .capture(@money + 1, "3921111362", @options)
+        .capture(@money + 1, @authorization, @options)
         assert String.contains?(result, "exceeds the authorization amount")
       end
     end
@@ -183,7 +185,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_refund end] do
         {:ok, %Response{success: result}} = Gateway
-        .refund(@money, "3916017714", @options)
+        .refund(@money, @authorization, @options)
         assert result
       end
     end
@@ -200,7 +202,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.more_than_purchase_amount end] do
         {:ok, %Response{message: result}} = Gateway
-        .refund(@money + 1, "3916017714", @options)
+        .refund(@money + 1, @authorization, @options)
         assert String.contains?(result, "Refund amount may not exceed")
       end
     end
@@ -220,7 +222,7 @@ defmodule Gringotts.Gateways.CamsTest do
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_void end] do
         {:ok, %Response{message: result}} = Gateway
-        .void("3921111362", @options)
+        .void(@authorization, @options)
         assert String.contains?(result, "Void Successful")
       end
     end
