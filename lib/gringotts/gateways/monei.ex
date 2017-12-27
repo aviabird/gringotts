@@ -202,11 +202,11 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec capture(number, String.t, keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
-  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
+  def capture(amount, <<payment_id::bytes-size(32)>>, opts) when is_integer(amount) do
     capture(amount / 1, payment_id, opts)
   end
   
-  def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_float(amount) do
+  def capture(amount, <<payment_id::bytes-size(32)>>, opts) when is_float(amount) do
     params = [paymentType: "CP",
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency(opts)]
@@ -275,7 +275,7 @@ defmodule Gringotts.Gateways.Monei do
   """  
   @spec void(String.t, keyword) :: {:ok | :error, Response}
   def void(payment_id, opts)
-  def void(<<paymentId::bytes-size(32)>>, opts) do
+  def void(<<payment_id::bytes-size(32)>>, opts) do
     params = [paymentType: "RV"]
     auth_info = Keyword.fetch!(opts, :config)
     commit(:post, "payments/#{payment_id}", params, auth_info)
@@ -306,7 +306,7 @@ defmodule Gringotts.Gateways.Monei do
     refund(amount / 1, payment_id, opts)
   end
   
-  def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
+  def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
     params = [paymentType: "RF",
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency(opts)]
