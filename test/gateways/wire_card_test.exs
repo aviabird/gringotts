@@ -3,15 +3,15 @@ defmodule Gringotts.Gateways.WireCardTest do
 
   import Mock
 
-  setup do
-    # TEST_AUTHORIZATION_GUWID = 'C822580121385121429927'
-    # TEST_PURCHASE_GUWID =      'C865402121385575982910'
-    # TEST_CAPTURE_GUWID =       'C833707121385268439116'
+  # TEST_AUTHORIZATION_GUWID = 'C822580121385121429927'
+  # TEST_PURCHASE_GUWID =      'C865402121385575982910'
+  # TEST_CAPTURE_GUWID =       'C833707121385268439116'
+
   alias Gringotts.{
     CreditCard,
   }
-
-  alias Gringotts.Gateways.WireCard, as: Gateway
+  alias Gringotts.Gateways.WireCard, as: Wirecard
+  alias Gringotts.Gateways.AuthorizeNetMock, as: MockResponse
 
   @with authorization_guwid "C822580121385121429927"
   @with purchase_guwid      "C865402121385575982910"
@@ -188,7 +188,7 @@ defmodule Gringotts.Gateways.WireCardTest do
     end
   end
 
-  describe "system error in response in differnt request scenarios" do
+  describe "testing system error in response in differnt request scenarios" do
     @tag :pending
     test "with system error response" do      
     end
