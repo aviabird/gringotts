@@ -58,7 +58,6 @@ defmodule Gringotts.Gateways.Paymill do
   """
   @spec authorize(number, String.t() | CreditCard.t(), Keyword) :: {:ok | :error, Response}
   def authorize(amount, card_or_token, options) do
-    Keyword.put(options, :money, amount)
     action_with_token(:authorize, amount, card_or_token, options)
   end
 
@@ -185,7 +184,7 @@ defmodule Gringotts.Gateways.Paymill do
   end
 
   defp add_amount(post, money, options) do
-    post ++ [{"amount", money}, {"currency", @default_currency}]
+    post ++ [{"amount", money}, {"currency", get_currency(options)}]
   end
 
   defp set_username(options) do
@@ -323,14 +322,16 @@ defmodule Gringotts.Gateways.Paymill do
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = Poison.decode!(body)
-      parse_body(body)
+      [status_code: 200]
+      |> parse_body(body)
     end
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
       body = Poison.decode!(body)
-
-      []
+      [status_code: 400, success: false]
       |> set_params(body)
+      |> handle_error(body)
+      |> handle_opts
     end
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
@@ -348,10 +349,15 @@ defmodule Gringotts.Gateways.Paymill do
 
     defp set_success(opts, %{"transaction" => %{"response_code" => 20_000}}) do
       opts ++ [success: true]
+    ends
+
+    defp handle_error(opts, %{"error" => %{"messages" => messages}}) do
+      [{key, msg}| tail] = Map.to_list(messages)
+      opts ++ [message: msg]
     end
 
-    defp parse_body(%{"data" => data}) do
-      []
+    defp parse_body(opts, %{"data" => data}) do
+      opts
       |> set_success(data)
       |> parse_authorization(data)
       |> parse_status_code(data)
@@ -370,18 +376,18 @@ defmodule Gringotts.Gateways.Paymill do
     defp parse_status_code(opts, %{"status" => "failed"} = body) do
       response_code = get_in(body, ["transaction", "response_code"])
       response_msg = Map.get(@response_code, response_code, -1)
-      opts ++ [message: response_msg]
+      opts ++ [error_code: response_code, message: response_msg]
     end
 
     defp parse_status_code(opts, %{"transaction" => transaction}) do
       response_code = Map.get(transaction, "response_code", -1)
       response_msg = Map.get(@response_code, response_code, -1)
-      opts ++ [status_code: response_code, message: response_msg]
+      opts ++ [error_code: response_code, message: response_msg]
     end
 
     defp parse_status_code(opts, %{"response_code" => code}) do
       response_msg = Map.get(@response_code, code, -1)
-      opts ++ [status_code: code, message: response_msg]
+      opts ++ [error_code: code, message: response_msg]
     end
 
     # Authorization
