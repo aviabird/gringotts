@@ -107,7 +107,7 @@ defmodule Gringotts.Gateways.CamsTest do
       end
     end
 
-    test "with bad card details" do
+    test "with bad card" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.failed_authorized_with_bad_card end] do
@@ -198,17 +198,8 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway
-        .authorize(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.invalid_transaction_id end] do
-        {:ok, %Response{message: result}} = Gateway
-        .void(@bad_authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.invalid_transaction_id end] do
+        {:ok, %Response{message: result}} = Gateway.void(@bad_authorization, @options)
         assert String.contains?(result, "Transaction not found")
       end
     end
