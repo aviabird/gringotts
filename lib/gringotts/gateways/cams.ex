@@ -236,7 +236,7 @@ defmodule Gringotts.Gateways.Cams do
   defp add_invoice(post, money, options) do
     post
       |> Keyword.put(:amount, money)
-      |> Keyword.put(:currency, (options[:config][:currency]))
+      |> Keyword.put(:currency, (options[:config][:currency]) || @default_currency)
   end
 
   defp add_payment(post, payment) do
