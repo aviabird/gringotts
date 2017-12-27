@@ -91,18 +91,44 @@ defmodule Gringotts.Gateways.WireCardTest do
   end
 
   describe "purchase/3" do
-    @tag :pending
     test "with successful purchase" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_purchase_response end] do
+        {:ok, response} = WireCard.purchase(@amount, @card, @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PURCHASE"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_purchase_guwid
+      end
     end
 
-    @tag :pending
     test "with successful reference purchase" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_purchase_response end] do
+        {:ok, response} = WireCard.purchase(@amount, "12345", @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PURCHASE"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_purchase_guwid
+      end
     end
   end
 
   describe "authorize/3 and capture/3" do
-    @tag :pending
+    # This is Integration testing
     test "with successful authorization and capture" do
+      # Authorize first
+      response_guwid = with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+        {:ok, response} = WireCard.authorize(@amount, @card, @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_authorization_guwid
+        response_guwid
+      end
+
+      # capture
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+        {:ok, response} = WireCard.capture(response_guwid, @amount, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["Info"]
+        assert response_message =~ "THIS IS A DEMO TRANSACTION"
+      end
     end
 
     @tag :pending
