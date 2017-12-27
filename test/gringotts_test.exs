@@ -3,12 +3,13 @@ defmodule GringottsTest do
 
   import Gringotts
 
-  @test_config [adapter: GringottsTest.FakeGateway,
-                some_auth_info: :merchant_secret_key,
-                other_secret: :sun_rises_in_the_east]
-  
-  @bad_config [adapter: GringottsTest.FakeGateway,
-               some_auth_info: :merchant_secret_key]
+  @test_config [
+    adapter: GringottsTest.FakeGateway,
+    some_auth_info: :merchant_secret_key,
+    other_secret: :sun_rises_in_the_east
+  ]
+
+  @bad_config [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]
 
   defmodule FakeGateway do
     use Gringotts.Adapter, required_config: [:some_auth_info, :other_secret]
@@ -21,7 +22,7 @@ defmodule GringottsTest do
       :purchase_response
     end
 
-    def capture(1234, 100,_) do
+    def capture(1234, 100, _) do
       :capture_response
     end
 
@@ -48,15 +49,17 @@ defmodule GringottsTest do
   end
 
   test "authorization" do
-    assert authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) == :authorization_response
+    assert authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) ==
+             :authorization_response
   end
 
   test "purchase" do
-    assert purchase(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) == :purchase_response
+    assert purchase(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) ==
+             :purchase_response
   end
 
   test "capture" do
-    assert capture(:payment_worker, GringottsTest.FakeGateway, 1234, 100,[]) == :capture_response
+    assert capture(:payment_worker, GringottsTest.FakeGateway, 1234, 100, []) == :capture_response
   end
 
   test "void" do
@@ -77,9 +80,11 @@ defmodule GringottsTest do
 
   test "validate_config when some required config is missing" do
     Application.put_env(:gringotts, GringottsTest.FakeGateway, @bad_config)
+
     assert_raise(
       ArgumentError,
       "expected [:other_secret] to be set, got: [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]\n",
-      fn -> authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) end)
+      fn -> authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) end
+    )
   end
 end
