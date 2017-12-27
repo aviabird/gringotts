@@ -1,6 +1,6 @@
 defmodule Gringotts.Gateways.Paymill do
   @moduledoc """
-  An Api Client for the [PAYMILL](https://www.paymill.com/) gateway.
+  An Api Client for the [PAYMILL][home] gateway.
 
   For refernce see [PAYMILL's API (v2.1) documentation](https://developers.paymill.com/API/index)
 
@@ -24,15 +24,15 @@ defmodule Gringotts.Gateways.Paymill do
       config :gringotts, Gringotts.Gateways.Paymill,
         private_key: "your_privat_key",
         public_key: "your_public_key"
+
+  [home]: https://paymill.com
   """
   use Gringotts.Gateways.Base
-  alias Gringotts.{CreditCard, Address, Response}
+  alias Gringotts.{CreditCard, Response}
   alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
 
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
 
-  @home_page "https://paymill.com"
-  @money_format :cents
   @default_currency "EUR"
   @live_url "https://api.paymill.com/v2.1/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
@@ -82,7 +82,6 @@ defmodule Gringotts.Gateways.Paymill do
   """
   @spec purchase(number, CreditCard.t(), Keyword) :: {:ok | :error, Response}
   def purchase(amount, card, options) do
-    Keyword.put(options, :money, amount)
     action_with_token(:purchase, amount, card, options)
   end
 
@@ -218,8 +217,9 @@ defmodule Gringotts.Gateways.Paymill do
     get_in(options, [:config, key])
   end
 
-  @moduledoc false
   defmodule ResponseHandler do
+    @moduledoc false
+    
     alias Gringotts.Response
 
     @response_code %{
@@ -336,11 +336,17 @@ defmodule Gringotts.Gateways.Paymill do
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
       body = Poison.decode!(body)
-
-      []
-      |> set_success(body)
+      [status_code: 404, success: false]
+      |> handle_error(body)
       |> set_params(body)
       |> handle_opts()
+    end
+    def parse(({:ok, %HTTPoison.Response{body: body, status_code: 409}})) do
+      body = Poison.decode!(body)
+      [status_code: 409, success: false]
+      |> set_params(body)
+      |> handle_error(body)
+      |> handle_opts
     end
 
     defp set_success(opts, %{"error" => error}) do
@@ -352,7 +358,10 @@ defmodule Gringotts.Gateways.Paymill do
     ends
 
     defp handle_error(opts, %{"error" => %{"messages" => messages}}) do
-      [{key, msg}| tail] = Map.to_list(messages)
+      [{_, msg} | _] = Map.to_list(messages)
+      opts ++ [message: msg]
+    end
+    defp handle_error(opts, %{"error" => msg}) do
       opts ++ [message: msg]
     end
 
@@ -394,8 +403,7 @@ defmodule Gringotts.Gateways.Paymill do
     defp parse_authorization(opts, %{"status" => "failed"}) do
       opts ++ [success: false]
     end
-
-    defp parse_authorization(opts, %{"id" => id} = auth) do
+    defp parse_authorization(opts, %{"id" => id}) do
       opts ++ [authorization: id]
     end
 
