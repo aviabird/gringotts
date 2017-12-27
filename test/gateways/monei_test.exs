@@ -158,7 +158,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
   end
   
-  describe "unstore   |" do
+  describe "unstore" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(
         bypass,
