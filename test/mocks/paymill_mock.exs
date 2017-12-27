@@ -16,14 +16,32 @@ defmodule Gringotts.Gateways.PaymillMock do
   end
 
   def authorize_invalid_card_token() do
-    {:ok, %HTTPoison.Response{body: "{\n\t\"error\":{\n\t\t\"messages\":{\n\t\t\t\"regexNotMatch\":\"'tok_123' does not match against pattern '\\/^[a-zA-Z0-9_]{32}$\\/'\"\n\t\t},\n\t\t\"field\":\"token\"\n\t}\n}",
+    {:ok, %HTTPoison.Response{body: "{\"error\":{\"messages\":{\"regexNotMatch\":\"'tok_123' does not match against pattern '/^[a-zA-Z0-9_]{32}$/'\"},\"field\":\"token\"}}",
       request_url: "https://api.paymill.com/v2.1/preauthorizations",
       status_code: 400}}
   end
 
   def authorize_invalid_currency() do
-    {:ok, %HTTPoison.Response{body: "{\n\t\"error\":{\n\t\t\"messages\":{\n\t\t\t\"notInArray\":\"'ABC' was not found in the haystack\"\n\t\t},\n\t\t\"field\":\"currency\"\n\t}\n}",
+    {:ok, %HTTPoison.Response{body: "{\"error\":{\"messages\":{\"notInArray\":\"'ABC' was not found in the haystack\"},\"field\":\"currency\"}}",
       request_url: "https://api.paymill.com/v2.1/preauthorizations",
       status_code: 400}}
+  end
+
+  def successful_capture() do
+    {:ok, %HTTPoison.Response{body: "{\"mode\":\"test\",\"data\":{\"updated_at\":1514396484,\"status\":\"closed\",\"short_id\":\"0000.9999.0000\",\"response_code\":20000,\"refunds\":null,\"preauthorization\":{\"updated_at\":1514396459,\"transaction\":\"tran_478351595d1ec1e65d32d97e2696\",\"status\":\"closed\",\"payment\":\"pay_d9eef5928b69760cd60c4784\",\"livemode\":false,\"id\":\"preauth_7dc9457660b33759b70b\",\"description\":null,\"currency\":\"INR\",\"created_at\":1514396457,\"client\":\"client_436f5667c0835f3adf2c\",\"app_id\":null,\"amount\":\"200\"},\"payment\":{\"updated_at\":1514396441,\"type\":\"creditcard\",\"last4\":\"1111\",\"is_usable_for_preauthorization\":true,\"is_recurring\":true,\"id\":\"pay_d9eef5928b69760cd60c4784\",\"expire_year\":\"2020\",\"expire_month\":\"3\",\"created_at\":1514396441,\"country\":\"DE\",\"client\":\"client_436f5667c0835f3adf2c\",\"card_type\":\"visa\",\"card_holder\":\"Sagar Karwande\",\"app_id\":null},\"origin_amount\":2000,\"mandate_reference\":null,\"livemode\":false,\"is_refundable\":true,\"is_markable_as_fraud\":true,\"is_fraud\":false,\"invoices\":[],\"id\":\"tran_478351595d1ec1e65d32d97e2696\",\"fees\":[],\"description\":\"\",\"currency\":\"EUR\",\"created_at\":1514396441,\"client\":{\"updated_at\":1514396441,\"subscription\":null,\"payment\":[\"pay_d9eef5928b69760cd60c4784\"],\"id\":\"client_436f5667c0835f3adf2c\",\"email\":null,\"description\":null,\"created_at\":1514396441,\"app_id\":null},\"app_id\":null,\"amount\":2000}}",
+      request_url: "https://api.paymill.com/v2.1/transactions",
+      status_code: 200}}
+  end
+
+  def capture_with_used_auth do
+    {:ok, %HTTPoison.Response{body: "{\"exception\":\"preauthorization_already_used\",\"error\":\"Preauthorization has already been used\"}",
+      request_url: "https://api.paymill.com/v2.1/transactions",
+      status_code: 409}}
+  end
+
+  def capture_with_invalid_auth_token do
+    {:ok, %HTTPoison.Response{body: "{\"exception\":\"not_found_transaction_preauthorize\",\"error\":\"Preauthorize not found\"}",
+     request_url: "https://api.paymill.com/v2.1/transactions",
+     status_code: 404}}
   end
 end

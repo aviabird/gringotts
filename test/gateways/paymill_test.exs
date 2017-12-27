@@ -28,7 +28,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with valid card token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body,_headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers, _opts) ->
       MockResponse.successful_authorize end] do
 
         {:ok, response} = Paymill.authorize(100, "tok_6864ab6cce1444833ede76077ed0", @options)
@@ -41,7 +41,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid cvv" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body,_headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers, _opts) ->
       MockResponse.authorize_invalid_cvv end] do
 
         {:error, response} = Paymill.authorize(100, "tok_40101_23f20b1cebf9f4eb50d5e0", @options)
@@ -55,7 +55,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid card token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body,_headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers, _opts) ->
       MockResponse.authorize_invalid_card_token end] do
 
         {:error, response} = Paymill.authorize(100, "tok_123", @options)
@@ -68,7 +68,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with currency or amount mismatch" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body,_headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers, _opts) ->
       MockResponse.authorize_invalid_currency end] do
 
         invalid_opts = @options ++ [currency: "ABC"]
@@ -83,14 +83,46 @@ defmodule Gringotts.Gateways.PaymillTest do
   end
 
   describe "capture/3" do
+
     test "with valid preauth token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.successful_capture end] do
+
+        {:ok, response} = Paymill.capture("preauth_7dc9457660b33759b70b", 100, @options)
+
+        assert response.success
+        assert response.status_code == 200
+        assert response.error_code == 20000
+      end
     end
+
     test "with already used preauth token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.capture_with_used_auth end] do
+
+        {:error, response} = Paymill.capture("preauth_7dc9457660b33759b70b", 100, @options)
+
+        refute response.success
+        assert response.status_code == 409
+        assert response.message == "Preauthorization has already been used"
+      end
     end
+
     test "with invalid preauth token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.capture_with_invalid_auth_token end] do
+
+        {:error, response} = Paymill.capture("preauth_123", 100, @options)
+
+        refute response.success
+        assert response.status_code == 404
+        assert response.message == "Preauthorize not found"
+      end
     end
-    test "with missing parameters" do
-    end
+
   end
 
   describe "purchase/2" do
