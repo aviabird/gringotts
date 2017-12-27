@@ -77,7 +77,7 @@ defmodule Gringotts.Gateways.CamsTest do
       end
     end
 
-    test "with bad money" do
+    test "with bad amount" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.failed_purchase_with_bad_money end] do
@@ -116,6 +116,16 @@ defmodule Gringotts.Gateways.CamsTest do
         assert result == "SUCCESS"
       end
     end
+
+    test "with bad card details" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) ->
+        MockResponse.failed_authorized_with_bad_card end] do
+        {:ok, %Response{message: result}} = Gateway.
+        authorize(@money, @bad_payment, @options)
+        assert String.contains?(result, "Invalid Credit Card Number")
+      end
+    end
   end
 
   describe "capture" do
@@ -123,16 +133,16 @@ defmodule Gringotts.Gateways.CamsTest do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_authorize end] do
-        {:ok, %Response{message: result}} = Gateway.
+        {:ok, %Response{success: result}} = Gateway.
         authorize(@money, @payment, @options)
-        assert result == "SUCCESS"
+        assert result
       end
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.successful_capture end] do
-        {:ok, %Response{message: result}} = Gateway.
+        {:ok, %Response{success: result}} = Gateway.
         capture(@money - 1, @authorization, @options)
-        assert result == "SUCCESS"
+        assert result
       end
     end
 
@@ -223,6 +233,23 @@ defmodule Gringotts.Gateways.CamsTest do
         {:ok, %Response{message: result}} = Gateway
         .void(@authorization, @options)
         assert String.contains?(result, "Void Successful")
+      end
+    end
+
+    test "with invalid transaction_id" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) ->
+        MockResponse.successful_authorize end] do
+        {:ok, %Response{success: result}} = Gateway
+        .authorize(@money, @payment, @options)
+        assert result
+      end
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) ->
+        MockResponse.invalid_transaction_id end] do
+        {:ok, %Response{message: result}} = Gateway
+        .void(@bad_authorization, @options)
+        assert String.contains?(result, "Transaction not found")
       end
     end
   end

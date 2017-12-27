@@ -2,8 +2,8 @@ defmodule Gringotts.Gateways.Cams do
   @moduledoc ~S"""
     A module for working with the Cams payment gateway.
     
-    For referance you can test gateway operations [CAMS API TEST MODE](https://secure.centralams.com).
-    Test it using test crediantials **username:** `testintegrationc`, **password:** `password9`
+    You can test gateway operations in [CAMS API TEST MODE](https://secure.centralams.com).
+    Test it using these crediantials **username:** `testintegrationc`, **password:** `password9`
 
     The following features of CAMS are implemented:
 
@@ -53,7 +53,7 @@ defmodule Gringotts.Gateways.Cams do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter,
   required_config: [:username, :password, :default_currency]
-  alias Gringotts.{CreditCard, Address, Response}
+  alias Gringotts.{CreditCard, Response}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
 
   import Poison, only: [decode!: 1]
@@ -67,7 +67,7 @@ defmodule Gringotts.Gateways.Cams do
     After successful transaction it returns response containing **transactionid**.
 
   ## Examples
-      payment = %{
+      payment = %CreditCard{
         number: "4111111111111111", month: 11, year: 2018,
         first_name: "Longbob", last_name: "Longsen",
         verification_code: "123", brand: "visa"
@@ -90,8 +90,8 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for authorizing the credit card for particular transaction. 
 
-    `authorize/3` method only authorize the transaction,it does not transfer the funds.
-    After authorized a transaction, we need to call `capture/3` method to complete the transaction.
+    This method only authorizes the transaction, it does not transfer the funds.
+    After authorizes a transaction, we need to call `capture/3` method to complete the transaction.
     After successful authorization it returns response containing **transactionid**.
     We required **transactionid** and **money** for capturing transaction later on.
     It perform operation by taking `money`, `payment` (credit card details) & `options` as parameters.

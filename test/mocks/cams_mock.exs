@@ -82,6 +82,7 @@ defmodule Gringotts.Gateways.CamsMock do
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}   
   end 
+
   def successful_void do
     {:ok,
     %HTTPoison.Response{body: "response=1&responsetext=Transaction Void Successful&authcode=123456&transactionid=3921178863&avsresponse=&cvvresponse=&orderid=&type=void&response_code=100",
@@ -90,9 +91,16 @@ defmodule Gringotts.Gateways.CamsMock do
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}} 
   end
- 
+
+  def failed_authorized_with_bad_card do
+    {:ok,
+    %HTTPoison.Response{body: "response=3&responsetext=Invalid Credit Card Number REFID:3503305883&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=auth&response_code=300",
+    headers: [{"Date", "Wed, 27 Dec 2017 09:51:45 GMT"}, {"Server", "Apache"},
+    {"Content-Length", "155"}, {"Content-Type", "text/html; charset=UTF-8"}],
+    request_url: "https://secure.centralams.com/gw/api/transact.php",
+    status_code: 200}}  
+  end
+
 end
-
-
 
 
