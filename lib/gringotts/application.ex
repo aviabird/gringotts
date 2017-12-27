@@ -8,8 +8,8 @@ defmodule Gringotts.Application do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
     app_config = Application.get_all_env(:gringotts)
-    adapters = Enum.filter(app_config, fn({key, klist}) -> klist != [] end)
-                |> Enum.map(fn({key, klist}) -> Keyword.get(klist, :adapter) end)
+    adapters = Enum.filter(app_config, fn({_, klist}) -> klist != [] end)
+                |> Enum.map(fn({_, klist}) -> Keyword.get(klist, :adapter) end)
 
     children = [
       # Define workers and child supervisors to be supervised
