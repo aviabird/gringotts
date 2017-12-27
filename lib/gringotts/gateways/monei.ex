@@ -181,7 +181,7 @@ defmodule Gringotts.Gateways.Monei do
   Captures a pre-authorized `amount`.
 
   `amount` is transferred to the merchant account by MONEI when it is smaller or
-  equal to the amount used in the pre-authorization referenced by `paymentId`.
+  equal to the amount used in the pre-authorization referenced by `payment_id`.
 
   ## Note
 
@@ -201,9 +201,9 @@ defmodule Gringotts.Gateways.Monei do
       iex> capture_result = Gringotts.capture(:payment_worker, Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
   @spec capture(number, String.t, keyword) :: {:ok | :error, Response}
-  def capture(amount, paymentId, opts)
+  def capture(amount, payment_id, opts)
   def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_integer(amount) do
-    capture(amount / 1, paymentId, opts)
+    capture(amount / 1, payment_id, opts)
   end
   
   def capture(amount, <<paymentId::bytes-size(32)>>, opts) when is_float(amount) do
@@ -211,7 +211,7 @@ defmodule Gringotts.Gateways.Monei do
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency(opts)]
     auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{paymentId}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, auth_info)
   end
 
   @doc """
@@ -244,7 +244,7 @@ defmodule Gringotts.Gateways.Monei do
   Voids the referenced payment.
 
   This method attempts a reversal of the either a previous `purchase/3` or
-  `authorize/3` referenced by `paymentId`.
+  `authorize/3` referenced by `payment_id`.
 
   As a consequence, the customer will never see any booking on his
   statement. Refer MONEI's [Backoffice
@@ -274,11 +274,11 @@ defmodule Gringotts.Gateways.Monei do
       iex> void_result = Gringotts.void(:payment_worker, Gringotts.Gateways.Monei, auth_result.id, opts)
   """  
   @spec void(String.t, keyword) :: {:ok | :error, Response}
-  def void(paymentId, opts)
+  def void(payment_id, opts)
   def void(<<paymentId::bytes-size(32)>>, opts) do
     params = [paymentType: "RV"]
     auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{paymentId}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, auth_info)
   end
 
   @doc """
@@ -302,8 +302,8 @@ defmodule Gringotts.Gateways.Monei do
       iex> refund_result = Gringotts.refund(:payment_worker, Gringotts.Gateways.Monei, purchase_result.id, opts)
   """
   @spec refund(number, String.t, keyword) :: {:ok | :error, Response}
-  def refund(amount, paymentId, opts) when is_integer(amount) do
-    refund(amount / 1, paymentId, opts)
+  def refund(amount, payment_id, opts) when is_integer(amount) do
+    refund(amount / 1, payment_id, opts)
   end
   
   def refund(amount, <<paymentId::bytes-size(32)>>, opts) do
@@ -311,7 +311,7 @@ defmodule Gringotts.Gateways.Monei do
               amount: :erlang.float_to_binary(amount, decimals: 2),
               currency: currency(opts)]
     auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{paymentId}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, auth_info)
   end
 
   @doc """
