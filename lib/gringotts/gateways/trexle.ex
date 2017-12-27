@@ -11,31 +11,31 @@ defmodule Gringotts.Gateways.Trexle do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key, :default_currency]
 
-  @spec authorize(Float, Map, List) :: Map
+  @spec authorize(float, map, list) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
   end
 
-  @spec purchase(Float, Map, List) :: Map
+  @spec purchase(float, map, list) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
   end
 
-  @spec capture(String.t, Float, List) :: Map
+  @spec capture(String.t, float, list) :: map
   def capture(charge_token, amount, opts \\ []) do
     params = [amount: amount]
     commit(:put, "charges/#{charge_token}/capture", params, opts)
   end
   
-  @spec refund(Float, String.t, List) :: Map 
+  @spec refund(float, String.t, list) :: map 
   def refund(amount, charge_token, opts \\ []) do
     params = [amount: amount]
     commit(:post, "charges/#{charge_token}/refunds", params, opts)
   end
 
-  @spec store(Map, List) :: Map
+  @spec store(map, list) :: map
   def store(payment, opts \\ []) do
     params = [email: opts[:email]] ++ card_params(payment)
     commit(:post, "customers", params, opts)

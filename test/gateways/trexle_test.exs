@@ -40,18 +40,17 @@ defmodule Gringotts.Gateways.TrexleTest do
   @invalid_token "30"
 
   @opts [
-    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "usd"}, 
+    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "USD"}, 
     email: "john@trexle.com",
     ip_address: "66.249.79.118", 
     description: "Store Purchase 1437598192"
   ]
 
   @missingip_opts [
-    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "usd"}, 
+    config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "USD"}, 
     email: "john@trexle.com",
     description: "Store Purchase 1437598192"
   ]
-
 
   @invalid_opts [
     config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4"}, 
@@ -71,7 +70,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "purchase" do
     test "with valid card" do
       with_mock HTTPoison, 
-        [request!: fn(_method, _url, _body, _headers,_options) -> MockResponse.test_for_purchase_with_valid_card end] do
+        [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_valid_card end] do
           {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
           assert response.status_code == 201
       end
