@@ -101,6 +101,22 @@ defmodule Gringotts.Gateways.CamsMock do
     status_code: 200}}  
   end
 
+  def multiple_capture_on_same_transaction do
+    {:ok,
+    %HTTPoison.Response{body: "response=3&responsetext=A capture requires that the existing transaction be an AUTH REFID:3503316182&authcode=&transactionid=3922433984&avsresponse=&cvvresponse=&orderid=&type=capture&response_code=300",
+    headers: [{"Date", "Wed, 27 Dec 2017 13:47:12 GMT"}, {"Server", "Apache"},
+    {"Content-Length", "201"}, {"Content-Type", "text/html; charset=UTF-8"}],
+    request_url: "https://secure.centralams.com/gw/api/transact.php",
+    status_code: 200}}
+  end
+
+  def refund_the_authorised_transaction do
+    {:ok,
+    %HTTPoison.Response{body: "response=3&responsetext=Refund amount may not exceed the transaction balance REFID:3503316128&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=refund&response_code=300",
+    headers: [{"Date", "Wed, 27 Dec 2017 13:45:19 GMT"}, {"Server", "Apache"},
+    {"Content-Length", "183"}, {"Content-Type", "text/html; charset=UTF-8"}],
+    request_url: "https://secure.centralams.com/gw/api/transact.php",
+    status_code: 200}}  
+  end
+
 end
-
-

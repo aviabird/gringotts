@@ -3,7 +3,8 @@ defmodule Gringotts.Gateways.Cams do
     A module for working with the Cams payment gateway.
     
     You can test gateway operations in [CAMS API TEST MODE](https://secure.centralams.com).
-    Test it using these crediantials **username:** `testintegrationc`, **password:** `password9`
+    Test it using these crediantials **username:** `testintegrationc`, **password:** `password9`,
+    as well as you can find api docs in this test account under **integration** link.
 
     The following features of CAMS are implemented:
 
@@ -46,6 +47,44 @@ defmodule Gringotts.Gateways.Cams do
       adapter: Gringotts.Gateways.Cams,
       username: "your_secret_user_name",
       password: "your_secret_password",
+  
+
+  ## Scope of this module, and _quirks_
+
+  * Cams process money in cents.
+  * Although Cams supports payments from electronic check & various cards this library only 
+  accepts payments by cards like *visa*, *master*, *american_express* and *discover*.
+
+  ## Following the examples
+  1. First, set up a sample application and configure it to work with Cams.
+      - You could do that from scratch by following our [Getting Started](#) guide.
+      - To save you time, we recommend [cloning our example
+  repo](https://github.com/aviabird/gringotts_example) that gives you a
+  pre-configured sample app ready-to-go.
+          + You could use the same config or update it the with your "secrets"
+          that you get after registering with Cams.
+
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
+  aliases to it (to save some time):
+  ```
+  iex> alias Gringotts.{Response, CreditCard, Gateways.Cams}
+  iex> opts = [currency: "USD"] # The default currency is USD, and this is just for an example.
+  iex> payment = %CreditCard{number: "4111111111111111", month: 11, year: 2018,
+                            first_name: "Longbob", last_name: "Longsen",
+                            verification_code: "123", brand: "visa"}
+  ```
+
+  We'll be using these in the examples below.
+
+  ## TODO
+
+  * Credit Card Operations
+    - Credit
+
+  * Electronic Check
+    - Sale
+    - Void
+    - Refund
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
   @default_currency  "USD"
@@ -58,13 +97,14 @@ defmodule Gringotts.Gateways.Cams do
 
   import Poison, only: [decode!: 1]
   @doc """
-    Use this method for performing purchase(sale) operation. 
+    Transfers `amount` from the customer to the merchant.
 
-    It perform operation by taking `money`, `payment`(credit card details) & `options` as parameters.
-    Here `money` is required field which contains amount to be deducted. 
-    Required fields in credit card are `Credit Card Number` & `Expiration Date`.
-    Whereas `options` contains other information like billing address,order information etc. 
-    After successful transaction it returns response containing **transactionid**.
+    Function to charge a user credit card for the specified amount. It performs authorize
+    and capture at the same time.Purchase transaction are submitted and immediately sent for settlement.
+    
+    After successful purchase it returns an `authorization` which can be used later to:
+    * `refund/3` an amount.
+    * `void/2` a transaction(*if Not settled*).
 
   ## Examples
       payment = %CreditCard{
@@ -88,17 +128,18 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   @doc """
-    Use this method for authorizing the credit card for particular transaction. 
+    Authorize a credit card transaction.
 
-    This method only authorizes the transaction, it does not transfer the funds.
-    After authorizes a transaction, we need to call `capture/3` method to complete the transaction.
-    After successful authorization it returns response containing **transactionid**.
-    We required **transactionid** and **money** for capturing transaction later on.
-    It perform operation by taking `money`, `payment` (credit card details) & `options` as parameters.
-    Here `money` is required field which contains amount to be deducted. 
-    Required fields in credit card are `Credit Card Number` & `Expiration Date`.
-    Whereas `options` contains other information like billing address,order information etc. 
+    The authorization validates the `card` details with the banking network, places a hold on the
+    transaction amount in the customer’s issuing bank and also triggers risk management. 
+    Funds are not transferred.It needs to be followed up with a capture transaction to transfer the funds 
+    to merchant account.After successful capture, transaction will be sent for settlement.
     
+    Cams returns an `authorization` which can be used later to:
+    * `capture/3` an amount.
+    * `void/2` a authorized transaction.
+
+
   ## Examples
       payment = %{
         number: "4111111111111111", month: 11, year: 2018,
@@ -121,14 +162,12 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   @doc """
-    Use this method for capture the amount of the authorized transaction which is previously authorized by `authorize/3` method.
-    
+    Captures a pre-authorized amount.
+
+    It captures existing authorizations for settlement.Only authorizations can be captured.
     Captures can be submitted for an amount equal to or less than the original authorization.
-    It takes `money`, `authorization` and `options` as parameters.
-    Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
-    From response it takes `transactionid` for further processing. 
-    Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
-    Capture with less than original amount, can be captured once, remaining amount needs to be refund back to original payment source.  
+    It allows partial captures like many other gateways and release the remaining amount back to 
+    the payment source **[citation-needed]**.Multiple captures can not be done using same `authorization`.
 
   ## Examples
 
@@ -146,15 +185,16 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   @doc """
-    Use this method for refund the amount for particular transaction. 
+    Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-    Successful transaction can be refunded after settlement or any time.
-    It requires *transactionid* for refund the specified amount back to authorized payment source. 
-    Only purchased(sale) transactions can be refund based on thier `transactionid`.
-    It takes `money`, `authorization` and `options` as parameters.
-    Where `money` is a amount to be refund and `authorization` is a response returned by `purchase/3` method.
-    From response it takes `transactionid` for further processing. 
-    Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3`, `purchase/3` and `capture/3` methods.
+    It will reverse a previously settled or pending settlement transaction.
+    If the transaction has not been settled, a transaction `void/2` can also reverse it.
+    It processes a full or partial refund worth `amount`, referencing a previous `purchase/3` or `capture/3`.
+    Authorized transaction can not be reversed. 
+
+  `authorization` can be used to perform multiple refund, till:
+    * all the pre-authorized amount is captured or,
+    * the remaining amount is explicitly "reversed" via `void/2`. **[citation-needed]**
 
   ## Examples
 
@@ -172,11 +212,12 @@ defmodule Gringotts.Gateways.Cams do
   end
 
   @doc """
-    Use this method for cancel the transaction.
+    Voids the referenced payment.
     
-    It is use to cancel the purchase(sale) transaction before settlement.
-    Authorised transaction can be canceled, but once it captured, it can not be canceled.
-    It requires `transactionid` to cancle transaction.Amount is returned to the authorized payment source.
+    Transaction voids will cancel an existing sale or captured authorization.
+    In addition, non-captured authorizations can be voided to prevent any future capture.
+    Voids can only occur if the transaction has not been settled.
+
   ## Examples
 
       authorization = "3904093075"
@@ -271,10 +312,6 @@ defmodule Gringotts.Gateways.Cams do
       opts ++ [message: message]
     end
 
-    defp handle_opts(opts) do
-      {:ok, Response.success(opts)}
-    end
-
     defp set_params(opts, body) do
       opts ++ [params: body]
     end
@@ -285,6 +322,10 @@ defmodule Gringotts.Gateways.Cams do
 
     defp set_success(opts, %{"response_code" => response_code}) do
       opts ++ [success: response_code == "100"]
+    end
+    
+    defp handle_opts(opts) do
+      {:ok, Response.success(opts)}
     end
 
   end

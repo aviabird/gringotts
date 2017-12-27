@@ -59,65 +59,47 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "with all good" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_purchase end] do
-          {:ok, %Response{success: result}} = Gateway
-          .purchase(@money, @payment, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_purchase end] do
+        {:ok, %Response{success: result}} = Gateway.purchase(@money, @payment, @options)
         assert result
       end
     end
 
     test "with bad card" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.failed_purchase_with_bad_credit_card end] do
-          {:ok, %Response{message: result}} = Gateway.
-          purchase(@money, @bad_payment, @options)
-          assert String.contains?(result, "Invalid Credit Card Number")
+      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_credit_card end] do
+        {:ok, %Response{message: result}} = Gateway.purchase(@money, @bad_payment, @options)
+        assert String.contains?(result, "Invalid Credit Card Number")
       end
     end
 
     test "with bad amount" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.failed_purchase_with_bad_money end] do
-        {:ok, %Response{message: result}} = Gateway
-        .purchase(@bad_money, @payment, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_money end] do
+        {:ok, %Response{message: result}} = Gateway.purchase(@bad_money, @payment, @options)
         assert String.contains?(result, "Invalid amount")
       end
     end
 
     test "with invalid currency" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.with_invalid_currency end] do
-          {:ok, %Response{message: result}} = Gateway
-          .purchase(@money, @payment, @options)
-          assert String.contains?(result, "The cc payment type")
+      [post: fn(_url, _body, _headers) -> MockResponse.with_invalid_currency end] do
+        {:ok, %Response{message: result}} = Gateway.purchase(@money, @payment, @options)
+        assert String.contains?(result, "The cc payment type")
       end
     end
   end
 
   describe "authorize" do
-
-    test "with successful authorize and capture" do
+    test "with all good" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{message: result}} = Gateway.
-        authorize(@money, @payment, @options)
-        assert result == "SUCCESS"
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_capture end] do
-        {:ok, %Response{message: result}} = Gateway.
-        capture(@money, @authorization, @options)
-        assert result == "SUCCESS"
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_authorize end] do
+        {:ok, %Response{success: result}} = Gateway.authorize(@money, @payment, @options)
+        assert result
       end
     end
 
-    test "with bad card details" do
+    test "with bad card" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) ->
         MockResponse.failed_authorized_with_bad_card end] do
@@ -129,126 +111,81 @@ defmodule Gringotts.Gateways.CamsTest do
   end
 
   describe "capture" do
-    test "with partial amount" do
+    test "with full amount" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway.
-        authorize(@money, @payment, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_capture end] do
+        {:ok, %Response{success: result}} = Gateway.capture(@money, @authorization, @options)
         assert result
       end
+    end
+
+    test "with partial amount" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_capture end] do
-        {:ok, %Response{success: result}} = Gateway.
-        capture(@money - 1, @authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_capture end] do
+        {:ok, %Response{success: result}} = Gateway.capture(@money - 1, @authorization, @options)
         assert result
       end
     end
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway.
-        authorize(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.invalid_transaction_id end] do
-        {:ok, %Response{message: result}} = Gateway.
-        capture(@money, @bad_authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.invalid_transaction_id end] do
+        {:ok, %Response{message: result}} = Gateway.capture(@money, @bad_authorization, @options)
         assert String.contains?(result, "Transaction not found")
       end
     end
+
     test "with more than authorization amount" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway.
-        authorize(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.more_than_authorization_amount end] do
-        {:ok, %Response{message: result}} = Gateway
-        .capture(@money + 1, @authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.more_than_authorization_amount end] do
+        {:ok, %Response{message: result}} = Gateway.capture(@money + 1, @authorization, @options)
         assert String.contains?(result, "exceeds the authorization amount")
       end
     end
+
+    test "on already captured transaction" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) ->
+        MockResponse.multiple_capture_on_same_transaction end] do
+        {:ok, %Response{message: result}} = Gateway
+        .capture(@money, @authorization, @options)
+        assert String.contains?(result, "A capture requires that")
+      end
+    end
+
   end
 
   describe "refund" do
-    
     test "with all good" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_purchase end] do
-        {:ok, %Response{success: result}} = Gateway
-        .purchase(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_refund end] do
-        {:ok, %Response{success: result}} = Gateway
-        .refund(@money, @authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_refund end] do
+        {:ok, %Response{success: result}} = Gateway.refund(@money, @authorization, @options)
         assert result
       end
     end
 
-    test "with more than purchase amount" do
+    test "with more than purchased amount" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_purchase end] do
-        {:ok, %Response{success: result}} = Gateway
-        .purchase(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.more_than_purchase_amount end] do
-        {:ok, %Response{message: result}} = Gateway
-        .refund(@money + 1, @authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.more_than_purchase_amount end] do
+        {:ok, %Response{message: result}} = Gateway.refund(@money + 1, @authorization, @options)
         assert String.contains?(result, "Refund amount may not exceed")
       end
     end
   end
   
   describe "void" do  
-
     test "with all good" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway
-        .authorize(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_void end] do
-        {:ok, %Response{message: result}} = Gateway
-        .void(@authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.successful_void end] do
+        {:ok, %Response{message: result}} = Gateway.void(@authorization, @options)
         assert String.contains?(result, "Void Successful")
       end
     end
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.successful_authorize end] do
-        {:ok, %Response{success: result}} = Gateway
-        .authorize(@money, @payment, @options)
-        assert result
-      end
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.invalid_transaction_id end] do
-        {:ok, %Response{message: result}} = Gateway
-        .void(@bad_authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.invalid_transaction_id end] do
+        {:ok, %Response{message: result}} = Gateway.void(@bad_authorization, @options)
         assert String.contains?(result, "Transaction not found")
       end
     end
