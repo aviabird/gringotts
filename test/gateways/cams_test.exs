@@ -101,10 +101,8 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "with bad card" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.failed_authorized_with_bad_card end] do
-        {:ok, %Response{message: result}} = Gateway.
-        authorize(@money, @bad_payment, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.failed_authorized_with_bad_card end] do
+        {:ok, %Response{message: result}} = Gateway.authorize(@money, @bad_payment, @options)
         assert String.contains?(result, "Invalid Credit Card Number")
       end
     end
@@ -145,10 +143,8 @@ defmodule Gringotts.Gateways.CamsTest do
 
     test "on already captured transaction" do
       with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) ->
-        MockResponse.multiple_capture_on_same_transaction end] do
-        {:ok, %Response{message: result}} = Gateway
-        .capture(@money, @authorization, @options)
+      [post: fn(_url, _body, _headers) -> MockResponse.multiple_capture_on_same_transaction end] do
+        {:ok, %Response{message: result}} = Gateway.capture(@money, @authorization, @options)
         assert String.contains?(result, "A capture requires that")
       end
     end
