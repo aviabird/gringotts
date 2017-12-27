@@ -158,9 +158,32 @@ defmodule Gringotts.Gateways.PaymillTest do
   end
 
   describe "void/2" do
+
     test "with valid preauth token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.successful_void end] do
+
+        {:ok, response} = Paymill.void("preauth_028b0d40a6465099a774", @options)
+
+        assert response.success
+        assert response.status_code == 200
+        assert response.error_code == 50810
+        assert response.message == "Authorisation has been voided"
+      end
     end
+
     test "with invalid preauth token" do
+      with_mock HTTPoison,
+      [request: fn(_method, _url, _body, _headers, _opts) ->
+      MockResponse.void_with_invalid_auth_token end] do
+
+        {:error, response} = Paymill.void("preauth_028b0d40a6465099a123", @options)
+
+        refute response.success
+        assert response.status_code == 404
+        assert response.message == "Preauthorization was not found"
+      end
     end
   end
 
