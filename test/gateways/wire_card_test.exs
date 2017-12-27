@@ -1,6 +1,6 @@
 defmodule Gringotts.Gateways.WireCardTest do
   use ExUnit.Case, async: false
-
+  Code.require_file "../mocks/wirecard_mock.exs", __DIR__ 
   import Mock
 
   # TEST_AUTHORIZATION_GUWID = 'C822580121385121429927'
@@ -10,12 +10,13 @@ defmodule Gringotts.Gateways.WireCardTest do
   alias Gringotts.{
     CreditCard,
   }
-  alias Gringotts.Gateways.WireCard, as: Wirecard
-  alias Gringotts.Gateways.AuthorizeNetMock, as: MockResponse
+  alias Gringotts.Gateways.WireCard
+  alias Gringotts.Gateways.WireCardMock, as: MockResponse
 
-  @with authorization_guwid "C822580121385121429927"
-  @with purchase_guwid      "C865402121385575982910"
-  @with capture_guwid       "C833707121385268439116"
+  @test_authorization_guwid "C822580121385121429927"
+  @test_purchase_guwid      "C865402121385575982910"
+  @test_capture_guwid       "C833707121385268439116"
+  @amount                   100
 
   @card %CreditCard{
     number: "4200000000000000",
@@ -60,16 +61,32 @@ defmodule Gringotts.Gateways.WireCardTest do
   ]
 
   describe "authorize/3" do
-    @tag :pending
     test "with successful authorization" do
+      with_mock HTTPoison, 
+        [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+          {:ok, response} = WireCard.authorize(@amount, @card, @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_authorization_guwid
+      end
     end
 
-    @tag :pending
     test "with successful reference authorization" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+        {:ok, response} = WireCard.authorize(@amount, "709678", @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_authorization_guwid
+      end
     end
 
-    @tag :pending
-    test "with wrong credit card authorization" do      
+    test "with wrong credit card authorization" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.wrong_creditcard_authorization_response end] do
+        {:ok, response} = WireCard.authorize(@amount, @declined_card, @options)
+        response_error = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]
+        assert "24997" === response_error["Number"] 
+        assert "DATA_ERROR" === response_error["Type"]
+      end
     end
   end
 
