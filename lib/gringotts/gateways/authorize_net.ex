@@ -17,7 +17,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   | Refund a transaction                         | `refund/3`    |
   | Void a Transaction                           | `void/2`      |
   | Create Customer Profile                      | `store/2`     |
-  | Create Customer Payment Profile              |  `store/2`    |
+  | Create Customer Payment Profile              | `store/2`     |
   | Delete Customer Profile                      | `unstore/2`   |
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
@@ -42,6 +42,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   | `customer_type`      |        | implemented     |
   | `customer_profile_id`|        | implemented     |
   | `profile`            |        | implemented     |
+
+  To know more about these keywords visit [Request](https://developer.authorize.net/api/reference/index.html#payment-transactions)
+  and [Response](https://developer.authorize.net/api/reference/index.html#payment-transactions) key sections for each function.
 
   To use this module you need to create an account with the [Authorize.Net 
   gateway](https://www.authorize.net/solutions/merchantsolutions/onlinemerchantaccount/)
@@ -75,7 +78,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   ```
     iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
   ```
-  We'll be using these in the examples below.
   """
 
   import XmlBuilder
@@ -119,8 +121,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @doc """
   Charge a credit card.
 
-  Function to charge a user credit card for the specified amount. It performs authorize
-  and capture at the same time. 
+  Function to charge a user credit card for the specified `amount`. It performs `authorize`
+  and `capture` at the [same time](https://developer.authorize.net/api/reference/index.html#payment-transactions-charge-a-credit-card). 
   For this transaction Authorize.Net returns `transId` which can be used to:
   
   * `refund/3` a settled transaction.
@@ -161,7 +163,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(Float, CreditCard.t, Keyword) :: Tuple
+  @spec purchase(Float, CreditCard.t, Keyword.t) :: tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data, opts)
@@ -172,11 +174,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Authorize a credit card transaction.
 
   Function to authorize a transaction for the specified amount. It needs to be
-  followed up with a capture transaction to transfer the funds to merchant account.
+  followed up with a `capture/3` transaction to transfer the funds to merchant account.
   
   For this transaction Authorize.Net returns a `transId` which can be use for:
   * `capture/3` an authorized transaction.
-  * `refund/3` a settled transaction.
   * `void/2` a transaction.
 
   ## Optional Fields
@@ -215,7 +216,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec authorize(Float, CreditCard.t, Keyword) :: Tuple
+  @spec authorize(Float, CreditCard.t, Keyword.t) :: tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data, opts)
@@ -227,9 +228,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   
   Function to capture an `amount` for an authorized transaction.
 
-  For this transaction Authorize.Net returns a `transId` which can be use for:
-  * `refund/3` a settled transaction.
-  * `void/2` a transaction.
+  For this transaction Authorize.Net returns a `transId` which can be use to:
+    * `refund/3` a settled transaction.
+    * `void/2` a transaction.
+  
+  ## Quirks
+  * If a `capture` transaction needs to `void` then it should be done before it is settled. For AuthorieNet
+    all the transactions are settled after 24 hours.
+  
+  * AuthorizeNet supports partical capture of the `authorized amount`. But it is advisable to use one 
+    `authorization code`  only [once](https://support.authorize.net/authkb/index?page=content&id=A1720&actp=LIST).
 
   ## Optional Fields
       opts = [
@@ -237,7 +245,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: String
       ]
   
-    ## Example
+  ## Example
       iex> opts = [
         ref_id: "123456"
       ]
@@ -245,7 +253,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> id = "123456"
       iex> result = Gringotts.capture(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
-  @spec capture(String.t, Float, Keyword) :: Tuple
+  @spec capture(String.t, Float, Keyword.t) :: tuple
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     response_data = commit(:post, request_data, opts)
@@ -256,7 +264,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Refund `amount` for a settled transaction referenced by `id`.
 
   Use this method to refund a customer for a transaction that was already settled, requires
-  transId of the transaction.
+  transId of the transaction. The `payment` field in the `opts` is used to set the mode of payment.
+  The `card` field inside `payment` needs the information of the credit card to be passed in the specified fields 
+  so as to `refund` to that particular card.
   ## Required fields
       opts = [
         payment: %{card: %{number: String, year: Integer, month: Integer}}
@@ -273,7 +283,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> amount = 5
       iex> result = Gringotts.refund(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
-  @spec refund(Float, String.t, Keyword) :: Tuple
+  @spec refund(Float, String.t, Keyword.t) :: tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data, opts)
@@ -284,8 +294,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   To void a transaction
 
   Use this method to cancel either an original transaction that is not settled or 
-  an entire order composed of more than one transaction. It can be submitted against
-  any other transaction type. Requires the `transId` of a transaction passed as `id`.
+  an entire order composed of more than one transaction. It can be submitted against 'purchase', `authorize`
+  and `capture`. Requires the `transId` of a transaction.
 
   ## Optional fields
       opts = [ref_id: String]
@@ -297,7 +307,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> id = "123456"
       iex> result = Gringotts.void(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
   """
-  @spec void(String.t, Keyword) :: Tuple
+  @spec void(String.t, Keyword.t) :: tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data, opts)
@@ -307,11 +317,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @doc """
   Store a customer payment profile.
 
-  Use this function to store the customer card information by creating a customer profile,
-  and in case the customer_profile_exists with gateway then by creating customer payment profile 
-  which requires `customerProfileId`.
-  The gateway also provide a provision for a validation mode, there are two modes `"individual"`
-  and `"company"`.
+  Use this function to store the customer card information by creating a [customer profile](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile) which also 
+  creates a `payment profile` if `card` inofrmation is provided, and in case the `customer profile` exists without a payment profile, the merchant 
+  can create customer payment profile by passing the `customer_profile_id` in the `opts`.
+  The gateway also provide a provision for a `validation mode`, there are two modes `liveMode`
+  and `testMode`, to know more about modes [see](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile).
+  
+  ## Quirks
+  * The current version of this library supports only `credit card` as the payment profile.
+  * If a customer profile is created without the card info, then to create a payment profile
+    `card` info needs to be passed alongwith `cutomer_profile_id` to create it.
 
   ## Required Fields
       opts = [
@@ -329,13 +344,13 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
   ## Example
       iex> opts = [
-        profile: %{merchant_customer_id: 123456, description: "test store",email: "test@gmail.com"},
-        validation_mode: 'testMode'
+        profile: %{merchant_customer_id: 123456, description: "test store", email: "test@gmail.com"},
+        validation_mode: "testMode"
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
       iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, card, opts)
   """
-  @spec store(CreditCard.t, Keyword) :: Tuple
+  @spec store(CreditCard.t, Keyword.t) :: tuple
   def store(card, opts) do
     request_data = cond  do
       opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate
@@ -350,19 +365,14 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   Use this function to unstore the customer card information by deleting the customer profile
   present. Requires the customer profile id.
-
-  ## Required Fields
-      opts = [
-        customer_profile_id: String
-      ]
-
+  
   ## Example
       iex> id = "123456"
       iex> opts = []
       iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
   """
   
-  @spec unstore(String.t, Keyword) :: Tuple
+  @spec unstore(String.t, Keyword.t) :: tuple
   def unstore(customer_profile_id, opts) do
     request_data = delete_customer_profile(customer_profile_id, opts) |> generate
     response_data = commit(:post, request_data, opts)
