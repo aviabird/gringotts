@@ -19,7 +19,6 @@ defmodule Gringotts.Gateways.CamsTest do
     verification_code: "123",
     brand: "visa"
   }
-
   @bad_payment %CreditCard {
     number: "411111111111111",
     month: 9,

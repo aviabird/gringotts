@@ -123,14 +123,13 @@ defmodule Gringotts.Gateways.Cams do
   @doc """
     Use this method for capture the amount of the authorized transaction which is previously authorized by `authorize/3` method.
     
-    Transaction captures flag existing authorizations for settlement. Only authorizations can be captured. Captures
-    can be submitted for an amount equal to or less than the original authorization.
+    Captures can be submitted for an amount equal to or less than the original authorization.
     It takes `money`, `authorization` and `options` as parameters.
     Where `money` is a amount to be captured and `authorization` is a response returned by `authorize/3` method.
     From response it takes `transactionid` for further processing. 
     Both `money` and `authorization` are required fields, whereas `options` are as same as `authorize/3` and `purchase/3` methods.
     Capture with less than original amount, can be captured once, remaining amount needs to be refund back to original payment source.  
-  
+
   ## Examples
 
       authorization = "3904093075"
@@ -141,8 +140,8 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
-    post = [transactionid:  authorization]
-          |> add_invoice(money, options)
+    post = [transactionid: authorization]
+    add_invoice(post, money, options)
     commit("capture", post, options)
   end
 
@@ -168,7 +167,7 @@ defmodule Gringotts.Gateways.Cams do
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
     post = [transactionid:  authorization]
-        |> add_invoice(money, options)
+    add_invoice(post, money, options)
     commit("refund", post, options)
   end
 
@@ -187,7 +186,7 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do
-    post = [transactionid:  authorization]
+    post = [transactionid: authorization]
     commit("void", post, options)
   end
 
@@ -195,25 +194,26 @@ defmodule Gringotts.Gateways.Cams do
 
   defp add_invoice(post, money, options) do
     post
-    |> Keyword.put(:amount, money)
-    |> Keyword.put(:currency, (options[:config][:currency]))
+      |> Keyword.put(:amount, money)
+      |> Keyword.put(:currency, (options[:config][:currency]))
   end
 
   defp add_payment(post, payment) do
     exp_month = join_month(payment)
     exp_year = payment.year
-               |> to_string()
-               |> String.slice(-2..-1)
+      |> to_string()
+      |> String.slice(-2..-1)
+    
     post
-    |> Keyword.put(:ccnumber, payment.number)
-    |> Keyword.put(:ccexp, "#{exp_month}#{exp_year}")
-    |> Keyword.put(:cvv, payment.verification_code)
+      |> Keyword.put(:ccnumber, payment.number)
+      |> Keyword.put(:ccexp, "#{exp_month}#{exp_year}")
+      |> Keyword.put(:cvv, payment.verification_code)
   end
 
   defp add_address(post, payment, options) do
     post = post
-    |> Keyword.put(:firstname, payment.first_name)
-    |> Keyword.put(:lastname, payment.last_name)
+      |> Keyword.put(:firstname, payment.first_name)
+      |> Keyword.put(:lastname, payment.last_name)
 
     if options[:billing_address] do
       address = options[:billing_address]
@@ -237,10 +237,11 @@ defmodule Gringotts.Gateways.Cams do
   defp commit(action, params, options) do
     url = @live_url
     params = params
-             |> Keyword.put(:type, action)
-             |> Keyword.put(:password, options[:config][:password])
-             |> Keyword.put(:username, options[:config][:username])
-             |> params_to_string
+      |> Keyword.put(:type, action)
+      |> Keyword.put(:password, options[:config][:password])
+      |> Keyword.put(:username, options[:config][:username])
+      |> params_to_string
+    
     url
       |> HTTPoison.post(params, @headers)
       |> ResponseParser.parse
