@@ -36,6 +36,11 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     ref_id: "123456", 
     payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
   ]
+  @opts_refund_bad_payment [
+    config: %{name: "64jKa6NA", transaction_key: "4vmE338dQmAN6m7B"}, 
+    ref_id: "123456", 
+    payment: %{card: %{number: "123", year: 2020, month: 12}}
+  ]
   @opts_store [
     config: %{name: "64jKa6NA", transaction_key: "4vmE338dQmAN6m7B"}, 
     profile: %{merchant_customer_id: "123456", description: "Profile description here", email: "customer-profile-email@here.com"}
@@ -46,10 +51,11 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
 
   @refund_id "60036752756"
   @void_id "60036855217"
+  @void_invalid_id "60036855211"
   @unstore_id "1813991490"
 
   describe "purchase" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_purchase_response end] do
           {:ok, response} = ANet.purchase(@amount, @card, @opts)
@@ -107,10 +113,10 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   end
 
   describe "capture" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_capture_response end] do
-        {:ok, response} = ANet.capture(@amount, @bad_card, @opts)
+        {:ok, response} = ANet.capture(@amount, @card, @opts)
         assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
       end
     end
@@ -118,14 +124,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "with bad transaction id" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_id_capture end] do
-        {:error, response} = ANet.capture(@bad_amount, @card, @opts)
+        {:error, response} = ANet.capture(@amount, @card, @opts)
         assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Error"
       end
     end
   end
 
   describe "refund" do
-    test "successul response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_refund_response end] do
         {:ok, response} = ANet.refund(@amount, @refund_id, @opts_refund)
@@ -136,7 +142,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "bad payment params" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_card_refund end] do
-          {:error, response} = ANet.refund(@amount, @refund_id, @opts_refund)
+          {:error, response} = ANet.refund(@amount, @refund_id, @opts_refund_bad_payment)
           assert response.raw["ErrorResponse"]["messages"]["resultCode"] == "Error"
       end
     end
@@ -151,7 +157,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   end
 
   describe "void" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_void end] do
           {:ok, response} = ANet.void(@void_id, @opts)
@@ -162,14 +168,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "with bad transaction id" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.void_non_existent_id end] do
-          {:error, response} = ANet.void(@void_id, @opts)
+          {:error, response} = ANet.void(@void_invalid_id, @opts)
           assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Error"
       end
     end
   end
 
   describe "store" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_store_response end] do
           {:ok, response} = ANet.store(@card, @opts_store)
@@ -187,7 +193,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   end
 
   describe "unstore" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_unstore_response end] do
           {:ok, response} = ANet.unstore(@unstore_id, @opts)
