@@ -121,8 +121,8 @@ defmodule Gringotts.Gateways.TrexleTest do
     test "with missing ip address" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
-        response = Trexle.authorize(@amount, @valid_card, @missingip_opts)
-        assert response == %{"error" => "something went wrong, please try again later"}
+        {:error, response} = Trexle.authorize(@amount, @valid_card, @missingip_opts)
+        assert response.status_code == 500
       end
     end
   end

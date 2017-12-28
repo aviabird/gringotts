@@ -75,6 +75,8 @@ defmodule Gringotts.Gateways.Trexle do
     options = [hackney: [:insecure, basic_auth: {opts[:config][:api_key], "password"}]]
     url = "#{@base_url}#{path}"
     response = HTTPoison.request(method, url, data, headers, options)
+    require IEx
+    IEx.pry
     response |> respond
   end
 

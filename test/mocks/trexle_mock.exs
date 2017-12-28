@@ -109,7 +109,15 @@
     end
 
     def test_for_authorize_with_missing_ip_address do
-      %{"error" => "something went wrong, please try again later"}
+      {:ok,
+      %HTTPoison.Response{body: "{\"error\":\"ip_address is missing\"}",
+        headers: [{"Date", "Thu, 28 Dec 2017 12:22:43 GMT"},
+         {"Content-Type", "application/json; charset=UTF-8"},
+         {"Cache-Control", "no-cache"},
+         {"X-Request-Id", "97bae548-a446-42e9-b792-8c505c38f4c1"},
+         {"X-Runtime", "0.005652"}, {"Content-Length", "33"},
+         {"X-Powered-By", "PleskLin"}, {"Connection", "close"}],
+        request_url: "https://core.trexle.com/api/v1/charges", status_code: 500}}
     end
 
     def test_for_refund_with_valid_token do
