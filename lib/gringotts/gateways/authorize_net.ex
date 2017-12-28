@@ -161,7 +161,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
       iex> amount = 5
-      iex> result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
+      iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
   @spec purchase(Float, CreditCard.t, Keyword.t) :: tuple
   def purchase(amount, payment, opts) do
@@ -214,7 +214,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
       iex> amount = 5
-      iex> result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
+      iex> result = Gringotts.authorize(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
   @spec authorize(Float, CreditCard.t, Keyword.t) :: tuple
   def authorize(amount, payment, opts) do
@@ -251,7 +251,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
       iex> amount = 5
       iex> id = "123456"
-      iex> result = Gringotts.capture(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, amount, opts)
+      iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
   @spec capture(String.t, Float, Keyword.t) :: tuple
   def capture(id, amount, opts) do
@@ -281,7 +281,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
       iex> id = "123456"
       iex> amount = 5
-      iex> result = Gringotts.refund(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, id, opts)
+      iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
   @spec refund(Float, String.t, Keyword.t) :: tuple
   def refund(amount, id, opts) do
@@ -305,7 +305,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: "123456"
       ]
       iex> id = "123456"
-      iex> result = Gringotts.void(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
+      iex> result = Gringotts.void(Gringotts.Gateways.AuthorizeNet, id, opts)
   """
   @spec void(String.t, Keyword.t) :: tuple
   def void(id, opts) do
@@ -348,7 +348,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         validation_mode: "testMode"
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
-      iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, card, opts)
+      iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, card, opts)
   """
   @spec store(CreditCard.t, Keyword.t) :: tuple
   def store(card, opts) do
@@ -369,7 +369,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   ## Example
       iex> id = "123456"
       iex> opts = []
-      iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
+      iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, id, opts)
   """
   
   @spec unstore(String.t, Keyword.t) :: tuple

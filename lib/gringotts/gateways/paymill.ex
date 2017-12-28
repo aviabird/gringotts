@@ -55,7 +55,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Paymill, amount, card, options)
+      iex> Gringotts.authorize(Gringotts.Gateways.Paymill, amount, card, options)
   """
   @spec authorize(number, String.t | CreditCard.t, Keyword) :: {:ok | :error, Response}
   def authorize(amount, card_or_token, options) do
@@ -80,7 +80,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Paymill, amount, card, options)
+      iex> Gringotts.purchase(Gringotts.Gateways.Paymill, amount, card, options)
   """
   @spec purchase(number, CreditCard.t, Keyword) :: {:ok | :error, Response}
   def purchase(amount, card, options) do
@@ -98,7 +98,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Paymill, token, amount, options)
+      iex> Gringotts.capture(Gringotts.Gateways.Paymill, token, amount, options)
   """
   @spec capture(String.t, number, Keyword) :: {:ok | :error, Response}
   def capture(authorization, amount, options) do
@@ -115,7 +115,7 @@ defmodule Gringotts.Gateways.Paymill do
 
       options = []
 
-      iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Paymill, token, options)
+      iex> Gringotts.void(Gringotts.Gateways.Paymill, token, options)
   """
   @spec void(String.t, Keyword) :: {:ok | :error, Response}
   def void(authorization, options) do

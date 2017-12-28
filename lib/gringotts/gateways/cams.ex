@@ -116,7 +116,7 @@ defmodule Gringotts.Gateways.Cams do
       options = [currency: "USD"]
       money   = 100
       
-      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
+      iex> Gringotts.purchase(Gringotts.Gateways.Cams, money, payment, options)
   """
   @spec purchase(number, CreditCard.t, Keyword) :: Response
   def purchase(money, payment, options) do
@@ -150,7 +150,7 @@ defmodule Gringotts.Gateways.Cams do
       options = [currency: "USD"]
       money   = 100
       
-      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Cams, money, payment, options)
+      iex> Gringotts.authorize(Gringotts.Gateways.Cams, money, payment, options)
   """
   @spec authorize(number, CreditCard.t, Keyword) :: Response
   def authorize(money, payment, options) do
@@ -175,7 +175,7 @@ defmodule Gringotts.Gateways.Cams do
       options = [currency: "USD"]
       money   = 100
       
-      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Cams, money, authorization, options)
+      iex> Gringotts.capture(Gringotts.Gateways.Cams, money, authorization, options)
   """
   @spec capture(number, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
@@ -202,7 +202,7 @@ defmodule Gringotts.Gateways.Cams do
       options = [currency: "USD"]
       money   = 100
       
-      iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Cams, money, authorization, options)
+      iex> Gringotts.refund(Gringotts.Gateways.Cams, money, authorization, options)
   """
   @spec refund(number, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
@@ -223,7 +223,7 @@ defmodule Gringotts.Gateways.Cams do
       authorization = "3904093075"
       options = []
       
-      iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Cams, authorization, options)
+      iex> Gringotts.void(Gringotts.Gateways.Cams, authorization, options)
   """
   @spec void(String.t, Keyword) :: Response
   def void(authorization , options) do
