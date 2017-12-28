@@ -53,6 +53,8 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   @void_id "60036855217"
   @void_invalid_id "60036855211"
   @unstore_id "1813991490"
+  @capture_id "60036752756"
+  @capture_invalid_id "60036855211"
 
   describe "purchase" do
     test "successful response with right params" do
@@ -87,12 +89,12 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   end
 
   describe "authorize" do
-    test "successful response" do
+    test "successful response with right params" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorize_response end] do
-        {:ok, response} = ANet.authorize(@amount, @card, @opts)
-        assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
-    end
+        [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorize_response end] do
+          {:ok, response} = ANet.authorize(@amount, @card, @opts)
+          assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
+      end
     end
 
     test "with bad amount" do
@@ -116,7 +118,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "successful response with right params" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_capture_response end] do
-        {:ok, response} = ANet.capture(@amount, @card, @opts)
+        {:ok, response} = ANet.capture(@capture_id, @amount, @opts)
         assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
       end
     end
@@ -124,7 +126,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "with bad transaction id" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_id_capture end] do
-        {:error, response} = ANet.capture(@amount, @card, @opts)
+        {:error, response} = ANet.capture(@capture_invalid_id, @amount, @opts)
         assert response.raw["createTransactionResponse"]["messages"]["resultCode"] == "Error"
       end
     end
