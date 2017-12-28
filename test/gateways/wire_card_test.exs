@@ -173,7 +173,7 @@ defmodule Gringotts.Gateways.WireCardTest do
     test "with failed refund" do
       with_mock HTTPoison, 
       [request: fn(_method, _url, _body, _headers) -> MockResponse.failed_refund_response end] do
-        {:ok, response} = WireCard.capture(@test_capture_guwid, @amount - 10, @options)
+        {:ok, response} = WireCard.refund("TheIdentifcation", @amount - 10, @options)
         response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_BOOKBACK"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]["Message"]
         assert response_message =~ "Not prudent"
       end
@@ -181,12 +181,22 @@ defmodule Gringotts.Gateways.WireCardTest do
   end
 
   describe "void/2" do
-    @tag :pending
     test "with successful void" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_void_response end] do
+        {:ok, response} = WireCard.void(@test_purchase_guwid, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_REVERSAL"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["Info"]
+        assert response_message =~ "Nice one!"
+      end
     end
 
-    @tag :pending
     test "with failed void" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.failed_void_response end] do
+        {:ok, response} = WireCard.void(@test_purchase_guwid, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_REVERSAL"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]["Message"]
+        assert response_message =~ "Not gonna do it"
+      end
     end
   end
 
