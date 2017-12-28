@@ -330,7 +330,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   ## Required Fields
       opts = [
-        profile: %{merchant_customer_id: String, description: String,email: String}
+        profile: %{merchant_customer_id: String, description: String, email: String}
       ]
   ## Optional Fields
       opts = [
