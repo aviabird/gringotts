@@ -12,7 +12,7 @@ defmodule Gringotts.Gateways.TrexleTest do
     number: "5200828282828210",
     expiry_month: 1,
     expiry_year: 2018,
-    cvc:  "123",
+    cvc: "123",
     address_line1: "456 My Street",
     address_city: "Ottawa",
     address_postcode: "K1C2N6",
@@ -25,7 +25,7 @@ defmodule Gringotts.Gateways.TrexleTest do
     number: "5200828282828210",
     expiry_month: 1,
     expiry_year: 2010,
-    cvc:  "123",
+    cvc: "123",
     address_line1: "456 My Street",
     address_city: "Ottawa",
     address_postcode: "K1C2N6",
@@ -70,7 +70,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "purchase" do
     test "with valid card" do
       with_mock HTTPoison,
-        [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_valid_card end] do
+        [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_valid_card end] do
           {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
           assert response.status_code == 201
       end
@@ -78,7 +78,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with invalid card" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_card end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_card end] do
         {:error, response} = Trexle.purchase(@amount, @invalid_card, @opts)
         assert response.status_code == 400
       end
@@ -86,7 +86,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with invalid amount" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_amount end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_amount end] do
         {:error, response} = Trexle.purchase(@bad_amount, @valid_card, @opts)
         assert response.status_code == 400
       end
@@ -96,7 +96,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "authorize" do
     test "with valid card" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
         {:ok, response} = Trexle.authorize(@amount, @invalid_card, @opts)
         assert response.status_code == 201
       end
@@ -104,7 +104,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with invalid card" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_card end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_card end] do
         {:error, response} = Trexle.authorize(@amount, @invalid_card, @opts)
         assert response.status_code == 400
       end
@@ -112,7 +112,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with invalid amount" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
         assert response.status_code == 400
       end
@@ -120,7 +120,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with missing ip address" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
         response = Trexle.authorize(@amount, @valid_card, @missingip_opts)
         assert response == %{"error" => "something went wrong, please try again later"}
       end
@@ -130,7 +130,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "refund" do
     test "with valid token" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
         {:ok, response} = Trexle.refund(@amount, @valid_token, @opts)
         assert response.status_code == 201
       end
@@ -138,7 +138,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "with invalid token" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
         {:error, response} = Trexle.refund(@amount, @invalid_token, @opts)
         assert response.status_code == 400
       end
@@ -148,7 +148,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "capture" do
     test "with valid chargetoken" do
       with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_valid_chargetoken end] do
+      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_valid_chargetoken end] do
         {:ok, response} = Trexle.capture(@valid_token, @amount, @opts)
         assert response.status_code == 200
       end
@@ -156,7 +156,7 @@ defmodule Gringotts.Gateways.TrexleTest do
 
     test "test_for_capture_with_invalid_chargetoken" do
      with_mock HTTPoison,
-     [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_invalid_chargetoken end] do
+     [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_invalid_chargetoken end] do
        {:error, response} = Trexle.capture(@invalid_token, @amount, @opts)
        assert response.status_code == 400
      end
@@ -166,7 +166,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   describe "store" do
     test "with valid card" do
       with_mock HTTPoison,
-        [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_store_with_valid_card end] do
+        [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_store_with_valid_card end] do
         {:ok, response} = Trexle.store(@valid_card, @opts)
         assert response.status_code == 201
       end

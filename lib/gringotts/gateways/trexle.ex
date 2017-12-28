@@ -7,9 +7,10 @@ defmodule Gringotts.Gateways.Trexle do
   """
   @base_url "https://core.trexle.com/api/v1/"
 
-  alias Gringotts.Gateways.Trexle.ResponseHandler, as: ResponseParser
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key, :default_currency]
+  import Poison, only: [decode: 1]
+  alias Gringotts.{Response}
 
   @spec authorize(float, map, list) :: map
   def authorize(amount, payment, opts \\ []) do
@@ -71,21 +72,29 @@ defmodule Gringotts.Gateways.Trexle do
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
     data = params_to_string(params)
-    options = [hackney: [basic_auth: {opts[:config][:api_key], "password"}]]
-    url = "#{@base_url}/#{path}"
-    response = HTTPoison.request!(method, url, data, headers, options)
-    format_response(response)
+    options = [hackney: [:insecure, basic_auth: {opts[:config][:api_key], "password"}]]
+    url = "#{@base_url}#{path}"
+    response = HTTPoison.request(method, url, data, headers, options)
+    response |> respond
   end
 
-  defp format_response(response) do
-    case {:ok, response} do
-      {:ok, %HTTPoison.Response{status_code: 201}} -> {:ok, response}
-      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, response}
-      {:ok, %HTTPoison.Response{status_code: 400}} -> {:error, response}
-      {:ok, %HTTPoison.Response{status_code: 401}} -> {:error, response}
-      _ -> %{"error" => "something went wrong, please try again later"}
+  @spec respond(term) ::
+  {:ok, Response} |
+  {:error, Response}
+  defp respond(response)
+
+  defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
+    case decode(body) do
+      {:ok, results} -> {:ok, Response.success(raw: results, status_code: code)}
     end
   end
 
-end
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    {:error, Response.error(status_code: status_code, raw: body)}
+  end
 
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
+  end
+
+end
