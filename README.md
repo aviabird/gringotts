@@ -47,7 +47,7 @@ Add configs in `config/config.exs` file.
 ```elixir
 config :gringotts, Gringotts.Gateways.Stripe,
   adapter: Gringotts.Gateways.Stripe,
-  api_key: "YOUR_KEY",
+  secret_key: "YOUR_KEY",
   default_currency: "USD"
 
 ```
@@ -64,7 +64,7 @@ card = %CreditCard{
   number: "4242424242424242",
   year: "2017",
   month: "12",
-  cvc: "123"
+  verification_code: "123"
 }
 
 address = %Address{
@@ -75,8 +75,9 @@ address = %Address{
   postal_code: "11111"
 }
 
-case Gringotts.purchase(:my_gateway, Stripe, 199.95, card, billing_address: address,
-                                                   description: "Amazing T-Shirt") do
+opts = [address: address, currency: "eur"]
+
+case Gringotts.purchase(:payment_worker, Stripe, 10, card, opts) do
   {:ok,    %{authorization: authorization}} ->
     IO.puts("Payment authorized #{authorization}")
 
