@@ -73,6 +73,8 @@ defmodule Gringotts.Gateways.TrexleTest do
         [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_valid_card end] do
           {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
           assert response.status_code == 201
+          assert response.raw["response"]["success"] == true
+          assert response.raw["response"]["captured"] == false
       end
     end
 
@@ -81,6 +83,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_card end] do
         {:error, response} = Trexle.purchase(@amount, @invalid_card, @opts)
         assert response.status_code == 400
+        assert response.success == false
+        assert response.raw == ~s({"error":"Payment failed","detail":"Your card's expiration year is invalid."})
       end
     end
 
@@ -89,6 +93,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_purchase_with_invalid_amount end] do
         {:error, response} = Trexle.purchase(@bad_amount, @valid_card, @opts)
         assert response.status_code == 400
+        assert response.success == false
+        assert response.raw == ~s({"error":"Payment failed","detail":"Amount must be at least 50 cents"})
       end
     end
   end
@@ -99,6 +105,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
         {:ok, response} = Trexle.authorize(@amount, @invalid_card, @opts)
         assert response.status_code == 201
+        assert response.raw["response"]["success"] == true
+        assert response.raw["response"]["captured"] == false
       end
     end
 
@@ -107,6 +115,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_card end] do
         {:error, response} = Trexle.authorize(@amount, @invalid_card, @opts)
         assert response.status_code == 400
+        assert response.success == false
+        assert response.raw == ~s({"error":"Payment failed","detail":"Your card's expiration year is invalid."})
       end
     end
 
@@ -115,6 +125,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
         assert response.status_code == 400
+        assert response.success == false
+        assert response.raw == ~s({"error":"Payment failed","detail":"Amount must be at least 50 cents"})
       end
     end
 
@@ -123,6 +135,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @missingip_opts)
         assert response.status_code == 500
+        assert response.success == false
+        assert response.raw == ~s({"error":"ip_address is missing"})
       end
     end
   end
@@ -133,6 +147,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
         {:ok, response} = Trexle.refund(@amount, @valid_token, @opts)
         assert response.status_code == 201
+        assert response.raw["response"]["success"] == true
+        assert response.raw["response"]["captured"] == false
       end
     end
 
@@ -141,6 +157,8 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_invalid_amount end] do
         {:error, response} = Trexle.refund(@amount, @invalid_token, @opts)
         assert response.status_code == 400
+        assert response.success == false
+        assert response.raw == ~s({"error":"Payment failed","detail":"Amount must be at least 50 cents"})
       end
     end
   end
@@ -151,14 +169,19 @@ defmodule Gringotts.Gateways.TrexleTest do
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_valid_chargetoken end] do
         {:ok, response} = Trexle.capture(@valid_token, @amount, @opts)
         assert response.status_code == 200
+        assert response.raw["response"]["success"] == true
+        assert response.raw["response"]["captured"] == true
+        assert response.raw["response"]["status_message"] == "Transaction approved"
       end
     end
 
     test "test_for_capture_with_invalid_chargetoken" do
      with_mock HTTPoison,
      [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_capture_with_invalid_chargetoken end] do
-       {:error, response} = Trexle.capture(@invalid_token, @amount, @opts)
-       assert response.status_code == 400
+      {:error, response} = Trexle.capture(@invalid_token, @amount, @opts)
+      assert response.status_code == 400
+      assert response.success == false
+      assert response.raw == ~s({"error":"Capture failed","detail":"invalid token"})
      end
     end
   end
