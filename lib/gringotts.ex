@@ -5,7 +5,7 @@ defmodule Gringotts do
   ## Configuration
   
   The configuration for `Gringotts` must be in your application environment, 
-  usually defined in your `config/config.exs` and are **mandatory**:
+  usually defined in your `config/config.exs` and is **mandatory**:
 
   **Global Configuration**
   

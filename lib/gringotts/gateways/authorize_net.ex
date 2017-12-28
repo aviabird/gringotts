@@ -4,30 +4,87 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   A module for working with the Authorize.net payment gateway. 
   
   The module provides a set of functions to perform transactions via this gateway for a merchant. 
-  To use this module you need to create an account with the Authorize.net gateway which will provide you with a
-  `name` and a `transactionKey`. You will need to configure these keys to use the module
-  functions.
 
   [AuthorizeNet API reference](https://developer.authorize.net/api/reference/index.html)
 
-  The following set of functions have been provided for a transaction:
+  The following set of functions for Authorize.Net have been provided:
 
-  | `Action`  |  `Description`
-  | Authorize | To authorize the bank to charge the account and use it for payment.
-  | Capture   | To capture the given amount from an account for which, the 
-  |           |  transaction has already been authorized.
-  | Purchase  | To charge the account of a customer and transfer the funds to merchants
-  |           |  account.
-  | Refund    | To refund a settled transaction from the merchant to the customer account.
-  | void      | To void a transaction before the transaction is settled at merchant's side.
-  | store     | To store customer payment profile data.
-  | unstore   | To remove the customer payment profile data.
+  | Action                                       | Method        |
+  | ------                                       | ------        |
+  | Authorize a Credit Card                      | `authorize/3` |
+  | Capture a Previously Authorized Amount       | `capture/3`   |
+  | Charge a Credit Card                         | `purchase/3`  |
+  | Refund a transaction                         | `refund/3`    |
+  | Void a Transaction                           | `void/2`      |
+  | Create Customer Profile                      | `store/2`     |
+  | Create Customer Payment Profile              | `store/2`     |
+  | Delete Customer Profile                      | `unstore/2`   |
+
+  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
+  optional arguments for transactions with the Authorize.Net gateway. The following keys
+  are supported:
+
+  | Key                  | Remark | Status          |
+  | ----                 | ---    | ----            |
+  | `currency`           |        | not Implemented |
+  | `customer`           |        | implemented     |
+  | `invoice`            |        | implemented     |
+  | `bill_to`            |        | implemented     |
+  | `ship_to`            |        | implemented     |
+  | `customer_ip`        |        | implemented     |
+  | `order`              |        | implemented     |
+  | `lineitems`          |        | implemented     |  
+  | `ref_id`             |        | implemented     |
+  | `tax`                |        | implemented     |
+  | `duty`               |        | implemented     |
+  | `shipping`           |        | implemented     |
+  | `po_number`          |        | implemented     |
+  | `customer_type`      |        | implemented     |
+  | `customer_profile_id`|        | implemented     |
+  | `profile`            |        | implemented     |
+
+  To know more about these keywords visit [Request](https://developer.authorize.net/api/reference/index.html#payment-transactions)
+  and [Response](https://developer.authorize.net/api/reference/index.html#payment-transactions) key sections for each function.
+
+  To use this module you need to create an account with the [Authorize.Net 
+  gateway](https://www.authorize.net/solutions/merchantsolutions/onlinemerchantaccount/)
+  which will provide you with a `name` and a `transactionKey`.
+
+  ## Configuring your AuthorizeNet account at `Gringotts`
+
+  Your Application config **must include the `name` and `transaction_key`
+  fields** and would look something like this:
+  
+      config :gringotts, Gringotts.Gateways.AuthorizeNet,
+        adapter: Gringotts.Gateways.AuthorizeNet,
+        name: "name_provided_by_authorize_net",
+        transaction_key: "transactionKey_provided_by_authorize_net"
+  
+  ## Scope of this module, and _quirks_
+  * Although Authorize.Net supports payments from [various
+  sources](https://www.authorize.net/solutions/merchantsolutions/onlinemerchantaccount/),
+  this library currently accepts payments by (supported) credit cards only.
+
+  ## Following the examples
+  1. First, set up a sample application and configure it to work with Authorize.Net.
+      - You could do that from scratch by following our [Getting Started](#) guide.
+      - To save you time, we recommend [cloning our example
+  repo](https://github.com/aviabird/gringotts_example) that gives you a
+  pre-configured sample app ready-to-go.
+          + You could use the same config or update it the with your "secrets"
+          [above](#Configuring your AuthorizeNet account at `Gringotts`).
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
+  aliases to it (to save some time):
+  ```
+    iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
+  ```
   """
+
   import XmlBuilder
   import XmlToMap
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:name, :transactionKey, :default_currency]
+  use Gringotts.Adapter, required_config: [:name, :transaction_key]
 
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
@@ -64,34 +121,49 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @doc """
   Charge a credit card.
 
-  Function to charge a user credit card for the specified amount. It performs authorize
-  and capture at the same time.
-  ## Required fields :
-      opts = [config: %{name:"", transactionKey: ""}]` taken from the configuration in your 
-    application
+  Function to charge a user credit card for the specified `amount`. It performs `authorize`
+  and `capture` at the [same time](https://developer.authorize.net/api/reference/index.html#payment-transactions-charge-a-credit-card). 
+  For this transaction Authorize.Net returns `transId` which can be used to:
+  
+  * `refund/3` a settled transaction.
+  * `void/2` a transaction.
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ,
-        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
-        tax: %{amount: , name: ,description: },
-        duty: %{amount: , name: ,description: },
-        shipping: %{amount: , name: ,description: },
-        poNumber: ,
-        customer: %{id: },
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerIP: ]
+      opts = [
+        order: %{invoice_number: String, description: String},
+        ref_id: String,
+        lineitems: %{
+          item_id: String, name: String, description: String,
+          quantity: Integer, unit_price: Float
+        },
+        tax: %{amount: Float, name: String, description: String},
+        duty: %{amount: String, name: String, description: String},
+        shipping: %{amount: String, name: String, description: String},
+        po_number: String,
+        customer: %{id: String},
+        bill_to: %{
+          first_name: String, last_name: String, company: String,
+          address: String, city: String, state: String, zip: String, 
+          country: String 
+        },
+        ship_to: %{
+          first_name: String, last_name: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customer_ip: String
+      ]
 
   ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
-        refId: "123456", 
-        order: %{invoiceNumber: "INV-12345", description: "Product Description"}, 
-        lineItem: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unitPrice: "45.00" }
+      iex> opts = [
+        ref_id: "123456",
+        order: %{invoice_number: "INV-12345", description: "Product Description"}, 
+        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
       ]
-      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
-      amount = 5
+      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+      iex> amount = 5
+      iex> result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(Float, CreditCard.t, Keyword) :: Tuple
+  @spec purchase(Float, CreditCard.t, Keyword.t) :: tuple
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     response_data = commit(:post, request_data, opts)
@@ -101,34 +173,50 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @doc """
   Authorize a credit card transaction.
 
-  Function to authorize a transaction for the specified amount. It needs to be 
-  followed up with a capture transaction to transfer the funds to merchant account.
-  ## Required fields :
-      opts = [config: %{name:"", transactionKey: ""}] taken from the configuration in your 
-    application
+  Function to authorize a transaction for the specified amount. It needs to be
+  followed up with a `capture/3` transaction to transfer the funds to merchant account.
+  
+  For this transaction Authorize.Net returns a `transId` which can be use for:
+  * `capture/3` an authorized transaction.
+  * `void/2` a transaction.
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ,
-        lineitems: %{itemId: , name: , description: , quantity: , unitPrice: },
-        tax: %{amount: , name: ,description: },
-        duty: %{amount: , name: ,description: },
-        shipping: %{amount: , name: ,description: },
-        poNumber: ,
-        customer: %{id: },
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        shipTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerIP: ]
+      opts = [
+        order: %{invoice_number: String, description: String},
+        ref_id: String,
+        lineitems: %{
+          item_id: String, name: String, description: String,
+          quantity: Integer, unit_price: Float
+        },
+        tax: %{amount: Float, name: String, description: String},
+        duty: %{amount: String, name: String, description: String},
+        shipping: %{amount: String, name: String, description: String},
+        po_number: String,
+        customer: %{id: String},
+        bill_to: %{ 
+          first_name: String, last_name: String, company: String,
+          address: String, city: String, state: String, zip: String, 
+          country: String 
+        },
+        ship_to: %{
+          first_name: String, last_name: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customer_ip: String
+      ]
+
 
   ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
-        refId: "123456", 
-        order: %{invoiceNumber: "INV-12345", description: "Product Description"}, 
-        lineItem: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unitPrice: "45.00" }
+      iex> opts = [
+        ref_id: "123456",
+        order: %{invoice_number: "INV-12345", description: "Product Description"}, 
+        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
       ]
-      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"} 
-      amount = 5
+      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+      iex> amount = 5
+      iex> result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec authorize(Float, CreditCard.t, Keyword) :: Tuple
+  @spec authorize(Float, CreditCard.t, Keyword.t) :: tuple
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data, opts)
@@ -139,21 +227,33 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Capture a transaction.
   
   Function to capture an `amount` for an authorized transaction.
-  ## Required fields :
-      opts = [config: %{name:" ", transactionKey: " "}, ] taken from the configuration in your
-    application
+
+  For this transaction Authorize.Net returns a `transId` which can be use to:
+    * `refund/3` a settled transaction.
+    * `void/2` a transaction.
+  
+  ## Quirks
+  * If a `capture` transaction needs to `void` then it should be done before it is settled. For AuthorieNet
+    all the transactions are settled after 24 hours.
+  
+  * AuthorizeNet supports partical capture of the `authorized amount`. But it is advisable to use one 
+    `authorization code`  only [once](https://support.authorize.net/authkb/index?page=content&id=A1720&actp=LIST).
+
   ## Optional Fields
-      opts = [order: %{invoiceNumber: ,description: },
-        refId: ]
-  ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"}, 
-        refId: "123456",
-        order: %{invoiceNumber: "INV-12345", description: "Product Description"}
+      opts = [
+        order: %{invoice_number: String, description: String},
+        ref_id: String
       ]
-      id = "transId of the authorize response"
-      amount = 5
+  
+  ## Example
+      iex> opts = [
+        ref_id: "123456"
+      ]
+      iex> amount = 5
+      iex> id = "123456"
+      iex> result = Gringotts.capture(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
-  @spec capture(String.t, Float, Keyword) :: Tuple
+  @spec capture(String.t, Float, Keyword.t) :: tuple
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     response_data = commit(:post, request_data, opts)
@@ -164,21 +264,26 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Refund `amount` for a settled transaction referenced by `id`.
 
   Use this method to refund a customer for a transaction that was already settled, requires
-  transId of the transaction.
+  transId of the transaction. The `payment` field in the `opts` is used to set the mode of payment.
+  The `card` field inside `payment` needs the information of the credit card to be passed in the specified fields 
+  so as to `refund` to that particular card.
   ## Required fields
-      opts = [config: %{name:" ", transactionKey: " "}, payment: %{card: %{number: ,year: , month:}}]
+      opts = [
+        payment: %{card: %{number: String, year: Integer, month: Integer}}
+      ]
   ## Optional fields
-      opts = [refId: ]
+      opts = [ref_id: String]
 
   ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"},
+      iex> opts = [
         payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
-        refId: "123456",
+        ref_id: "123456"
       ]
-      id = "trans id of the transaction to be refunded"
-      amount = 5
+      iex> id = "123456"
+      iex> amount = 5
+      iex> result = Gringotts.refund(:payment_worker, Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
-  @spec refund(Float, String.t, Keyword) :: Tuple
+  @spec refund(Float, String.t, Keyword.t) :: tuple
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data, opts)
@@ -189,20 +294,20 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   To void a transaction
 
   Use this method to cancel either an original transaction that is not settled or 
-  an entire order composed of more than one transaction. It can be submitted against
-  any other transaction type. Requires the `transId` of a transaction passed as `id`.
-  ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "}]
+  an entire order composed of more than one transaction. It can be submitted against 'purchase', `authorize`
+  and `capture`. Requires the `transId` of a transaction.
+
   ## Optional fields
-      opts = [refId: ]
+      opts = [ref_id: String]
 
   ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"},
-        refId: "123456",
+      iex> opts = [
+        ref_id: "123456"
       ]
-      id = "trans id of the transaction to be void"
+      iex> id = "123456"
+      iex> result = Gringotts.void(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
   """
-  @spec void(String.t, Keyword) :: Tuple
+  @spec void(String.t, Keyword.t) :: tuple
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     response_data = commit(:post, request_data, opts)
@@ -212,31 +317,43 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @doc """
   Store a customer payment profile.
 
-  Use this function to store the customer card information by creating a customer profile,
-  and in case the customer_profile_exists with gateway then by creating customer payment profile.
+  Use this function to store the customer card information by creating a [customer profile](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile) which also 
+  creates a `payment profile` if `card` inofrmation is provided, and in case the `customer profile` exists without a payment profile, the merchant 
+  can create customer payment profile by passing the `customer_profile_id` in the `opts`.
+  The gateway also provide a provision for a `validation mode`, there are two modes `liveMode`
+  and `testMode`, to know more about modes [see](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile).
+  
+  ## Quirks
+  * The current version of this library supports only `credit card` as the payment profile.
+  * If a customer profile is created without the card info, then to create a payment profile
+    `card` info needs to be passed alongwith `cutomer_profile_id` to create it.
 
   ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "},
-        profile: %{merchantCustomerId: ,description: ,email: }
+      opts = [
+        profile: %{merchant_customer_id: String, description: String, email: String}
       ]
   ## Optional Fields
       opts = [
-        validationMode: , # testMode, liveMode
-        billTo: %{firstName: ,lastName: ,company: ,address: ,city: ,state: ,zip: ,country: },
-        customerType: ,
-        customerProfileId: 
-        ]
-  ## Example
-      opts = [config: %{name: "your_name", transactionKey: "your_key"},
-        profile: %{merchantCustomerId: 123456 ,description: "test store",email: "test@gmail.com"},
-        validationMode: 'testMode'
+        validation_mode: String,
+        billTo: %{
+          first_name: String, last_name: String, company: String, address: String,
+          city: String, state: String, zip: String, country: String
+        },
+        customer_type: String,
+        customer_profile_id: String
       ]
-      card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+  ## Example
+      iex> opts = [
+        profile: %{merchant_customer_id: 123456, description: "test store", email: "test@gmail.com"},
+        validation_mode: "testMode"
+      ]
+      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+      iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, card, opts)
   """
-  @spec store(CreditCard.t, Keyword) :: Tuple
+  @spec store(CreditCard.t, Keyword.t) :: tuple
   def store(card, opts) do
     request_data = cond  do
-      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate 
+      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate
       true -> create_customer_profile(card, opts) |> generate
     end
     response_data = commit(:post, request_data, opts)
@@ -248,13 +365,14 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   Use this function to unstore the customer card information by deleting the customer profile
   present. Requires the customer profile id.
-
-  ## Required Fields
-      opts = [config: %{name:" ", transactionKey: " "},
-      customerProfileId:
-      ]
+  
+  ## Example
+      iex> id = "123456"
+      iex> opts = []
+      iex> result = Gringotts.store(:payment_worker, Gringotts.Gateways.AuthorizeNet, id, opts)
   """
-  @spec unstore(String.t, Keyword) :: Tuple
+  
+  @spec unstore(String.t, Keyword.t) :: tuple
   def unstore(customer_profile_id, opts) do
     request_data = delete_customer_profile(customer_profile_id, opts) |> generate
     response_data = commit(:post, request_data, opts)
@@ -356,9 +474,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   defp create_customer_payment_profile(card, opts) do
-    element(:createCustomerPaymentProfileRequest, %{xmlns: @aut_net_namespace},[
+    element(:createCustomerPaymentProfileRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
-      element(:customerProfileId, opts[:customerProfileId]),
+      element(:customerProfileId, opts[:customer_profile_id]),
       element(:paymentProfile, [
         add_billing_info(opts),
         add_payment_source(card)
@@ -371,11 +489,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     element(:createCustomerProfileRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       element(:profile, [
-        element(:merchantCustomerId, opts[:profile][:merchantCustomerId]),
+        element(:merchantCustomerId, opts[:profile][:merchant_customer_id]),
         element(:description, opts[:profile][:description]),
         element(:email, opts[:profile][:description]),
         element(:paymentProfiles, [
-          element(:customerType, (if opts[:customerType], do: opts[:customerType], else: "individual")),
+          element(:customerType, (if opts[:customer_type], do: opts[:customer_type], else: "individual")),
           add_payment_source(card)
         ])
       ])
@@ -395,12 +513,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   defp add_merchant_auth(opts) do
     element(:merchantAuthentication, [
       element(:name, opts[:name]),
-      element(:transactionKey, opts[:transactionKey])
+      element(:transactionKey, opts[:transaction_key])
     ])
   end
 
   defp add_order_id(opts) do
-    element(:refId, opts[:refId])
+    element(:refId, opts[:ref_id])
   end
 
   defp add_purchase_transaction_request(amount, transaction_type, payment, opts) do
@@ -474,16 +592,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   defp add_invoice(transactionType, opts) do
     element(
       [element(:order, [
-        element(:invoiceNumber, opts[:order][:invoiceNumber]),
+        element(:invoiceNumber, opts[:order][:invoice_number]),
         element(:description, opts[:order][:description]),
       ]),
       element(:lineItems, [
         element(:lineItem, [
-          element(:itemId, opts[:lineItem][:itemId]),
-          element(:name, opts[:lineItem][:name]),
-          element(:description, opts[:lineItem][:description]),
-          element(:quantity, opts[:lineItem][:quantity]),
-          element(:unitPrice, opts[:lineItem][:unitPrice])
+          element(:itemId, opts[:lineitems][:item_id]),
+          element(:name, opts[:lineitems][:name]),
+          element(:description, opts[:lineitems][:description]),
+          element(:quantity, opts[:lineitems][:quantity]),
+          element(:unitPrice, opts[:lineitems][:unit_price])
         ])
       ])
     ])
@@ -514,7 +632,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   defp add_po_number(opts) do
-    element(:poNumber, opts[:poNumber])
+    element(:poNumber, opts[:po_number])
   end
 
   defp add_customer_info(opts) do
@@ -534,32 +652,32 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   defp add_billing_info(opts) do
     element(:billTo, [
-      element(:firstName, opts[:billTo][:firstName]),
-      element(:lastName, opts[:billTo][:lastName]),
-      element(:company, opts[:billTo][:company]),
-      element(:address, opts[:billTo][:address]),
-      element(:city, opts[:billTo][:city]),
-      element(:state, opts[:billTo][:state]),
-      element(:zip, opts[:billTo][:zip]),
-      element(:country, opts[:billTo][:country])
+      element(:firstName, opts[:bill_to][:first_name]),
+      element(:lastName, opts[:bill_to][:last_name]),
+      element(:company, opts[:bill_to][:company]),
+      element(:address, opts[:bill_to][:address]),
+      element(:city, opts[:bill_to][:city]),
+      element(:state, opts[:bill_to][:state]),
+      element(:zip, opts[:bill_to][:zip]),
+      element(:country, opts[:bill_to][:country])
     ])
   end
 
   defp add_shipping_info(opts) do
     element(:shipTo, [
-      element(:firstName, opts[:shipTo][:firstName]),
-      element(:lastName, opts[:shipTo][:lastName]),
-      element(:company, opts[:shipTo][:company]),
-      element(:address, opts[:shipTo][:address]),
-      element(:city, opts[:shipTo][:city]),
-      element(:state, opts[:shipTo][:state]),
-      element(:zip, opts[:shipTo][:zip]),
-      element(:country, opts[:shipTo][:country]) 
+      element(:firstName, opts[:ship_to][:first_name]),
+      element(:lastName, opts[:ship_to][:last_name]),
+      element(:company, opts[:ship_to][:company]),
+      element(:address, opts[:ship_to][:address]),
+      element(:city, opts[:ship_to][:city]),
+      element(:state, opts[:ship_to][:state]),
+      element(:zip, opts[:ship_to][:zip]),
+      element(:country, opts[:ship_to][:country]) 
     ])
   end
 
   defp add_customer_ip(opts) do
-    element(:customerIP, opts[:customerIP])
+    element(:customerIP, opts[:customer_ip])
   end
 
   defp join_string(list, symbol) do
