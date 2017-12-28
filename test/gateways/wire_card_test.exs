@@ -173,7 +173,7 @@ defmodule Gringotts.Gateways.WireCardTest do
     test "with failed refund" do
       with_mock HTTPoison, 
       [request: fn(_method, _url, _body, _headers) -> MockResponse.failed_refund_response end] do
-        {:ok, response} = WireCard.refund("TheIdentifcation", @amount - 10, @options)
+        {:ok, response} = WireCard.refund(@amount - 10, "TheIdentifcation", @options)
         response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_BOOKBACK"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]["Message"]
         assert response_message =~ "Not prudent"
       end
