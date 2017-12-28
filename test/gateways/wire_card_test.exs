@@ -17,7 +17,7 @@ defmodule Gringotts.Gateways.WireCardTest do
   @test_purchase_guwid      "C865402121385575982910"
   @test_capture_guwid       "C833707121385268439116"
   @amount                   100
-
+  
   @card %CreditCard{
     number: "4200000000000000",
     month: 12,
@@ -131,22 +131,52 @@ defmodule Gringotts.Gateways.WireCardTest do
       end
     end
 
-    @tag :pending
     test "with successful authorization and partial capture" do
+      # Authorize first
+      response_guwid = with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+        {:ok, response} = WireCard.authorize(@amount, @card, @options)
+        response_guwid = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["GuWID"]
+        assert response_guwid == @test_authorization_guwid
+        response_guwid
+      end
+
+      # capture
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_authorization_response end] do
+        {:ok, response} = WireCard.capture(response_guwid, (@amount - 10), @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_PREAUTHORIZATION"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["Info"]
+        assert response_message =~ "THIS IS A DEMO TRANSACTION"
+      end
     end
 
-    @tag :pending
-    test "with unauthorized capture" do  
+    test "with unauthorized capture" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.unauthorized_capture_response end] do
+        {:ok, response} = WireCard.capture("1234567890123456789012", @amount, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_CAPTURE"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]["Message"]
+        assert response_message =~ "Could not find referenced transaction for GuWID 1234567890123456789012."
+      end
     end
   end
 
   describe "refund/3" do
-    @tag :pending
     test "with successful refund" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_refund_response end] do
+        {:ok, response} = WireCard.refund(@amount - 10, @test_purchase_guwid, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_BOOKBACK"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["Info"]
+        assert response_message =~ "All good!"
+      end
     end
 
-    @tag :pending
     test "with failed refund" do
+      with_mock HTTPoison, 
+      [request: fn(_method, _url, _body, _headers) -> MockResponse.failed_refund_response end] do
+        {:ok, response} = WireCard.capture(@test_capture_guwid, @amount - 10, @options)
+        response_message = response["WIRECARD_BXML"]["W_RESPONSE"]["W_JOB"]["FNC_CC_BOOKBACK"]["CC_TRANSACTION"]["PROCESSING_STATUS"]["ERROR"]["Message"]
+        assert response_message =~ "Not prudent"
+      end
     end
   end
 
