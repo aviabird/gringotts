@@ -1,5 +1,5 @@
 defmodule Gringotts.Gateways.Trexle do
-  
+
   @moduledoc """
   Functions supported for working with Trexle payment gateway:
   *
@@ -28,8 +28,8 @@ defmodule Gringotts.Gateways.Trexle do
     params = [amount: amount]
     commit(:put, "charges/#{charge_token}/capture", params, opts)
   end
-  
-  @spec refund(float, String.t, list) :: map 
+
+  @spec refund(float, String.t, list) :: map
   def refund(amount, charge_token, opts \\ []) do
     params = [amount: amount]
     commit(:post, "charges/#{charge_token}/refunds", params, opts)
@@ -53,7 +53,7 @@ defmodule Gringotts.Gateways.Trexle do
   end
 
   defp card_params(%{} = card) do
-    [ 
+    [
       "card[name]": card[:name],
       "card[number]": card[:number],
       "card[expiry_year]": card[:expiry_year],
@@ -64,7 +64,7 @@ defmodule Gringotts.Gateways.Trexle do
       "card[address_postcode]": card[:address_postcode],
       "card[address_state]": card[:address_state],
       "card[address_country]": card[:address_country]
-    ]   
+    ]
   end
 
   defp commit(method, path, params \\ [], opts \\ []) do
@@ -88,5 +88,4 @@ defmodule Gringotts.Gateways.Trexle do
   end
 
 end
-
 
