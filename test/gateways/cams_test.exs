@@ -90,6 +90,22 @@ defmodule Gringotts.Gateways.CamsTest do
   end
 
   describe "authorize" do
+    test "with network error" do
+      with_mock HTTPoision,
+      [post: fn(_url, _body, _headers) -> MockResponse.network_error end] do
+        {:ok, %Response{success: result}} = Gateway.authorize(@money, @payment, @options)
+        refute result
+      end
+    end
+
+    test "with bad_url" do
+      with_mock HTTPoision,
+      [post: fn(_url, _body, _headers) -> MockResponse.bad_url_error end] do
+        {:ok, %Response{message: result}} = Gateway.authorize(@money, @payment, @options)
+        assert String.contains?(result, "404 Not Found")
+      end
+    end
+
     test "with all good" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.successful_authorize end] do
