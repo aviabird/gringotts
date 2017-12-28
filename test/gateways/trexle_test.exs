@@ -139,14 +139,6 @@ defmodule Gringotts.Gateways.TrexleTest do
         assert response.raw == ~s({"error":"ip_address is missing"})
       end
     end
-
-    test "with missing ip address" do
-      with_mock HTTPoison,
-      [request!: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_missing_ip_address end] do
-        response = Trexle.authorize(@amount, @valid_card, @missingip_opts)
-        assert response == %{"error" => "something went wrong, please try again later"}
-      end
-    end
   end
 
   describe "refund" do
@@ -205,5 +197,3 @@ defmodule Gringotts.Gateways.TrexleTest do
   end
 
 end
-
-

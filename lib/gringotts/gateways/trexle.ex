@@ -50,7 +50,6 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   iex> amount = 100
 
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
   iex> card = %{
     name: "John Doe",
     number: "5200828282828210",
@@ -70,15 +69,12 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-=======
->>>>>>> extra empty line removal
   @spec authorize(float, map, list) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
   end
 
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
   @doc """
   Performs the amount transfer from the customer to the merchant.
 
@@ -107,15 +103,12 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-=======
->>>>>>> extra empty line removal
   @spec purchase(float, map, list) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
   end
 
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
   @doc """
   Captures a particular amount using the charge token of a pre authorized card.
 
@@ -133,14 +126,11 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-=======
->>>>>>> extra empty line removal
   @spec capture(String.t, float, list) :: map
   def capture(charge_token, amount, opts \\ []) do
     params = [amount: amount]
     commit(:put, "charges/#{charge_token}/capture", params, opts)
   end
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
 
   @doc """
   Refunds the amount to the customer's card with reference to a prior transfer.
@@ -164,16 +154,11 @@ defmodule Gringotts.Gateways.Trexle do
   """
 
   @spec refund(float, String.t, list) :: map
-=======
-  
-  @spec refund(float, String.t, list) :: map 
->>>>>>> extra empty line removal
   def refund(amount, charge_token, opts \\ []) do
     params = [amount: amount]
     commit(:post, "charges/#{charge_token}/refunds", params, opts)
   end
 
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
   @doc """
   Stores the card information for future use.
 
@@ -199,8 +184,6 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-=======
->>>>>>> extra empty line removal
   @spec store(map, list) :: map
   def store(payment, opts \\ []) do
     params = [email: opts[:email]] ++ card_params(payment)
@@ -254,7 +237,6 @@ defmodule Gringotts.Gateways.Trexle do
     end
   end
 
-<<<<<<< 941abb18f4b00c55cfb9c552a4ab0bb3d0d93d25
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:error, Response.error(status_code: status_code, raw: body)}
   end
@@ -263,8 +245,5 @@ defmodule Gringotts.Gateways.Trexle do
     {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
   end
 
-=======
->>>>>>> extra empty line removal
 end
-
 

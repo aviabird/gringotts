@@ -233,4 +233,3 @@ defmodule Gringotts.Gateways.TrexleMock do
     }
   end
 end
-
