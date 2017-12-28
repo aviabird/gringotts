@@ -295,13 +295,36 @@ defmodule Gringotts.Gateways.Cams do
     @doc false
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = URI.decode_query(body)
-      []
+      opts = [status_code: 200]
+      opts
       |> set_authorization(body)
       |> set_success(body)
       |> set_message(body)
       |> set_params(body)
       |> set_error_code(body)
       |> handle_opts()
+    end
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
+      body = URI.decode_query(body)
+      opts = [status_code: 400]
+      set_params(opts, body)
+    end
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
+      body = URI.decode_query(body)
+      opts = [status_code: 404]
+      opts
+      |> handle_not_found(body)
+      |> handle_opts()
+    end
+
+    def parse({:error, %HTTPoison.Error{} = error }) do
+      [
+        message: "HTTPoison says #{error.reason}",
+        error_code: error.id,
+        success: false
+      ]
     end
 
     defp set_authorization(opts, %{"transactionid" => id}) do
@@ -323,10 +346,20 @@ defmodule Gringotts.Gateways.Cams do
     defp set_success(opts, %{"response_code" => response_code}) do
       opts ++ [success: response_code == "100"]
     end
-    
+
+    defp handle_not_found(opts, body) do
+      error = parse_html(body)
+      opts ++ [success: false, message: error]
+    end
+
+    defp parse_html(body) do
+      error_message = List.to_string(Map.keys(body))
+      [h | tail] = (Regex.run(~r|<title>(.*)</title>|, error_message))
+      List.to_string(tail)
+    end
+
     defp handle_opts(opts) do
       {:ok, Response.success(opts)}
     end
-
   end
 end
