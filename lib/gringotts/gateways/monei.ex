@@ -73,15 +73,15 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Supported currencies and countries
 
-  The following currencies are supported: `USD`, `GBP`, `NAD`, `TWD`, `VUV`,
-  `NZD`, `NGN`, `NIO`, `NGN`, `NOK`, `PKR`, `PAB`, `PGK`, `PYG`, `PEN`, `NPR`,
-  `ANG`, `AWG`, `PHP`, `QAR`, `RUB`, `RWF`, `SHP`, `STD`, `SAR`, `SCR`, `SLL`,
-  `SGD`, `VND`, `SOS`, `ZAR`, `ZWL`, `YER`, `SDG`, `SZL`, `SEK`, `CHF`, `SYP`,
-  `TJS`, `THB`, `TOP`, `TTD`, `AED`, `TND`, `TRY`, `AZN`, `UGX`, `MKD`, `EGP`,
-  `GBP`, `TZS`, `UYU`, `UZS`, `WST`, `YER`, `RSD`, `ZMW`, `TWD`, `AZN`, `GHS`,
-  `RSD`, `MZN`, `AZN`, `MDL`, `TRY`, `XAF`, `XCD`, `XOF`, `XPF`, `MWK`, `SRD`,
-  `MGA`, `AFN`, `TJS`, `AOA`, `BYN`, `BGN`, `CDF`, `BAM`, `UAH`, `GEL`, `PLN`,
-  `BRL` and `CUC`.
+  The following currencies are supported: `EUR`, `USD`, `GBP`, `NAD`, `TWD`,
+  `VUV`, `NZD`, `NGN`, `NIO`, `NGN`, `NOK`, `PKR`, `PAB`, `PGK`, `PYG`, `PEN`,
+  `NPR`, `ANG`, `AWG`, `PHP`, `QAR`, `RUB`, `RWF`, `SHP`, `STD`, `SAR`, `SCR`,
+  `SLL`, `SGD`, `VND`, `SOS`, `ZAR`, `ZWL`, `YER`, `SDG`, `SZL`, `SEK`, `CHF`,
+  `SYP`, `TJS`, `THB`, `TOP`, `TTD`, `AED`, `TND`, `TRY`, `AZN`, `UGX`, `MKD`,
+  `EGP`, `GBP`, `TZS`, `UYU`, `UZS`, `WST`, `YER`, `RSD`, `ZMW`, `TWD`, `AZN`,
+  `GHS`, `RSD`, `MZN`, `AZN`, `MDL`, `TRY`, `XAF`, `XCD`, `XOF`, `XPF`, `MWK`,
+  `SRD`, `MGA`, `AFN`, `TJS`, `AOA`, `BYN`, `BGN`, `CDF`, `BAM`, `UAH`, `GEL`,
+  `PLN`, `BRL` and `CUC`.
 
   > [Here](https://support.monei.net/international/currencies-supported-by-monei)
   > is the up-to-date currency list. _Please [raise an
@@ -133,6 +133,8 @@ defmodule Gringotts.Gateways.Monei do
 
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
+  @supported_currencies ["EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN", "NIO", "NGN", "NOK", "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG", "PHP", "QAR", "RUB", "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND", "SOS", "ZAR", "ZWL", "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB", "TOP", "TTD", "AED", "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS", "UYU", "UZS", "WST", "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN", "AZN", "MDL", "TRY", "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN", "TJS", "AOA", "BYN", "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"]
+  @default_currency "EUR"
 
   @version "v1"
 
@@ -405,16 +407,18 @@ defmodule Gringotts.Gateways.Monei do
       "authentication.entityId": opts[:entityId]
     ]
 
-    body = params ++ auth_params
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
-
-    network_response =
-      case method do
-        :post -> HTTPoison.post(url, {:form, body}, @default_headers)
-        :delete -> HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
-      end
-
-    respond(network_response)
+    case validate_params params do
+      :ok ->
+      network_response =
+          case method do
+            :post -> HTTPoison.post(url, {:form, params ++ auth_params}, @default_headers)
+            :delete -> HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
+          end
+      respond(network_response)
+    {:error, {code, reason}} -> 
+        {:error, Response.error(code: code, description: reason)}
+    end
   end
 
   # Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
@@ -428,12 +432,11 @@ defmodule Gringotts.Gateways.Monei do
           {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
           {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
         end
-
       {:error, _} ->
         {:error, Response.error(raw: body, code: :undefined_response_from_monei)}
     end
   end
-
+  
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:error, Response.error(code: status_code, raw: body)}
   end
@@ -443,12 +446,21 @@ defmodule Gringotts.Gateways.Monei do
       :error,
       Response.error(
         code: error.id,
-        reason: :network_fail?,
+        reason: "network related failure",
         description: "HTTPoison says '#{error.reason}'"
       )
     }
   end
 
+  defp validate_params(params) do
+    currency = params[:currency]
+    if currency && currency not in @supported_currencies do
+      {:error, {nil, "#{params[:currency]} is not supported"}}
+    else
+      :ok
+    end
+  end
+  
   defp verification_result(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
     code = result["code"]
@@ -472,3 +484,4 @@ defmodule Gringotts.Gateways.Monei do
   defp base_url(opts), do: opts[:test_url] || @base_url
   defp version(opts), do: opts[:api_version] || @version
 end
+  
