@@ -4,7 +4,7 @@ defmodule Gringotts.Mixfile do
   def project do
     [
       app: :gringotts,
-      version: "1.0.1",
+      version: "1.0.2",
       description: description(),
       package: [
         contributors: ["Aviabird Technologies"],
