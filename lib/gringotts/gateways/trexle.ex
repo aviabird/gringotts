@@ -1,7 +1,7 @@
 defmodule Gringotts.Gateways.Trexle do
 
   @moduledoc """
-  TREXLE PAYMENT GATEWAY IMPLEMENTATION:
+  Trexle Payment Gateway Implementation:
 
   For further details, please refer [Trexle API documentation](https://docs.trexle.com/).
 
