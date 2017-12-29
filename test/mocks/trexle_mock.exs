@@ -82,19 +82,21 @@ defmodule Gringotts.Gateways.TrexleMock do
 
   def test_for_authorize_with_invalid_card do
     {:ok,
-    %HTTPoison.Response{
-      body: "{\"error\":\"Payment failed\",\"detail\":\"Your card's expiration year is invalid.\"}",
-      headers: [
-        {"Date", "Sat, 23 Dec 2017 18:25:40 GMT"},
-        {"Content-Type", "application/json; charset=UTF-8"},
-        {"Cache-Control", "no-cache"},
-        {"X-Request-Id", "239e7054-9500-4a87-bf3b-09456d550b6d"},
-        {"X-Runtime", "0.466670"},
-        {"Content-Length", "77"},
-        {"X-Powered-By", "PleskLin"},
-        {"Connection", "close"}
-      ],
-    request_url: "https://core.trexle.com/api/v1//charges", status_code: 400}
+      %HTTPoison.Response{
+        body: "{\"error\":\"Payment failed\",\"detail\":\"Your card's expiration year is invalid.\"}",
+        headers: [
+          {"Date", "Sat, 23 Dec 2017 18:25:40 GMT"},
+          {"Content-Type", "application/json; charset=UTF-8"},
+          {"Cache-Control", "no-cache"},
+          {"X-Request-Id", "239e7054-9500-4a87-bf3b-09456d550b6d"},
+          {"X-Runtime", "0.466670"},
+          {"Content-Length", "77"},
+          {"X-Powered-By", "PleskLin"},
+          {"Connection", "close"}
+        ],
+        request_url: "https://core.trexle.com/api/v1//charges",
+        status_code: 400
+      }
     }
   end
 
