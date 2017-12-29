@@ -122,35 +122,37 @@ defmodule Gringotts.Gateways.TrexleMock do
 
   def test_for_authorize_with_missing_ip_address do
     {:ok,
-    %HTTPoison.Response{body: "{\"error\":\"ip_address is missing\"}",
-      headers: [{"Date", "Thu, 28 Dec 2017 12:22:43 GMT"},
-        {"Content-Type", "application/json; charset=UTF-8"},
-        {"Cache-Control", "no-cache"},
-        {"X-Request-Id", "97bae548-a446-42e9-b792-8c505c38f4c1"},
-        {"X-Runtime", "0.005652"}, {"Content-Length", "33"},
-        {"X-Powered-By", "PleskLin"}, {"Connection", "close"}],
-      request_url: "https://core.trexle.com/api/v1/charges",
-      status_code: 500
+      %HTTPoison.Response{body: "{\"error\":\"ip_address is missing\"}",
+        headers: [
+          {"Date", "Thu, 28 Dec 2017 12:22:43 GMT"},
+          {"Content-Type", "application/json; charset=UTF-8"},
+          {"Cache-Control", "no-cache"},
+          {"X-Request-Id", "97bae548-a446-42e9-b792-8c505c38f4c1"},
+          {"X-Runtime", "0.005652"}, {"Content-Length", "33"},
+          {"X-Powered-By", "PleskLin"}, {"Connection", "close"}
+        ],
+        request_url: "https://core.trexle.com/api/v1/charges",
+        status_code: 500
       }
     }
   end
 
   def test_for_refund_with_valid_token do
     {:ok,
-    %HTTPoison.Response{
-      body: "{\"response\":{\"token\":\"refund_a86a757cc6bdabab50d6ebbfcdcd4db4e04198dd\",\"success\":true,\"amount\":50,\"charge\":\"charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b\",\"status_message\":\"Transaction approved\"}}",
-      headers: [
-        {"Date", "Sat, 23 Dec 2017 18:55:41 GMT"},
-        {"Content-Type", "application/json; charset=UTF-8"},
-        {"ETag", "W/\"7410ae0b45094aadada390f5c947a58a\""},
-        {"Cache-Control", "max-age=0, private, must-revalidate"},
-        {"X-Request-Id", "b1c94703-7fb4-48f2-b1b4-32e3b6a87e57"},
-        {"X-Runtime", "1.097186"},
-        {"Content-Length", "198"},
-        {"X-Powered-By", "PleskLin"}
-      ],
-      request_url: "https://core.trexle.com/api/v1//charges/charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b/refunds",
-      status_code: 201
+      %HTTPoison.Response{
+        body: "{\"response\":{\"token\":\"refund_a86a757cc6bdabab50d6ebbfcdcd4db4e04198dd\",\"success\":true,\"amount\":50,\"charge\":\"charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b\",\"status_message\":\"Transaction approved\"}}",
+        headers: [
+          {"Date", "Sat, 23 Dec 2017 18:55:41 GMT"},
+          {"Content-Type", "application/json; charset=UTF-8"},
+          {"ETag", "W/\"7410ae0b45094aadada390f5c947a58a\""},
+          {"Cache-Control", "max-age=0, private, must-revalidate"},
+          {"X-Request-Id", "b1c94703-7fb4-48f2-b1b4-32e3b6a87e57"},
+          {"X-Runtime", "1.097186"},
+          {"Content-Length", "198"},
+          {"X-Powered-By", "PleskLin"}
+        ],
+        request_url: "https://core.trexle.com/api/v1//charges/charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b/refunds",
+        status_code: 201
       }
     }
   end
@@ -235,4 +237,3 @@ defmodule Gringotts.Gateways.TrexleMock do
     }
   end
 end
-

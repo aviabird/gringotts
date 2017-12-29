@@ -198,7 +198,7 @@ defmodule Gringotts.Gateways.Trexle do
       email: opts[:email],
       ip_address: opts[:ip_address],
       description: opts[:description]
-    ]++ card_params(payment)
+    ] ++ card_params(payment)
   end
 
   defp card_params(%{} = card) do
@@ -244,5 +244,4 @@ defmodule Gringotts.Gateways.Trexle do
   defp respond({:error, %HTTPoison.Error{} = error}) do
     {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
   end
-
 end
