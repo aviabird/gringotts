@@ -319,7 +319,7 @@ defmodule Gringotts.Gateways.Cams do
       |> handle_opts()
     end
 
-    def parse({:error, %HTTPoison.Error{} = error }) do
+    def parse({:error, %HTTPoison.Error{} = error}) do
       [
         message: "HTTPoison says #{error.reason}",
         error_code: error.id,

@@ -56,7 +56,6 @@ defmodule Gringotts.Gateways.CamsTest do
   @bad_authorization "300000000"
 
   describe "purchase" do
-
     test "with all good" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.successful_purchase end] do
@@ -91,22 +90,6 @@ defmodule Gringotts.Gateways.CamsTest do
   end
 
   describe "authorize" do
-    test "with network error" do
-      with_mock HTTPoision,
-      [post: fn(_url, _body, _headers) -> MockResponse.network_error end] do
-        {:ok, %Response{success: result}} = Gateway.authorize(@money, @payment, @options)
-        refute result
-      end
-    end
-
-    test "with bad_url" do
-      with_mock HTTPoision,
-      [post: fn(_url, _body, _headers) -> MockResponse.bad_url_error end] do
-        {:ok, %Response{message: result}} = Gateway.authorize(@money, @payment, @options)
-        assert String.contains?(result, "404 Not Found")
-      end
-    end
-
     test "with all good" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.successful_authorize end] do
@@ -122,16 +105,14 @@ defmodule Gringotts.Gateways.CamsTest do
         assert String.contains?(result, "Invalid Credit Card Number")
       end
     end
-  end
-
-  test "with bad amount" do
-    with_mock HTTPoison,
-    [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_money end] do
-      {:ok, %Response{message: result}} = Gateway.purchase(@bad_money, @payment, @options)
-      assert String.contains?(result, "Invalid amount")
+    test "with bad amount" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_money end] do
+        {:ok, %Response{message: result}} = Gateway.authorize(@bad_money, @payment, @options)
+        assert String.contains?(result, "Invalid amount")
+      end
     end
   end
-
   describe "capture" do
     test "with full amount" do
       with_mock HTTPoison,
@@ -172,7 +153,6 @@ defmodule Gringotts.Gateways.CamsTest do
         assert String.contains?(result, "A capture requires that")
       end
     end
-
   end
 
   describe "refund" do
