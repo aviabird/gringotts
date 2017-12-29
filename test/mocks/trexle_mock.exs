@@ -74,7 +74,9 @@ defmodule Gringotts.Gateways.TrexleMock do
           {"Content-Length", "104"},
           {"X-Powered-By", "PleskLin"}
         ],
-      request_url: "https://core.trexle.com/api/v1//charges", status_code: 201}
+        request_url: "https://core.trexle.com/api/v1//charges",
+        status_code: 201
+      }
     }
   end
 
