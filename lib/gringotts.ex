@@ -36,14 +36,6 @@ defmodule Gringotts do
   The public API is designed in such a way that library users end up passing mostly a 
   standard params for almost all requests.
 
-  ### Worker Name 
-    eg: :payment_worker
-
-    The standard central supervised worker responsible for delegating/calling all
-    the payment specific methods such as `authorise` & `purchase`.
-
-    > This option is going to be removed in our next version.
-
   ### Gateway Name
     eg: Gringotts.Gateways.Stripe
 
@@ -103,15 +95,15 @@ defmodule Gringotts do
 
       @options [currency: "usd"]
 
-      Gringotts.purchase(:payment_worker, Gringotts.Gateways.Stripe, 5, @payment, @options)
+      Gringotts.purchase(Gringotts.Gateways.Stripe, 5, @payment, @options)
 
   This method is expected to authorize payment and transparently trigger eventual 
   settlement. Preferably it is implemented as a single call to the gateway, 
   but it can also be implemented as chained `authorize` and `capture` calls.
   """
-  def purchase(worker, gateway, amount, card, opts \\ []) do
+  def purchase(gateway, amount, card, opts \\ []) do
     validate_config(gateway)
-    call(worker, {:purchase, gateway, amount, card, opts})
+    call(:payment_worker, {:purchase, gateway, amount, card, opts})
   end
 
   @doc """
@@ -135,11 +127,11 @@ defmodule Gringotts do
 
       @options [currency: "usd"]
 
-      Gringotts.authorize(:payment_worker, Gringotts.Gateways.Stripe, 5, @payment, @options)
+      Gringotts.authorize(Gringotts.Gateways.Stripe, 5, @payment, @options)
   """
-  def authorize(worker, gateway, amount, card, opts \\ []) do
+  def authorize(gateway, amount, card, opts \\ []) do
     validate_config(gateway)
-    call(worker, {:authorize, gateway, amount, card, opts})
+    call(:payment_worker, {:authorize, gateway, amount, card, opts})
   end
 
   @doc """
@@ -169,11 +161,11 @@ defmodule Gringotts do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Gringotts.capture(:payment_worker, Gringotts.Gateways.Stripe, id, 5)
+      Gringotts.capture(Gringotts.Gateways.Stripe, id, 5)
   """
-  def capture(worker, gateway, id, amount, opts \\ []) do 
+  def capture(gateway, id, amount, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:capture, gateway, id, amount, opts})
+    call(:payment_worker, {:capture, gateway, id, amount, opts})
   end
 
   @doc """
@@ -198,12 +190,12 @@ defmodule Gringotts do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Gringotts.void(:payment_worker, Gringotts.Gateways.Stripe, id)
+      Gringotts.void(Gringotts.Gateways.Stripe, id)
 
   """
-  def void(worker, gateway, id, opts \\ []) do 
+  def void(gateway, id, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:void, gateway, id, opts})
+    call(:payment_worker, {:void, gateway, id, opts})
   end
 
   @doc """
@@ -225,11 +217,11 @@ defmodule Gringotts do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Gringotts.refund(:payment_worker, Gringotts.Gateways.Stripe, 5, id)
+      Gringotts.refund(Gringotts.Gateways.Stripe, 5, id)
   """
-  def refund(worker, gateway, amount, id, opts \\ []) do 
+  def refund(gateway, amount, id, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:refund, gateway, amount, id, opts})
+    call(:payment_worker, {:refund, gateway, amount, id, opts})
   end
 
   @doc """
@@ -258,11 +250,11 @@ defmodule Gringotts do
 
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
 
-      Gringotts.store(:payment_worker, Gringotts.Gateways.Stripe, @payment)
+      Gringotts.store(Gringotts.Gateways.Stripe, @payment)
   """
-  def store(worker, gateway, card, opts \\ []) do 
+  def store(gateway, card, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:store, gateway, card, opts})
+    call(:payment_worker, {:store, gateway, card, opts})
   end
 
   @doc """
@@ -274,11 +266,11 @@ defmodule Gringotts do
 
       customer_id = "random_customer"
 
-      Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, customer_id)
+      Gringotts.unstore(Gringotts.Gateways.Stripe, customer_id)
   """
-  def unstore(worker, gateway, customer_id, opts \\ []) do 
+  def unstore(gateway, customer_id, opts \\ []) do 
     validate_config(gateway)
-    call(worker, {:unstore, gateway, customer_id, opts})
+    call(:payment_worker, {:unstore, gateway, customer_id, opts})
   end
 
   # TODO: This is runtime error reporting fix this so that it does compile

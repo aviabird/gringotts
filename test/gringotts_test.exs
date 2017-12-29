@@ -49,33 +49,33 @@ defmodule GringottsTest do
   end
 
   test "authorization" do
-    assert authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) ==
+    assert authorize(GringottsTest.FakeGateway, 100, :card, []) ==
              :authorization_response
   end
 
   test "purchase" do
-    assert purchase(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) ==
+    assert purchase(GringottsTest.FakeGateway, 100, :card, []) ==
              :purchase_response
   end
 
   test "capture" do
-    assert capture(:payment_worker, GringottsTest.FakeGateway, 1234, 100, []) == :capture_response
+    assert capture(GringottsTest.FakeGateway, 1234, 100, []) == :capture_response
   end
 
   test "void" do
-    assert void(:payment_worker, GringottsTest.FakeGateway, 1234, []) == :void_response
+    assert void(GringottsTest.FakeGateway, 1234, []) == :void_response
   end
 
   test "refund" do
-    assert refund(:payment_worker, GringottsTest.FakeGateway, 100, 1234, []) == :refund_response
+    assert refund(GringottsTest.FakeGateway, 100, 1234, []) == :refund_response
   end
 
   test "store" do
-    assert store(:payment_worker, GringottsTest.FakeGateway, :card, []) == :store_response
+    assert store(GringottsTest.FakeGateway, :card, []) == :store_response
   end
 
   test "unstore" do
-    assert unstore(:payment_worker, GringottsTest.FakeGateway, 123, []) == :unstore_response
+    assert unstore(GringottsTest.FakeGateway, 123, []) == :unstore_response
   end
 
   test "validate_config when some required config is missing" do
@@ -84,7 +84,7 @@ defmodule GringottsTest do
     assert_raise(
       ArgumentError,
       "expected [:other_secret] to be set, got: [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]\n",
-      fn -> authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) end
+      fn -> authorize(GringottsTest.FakeGateway, 100, :card, []) end
     )
   end
 end

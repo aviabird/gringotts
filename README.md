@@ -77,7 +77,7 @@ address = %Address{
 
 opts = [address: address, currency: "eur"]
 
-case Gringotts.purchase(:payment_worker, Stripe, 10, card, opts) do
+case Gringotts.purchase(Stripe, 10, card, opts) do
   {:ok,    %{authorization: authorization}} ->
     IO.puts("Payment authorized #{authorization}")
 
