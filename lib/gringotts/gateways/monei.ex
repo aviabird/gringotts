@@ -180,7 +180,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> auth_result = Gringotts.authorize(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
+      iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, 40, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
   @spec authorize(number, CreditCard.t(), keyword) :: {:ok | :error, Response}
@@ -221,7 +221,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> capture_result = Gringotts.capture(:payment_worker, Gringotts.Gateways.Monei, 35, auth_result.id, opts)
+      iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
   @spec capture(number, String.t(), keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
@@ -254,7 +254,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> purchase_result = Gringotts.purchase(:payment_worker, Gringotts.Gateways.Monei, 40, card, opts)
+      iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, 40, card, opts)
   """
   @spec purchase(number, CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) when is_integer(amount) do
@@ -305,7 +305,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> void_result = Gringotts.void(:payment_worker, Gringotts.Gateways.Monei, auth_result.id, opts)
+      iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(payment_id, opts)
@@ -334,7 +334,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> refund_result = Gringotts.refund(:payment_worker, Gringotts.Gateways.Monei, purchase_result.id, opts)
+      iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, opts)
   """
   @spec refund(number, String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) when is_integer(amount) do
@@ -374,7 +374,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> opts = [currency: "EUR"] # The default currency is EUR, and this is just for an example.
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> store_result = Gringotts.store(:payment_worker, Gringotts.Gateways.Monei, card, opts)
+      iex> store_result = Gringotts.store(Gringotts.Gateways.Monei, card, opts)
   """
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do

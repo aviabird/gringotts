@@ -92,7 +92,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> opts = [currency: "usd"]
       iex> amount = 10
 
-      iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, payment, opts)
   """
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -119,7 +119,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> opts = [currency: "usd"]
       iex> amount = 5
 
-      iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, payment, opts)
   """
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
@@ -145,7 +145,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> amount = 5
       iex> opts = []
 
-      iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Stripe, id, amount, opts)
+      iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
   @spec capture(String.t, Float, List) :: Map
   def capture(id, amount, opts \\ []) do
@@ -178,7 +178,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       iex> opts = []
 
-      iex> Gringotts.void(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
+      iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
   @spec void(String.t, List) :: Map
   def void(id, opts \\ []) do
@@ -200,7 +200,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       iex> opts = []
 
-      iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Stripe, amount, id, opts)
+      iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
   @spec refund(Float, String.t, List) :: Map
   def refund(amount, id, opts \\ []) do
@@ -226,7 +226,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> opts = []
 
-      iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Stripe, payment, opts)
+      iex> Gringotts.store(Gringotts.Gateways.Stripe, payment, opts)
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
@@ -245,7 +245,7 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would unstore a already stored payment source.
       iex> id = "cus_BwpLX2x4ecEUgD"
 
-      iex> Gringotts.unstore(:payment_worker, Gringotts.Gateways.Stripe, id, opts)
+      iex> Gringotts.unstore(Gringotts.Gateways.Stripe, id, opts)
   """
   @spec unstore(String.t) :: Map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
