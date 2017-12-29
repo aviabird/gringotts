@@ -23,7 +23,8 @@ defmodule Gringotts.Mixfile do
         "coveralls.html": :test,
         "coveralls.travis": :test
       ],
-      deps: deps()]
+      deps: deps(),
+      docs: docs()]
   end
 
   # Configuration for the OTP application
@@ -68,4 +69,13 @@ defmodule Gringotts.Mixfile do
     activemerchant ruby gem.
     """
   end
+
+  defp docs do
+    [
+      main: "Gringotts",
+      logo: "images/lg.png",
+      source_url: "https://github.com/aviabird/gringotts"
+    ]
+  end
+  
 end
