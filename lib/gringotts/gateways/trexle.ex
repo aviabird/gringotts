@@ -46,6 +46,8 @@ defmodule Gringotts.Gateways.Trexle do
   alias Gringotts.{Response}
 
   @doc """
+  Performs the authorization of the card to be used for payment.
+
   Authorizes your card with the given amount and returns a charge token and captured status as false in response.
 
   ### Example
