@@ -324,13 +324,8 @@ defmodule Gringotts.Gateways.Cams do
     @doc false
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = URI.decode_query(body)
-<<<<<<< HEAD
 
       [status_code: 200]
-=======
-      opts = [status_code: 200]
-      opts
->>>>>>> affba64... Added test,Error handling
       |> set_authorization(body)
       |> set_success(body)
       |> set_message(body)
@@ -341,32 +336,18 @@ defmodule Gringotts.Gateways.Cams do
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
       body = URI.decode_query(body)
-<<<<<<< HEAD
       set_params([status_code: 400], body)
-=======
-      opts = [status_code: 400]
-      set_params(opts, body)
->>>>>>> affba64... Added test,Error handling
     end
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
       body = URI.decode_query(body)
-<<<<<<< HEAD
       
       [status_code: 404]
-=======
-      opts = [status_code: 404]
-      opts
->>>>>>> affba64... Added test,Error handling
       |> handle_not_found(body)
       |> handle_opts()
     end
 
-<<<<<<< HEAD
     def parse({:error, %HTTPoison.Error{} = error}) do
-=======
-    def parse({:error, %HTTPoison.Error{} = error }) do
->>>>>>> affba64... Added test,Error handling
       [
         message: "HTTPoison says #{error.reason}",
         error_code: error.id,
@@ -397,7 +378,6 @@ defmodule Gringotts.Gateways.Cams do
     defp handle_not_found(opts, body) do
       error = parse_html(body)
       opts ++ [success: false, message: error]
-<<<<<<< HEAD
     end
 
     defp parse_html(body) do
@@ -412,18 +392,5 @@ defmodule Gringotts.Gateways.Cams do
         {:ok, false} -> {:ok, Response.error(opts)}
       end
     end
-=======
-    end
-
-    defp parse_html(body) do
-      error_message = List.to_string(Map.keys(body))
-      [h | tail] = (Regex.run(~r|<title>(.*)</title>|, error_message))
-      List.to_string(tail)
-    end
-
-    defp handle_opts(opts) do
-      {:ok, Response.success(opts)}
-    end
->>>>>>> affba64... Added test,Error handling
   end
 end
