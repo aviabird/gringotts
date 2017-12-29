@@ -87,4 +87,14 @@ defmodule GringottsTest do
       fn -> authorize(GringottsTest.FakeGateway, 100, :card, []) end
     )
   end
+
+  test "validate_config when some required config is missing" do
+    Application.put_env(:gringotts, GringottsTest.FakeGateway, @bad_config)
+
+    assert_raise(
+      ArgumentError,
+      "expected [:other_secret] to be set, got: [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]\n",
+      fn -> authorize(:payment_worker, GringottsTest.FakeGateway, 100, :card, []) end
+    )
+  end
 end
