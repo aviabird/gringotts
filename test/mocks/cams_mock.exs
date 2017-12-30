@@ -1,19 +1,7 @@
 defmodule Gringotts.Gateways.CamsMock do
-<<<<<<< HEAD
-<<<<<<< HEAD
   def successful_purchase do
     {:ok,
     %HTTPoison.Response{
-=======
-	def successful_purchase do
-		{:ok,
-		%HTTPoison.Response{
->>>>>>> 9c72b2a... Mock are indentate
-=======
-  def successful_purchase do
-    {:ok,
-    %HTTPoison.Response{
->>>>>>> e35d058... fixed indentation
       body: "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3916017714&avsresponse=N&cvvresponse=N&orderid=&type=sale&response_code=100",
       headers: [
         {"Date", "Thu, 21 Dec 2017 12:45:16 GMT"}, 
@@ -23,7 +11,6 @@ defmodule Gringotts.Gateways.CamsMock do
       ],
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}		 
-<<<<<<< HEAD
   end
   
   def failed_purchase_with_bad_credit_card do
@@ -53,12 +40,6 @@ defmodule Gringotts.Gateways.CamsMock do
     status_code: 200}}
   end
   
-  def with_invalid_currency do
-    {:ok,
-    %HTTPoison.Response{
-=======
-  end
-  
   def failed_purchase_with_bad_credit_card do
     {:ok,
     %HTTPoison.Response{
@@ -71,25 +52,10 @@ defmodule Gringotts.Gateways.CamsMock do
       ],
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}			 
-  end
-  def failed_purchase_with_bad_money do
-    {:ok,
-    %HTTPoison.Response{
-      body: "response=3&responsetext=Invalid amount REFID:3502949755&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=sale&response_code=300",
-      headers: [
-        {"Date", "Thu, 21 Dec 2017 13:50:20 GMT"}, 
-        {"Server", "Apache"},
-        {"Content-Length", "143"},
-        {"Content-Type", "text/html; charset=UTF-8"}
-      ],
-    request_url: "https://secure.centralams.com/gw/api/transact.php",
-    status_code: 200}}
-  end
-  
+  end  
   def with_invalid_currency do
     {:ok,
     %HTTPoison.Response{
->>>>>>> 9c72b2a... Mock are indentate
       body: "response=3&responsetext=The cc payment type [Visa] and/or currency [INR] is not accepted REFID:3503238709&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=auth&response_code=300",
       headers: [
         {"Date", "Tue, 26 Dec 2017 10:37:42 GMT"},
@@ -102,15 +68,7 @@ defmodule Gringotts.Gateways.CamsMock do
   end
   
   def successful_capture do
-<<<<<<< HEAD
-<<<<<<< HEAD
     {:ok,
-=======
-		{:ok,
->>>>>>> 9c72b2a... Mock are indentate
-=======
-    {:ok,
->>>>>>> e35d058... fixed indentation
     %HTTPoison.Response{
       body: "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3921111362&avsresponse=&cvvresponse=&orderid=&type=capture&response_code=100",
       headers: [
@@ -241,6 +199,6 @@ defmodule Gringotts.Gateways.CamsMock do
       {"Content-Type", "text/html; charset=UTF-8"}
     ],
     request_url: "https://secure.centralams.com/gw/api/transact.php",
-    status_code: 200}}  
+    status_code: 200}}
   end
 end

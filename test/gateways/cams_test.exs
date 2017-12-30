@@ -189,13 +189,5 @@ defmodule Gringotts.Gateways.CamsTest do
         assert String.contains?(result, "Transaction not found")
       end
     end
-
-    test "with invalid transaction_id" do
-      with_mock HTTPoison,
-      [post: fn(_url, _body, _headers) -> MockResponse.invalid_transaction_id end] do
-        {:ok, %Response{message: result}} = Gateway.void(@bad_authorization, @options)
-        assert String.contains?(result, "Transaction not found")
-      end
-    end
   end
 end
