@@ -77,7 +77,7 @@ defmodule Gringotts.Gateways.WireCard do
       test: true
     ] 
   """
-  @spec authorize(Integer | Float, CreditCard.t | String.t, Keyword) :: { :ok, Map }
+  @spec authorize(Integer | Float, CreditCard.t | String.t, Keyword) :: {:ok, Map}
   def authorize(money, payment_method, options \\ [])
 
   def authorize(money, %CreditCard{} = creditcard, options) do
@@ -94,7 +94,7 @@ defmodule Gringotts.Gateways.WireCard do
     Capture - the first paramter here should be a GuWid/authorization.
     Authorization is obtained by authorizing the creditcard. 
   """
-  @spec capture(String.t, Float, Keyword) :: { :ok, Map }
+  @spec capture(String.t, Float, Keyword) :: {:ok, Map}
   def capture(authorization, money, options \\ []) when is_binary(authorization) do
     options = Keyword.put(options, :preauthorization, authorization)
     commit(:post, :capture, money, options)
@@ -106,7 +106,7 @@ defmodule Gringotts.Gateways.WireCard do
     transaction.  If a GuWID is given, rather than a CreditCard,
     then then the :recurring option will be forced to "Repeated"
   """
-  @spec purchase(Float | Integer, CreditCard| String.t, Keyword) :: { :ok, Map }
+  @spec purchase(Float | Integer, CreditCard| String.t, Keyword) :: {:ok, Map}
   def purchase(money, payment_method, options \\ [])
 
   def purchase(money, %CreditCard{} = creditcard, options) do
@@ -130,7 +130,7 @@ defmodule Gringotts.Gateways.WireCard do
   identification -  The authorization string returned from the
                     initial authorization or purchase.
   """
-  @spec void(String.t, Keyword) :: { :ok, Map }
+  @spec void(String.t, Keyword) :: {:ok, Map}
   def void(identification, options \\ []) when is_binary(identification) do
     options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :reversal, nil, options)
@@ -146,7 +146,7 @@ defmodule Gringotts.Gateways.WireCard do
                       as an Integer value in cents.
     identification -- GuWID
   """
-  @spec refund(Float, String.t, Keyword) :: { :ok, Map }
+  @spec refund(Float, String.t, Keyword) :: {:ok, Map}
   def refund(money, identification, options \\ []) when is_binary(identification) do
     options = Keyword.put(options, :preauthorization, identification)
     commit(:post, :bookback, money, options)
@@ -183,7 +183,7 @@ defmodule Gringotts.Gateways.WireCard do
     the returned authorization/GuWID usable in later transactions
     with +options[:recurring] = 'Repeated'+.
   """
-  @spec store(CreditCard.t, Keyword) :: { :ok, Map }
+  @spec store(CreditCard.t, Keyword) :: {:ok, Map}
   def store(%CreditCard{} = creditcard, options \\ []) do
     options = options 
                 |> Keyword.put(:credit_card, creditcard) 
@@ -201,23 +201,23 @@ defmodule Gringotts.Gateways.WireCard do
   # Contact WireCard, make the XML request, and parse the
   # reply into a Response object.
   defp commit(method, action, money, options) do
-    #TODO: validate and setup address hash as per AM
+    # TODO: validate and setup address hash as per AM
     request = build_request(action, money, options)
-    headers = %{ "Content-Type" => "text/xml",
-                 "Authorization" => encoded_credentials(
-                    options[:config][:login], options[:config][:password]
-                  ) 
-                }
+    headers = %{"Content-Type" => "text/xml",
+                "Authorization" => encoded_credentials(
+                   options[:config][:login], options[:config][:password]
+                 ) 
+               }
     method |> HTTPoison.request(base_url(options) , request, headers) |> respond
   end
 
-  defp respond({:ok, %{ status_code: 200, body: body}}) do
+  defp respond({:ok, %{status_code: 200, body: body}}) do
     response = parse(body)
     {:ok, response}
   end
 
   defp respond({:ok, %{body: body, status_code: status_code}}) do
-    { :error, "Some Error Occurred: \n #{ inspect body }" }
+    {:error, "Some Error Occurred: \n #{ inspect body }"}
   end
 
   # Read the XML message from the gateway and check if it was successful,
@@ -298,7 +298,7 @@ defmodule Gringotts.Gateways.WireCard do
             element(:Zip, address[:zip]), 
             add_state(address),
             element(:Country, address[:country]),
-            element(:Phone, (if regex_match(@valid_phone_format ,address[:phone]), do: address[:phone])),
+            element(:Phone, (if regex_match(@valid_phone_format, address[:phone]), do: address[:phone])),
             element(:Email, address[:email])
           ])
         ])
@@ -307,7 +307,7 @@ defmodule Gringotts.Gateways.WireCard do
   end
 
   defp add_state(address) do
-    if ( regex_match(~r/[A-Za-z]{2}/, address[:state]) && regex_match(~r/^(us|ca)$/i, address[:country]) 
+    if (regex_match(~r/[A-Za-z]{2}/, address[:state]) && regex_match(~r/^(us|ca)$/i, address[:country]) 
     ) do
      element(:State, (String.upcase(address[:state])))
     end
@@ -364,9 +364,10 @@ defmodule Gringotts.Gateways.WireCard do
   # Encode login and password in Base64 to supply as HTTP header
   # (for http basic authentication)
   defp encoded_credentials(login, password) do
-    join_string([login, password], ":")
-    |> Base.encode64 
-    |> (&( "Basic "<> &1)).()
+    [login, password]
+      |> join_string(":")
+      |> Base.encode64 
+      |> (&("Basic "<> &1)).()
   end
 
   defp join_string(list_of_words, joiner), do: Enum.join(list_of_words, joiner)
