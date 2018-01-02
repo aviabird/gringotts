@@ -50,14 +50,14 @@ defmodule Gringotts.Mixfile do
     [
       {:poison, "~> 3.1.0"},
       {:httpoison, "~> 0.13"},
+      {:xml_builder, "~> 0.1.1"}, 
+      {:elixir_xml_to_map, "~> 0.1"},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
-      {:xml_builder, "~> 0.1.1"}, 
-      {:elixir_xml_to_map, "~> 0.1"},
       {:excoveralls, "~> 0.7", only: :test},
       {:credo, "~> 0.3", only: [:dev, :test]},
-      {:inch_ex, only: :docs},
+      {:inch_ex, "~> 0.5", only: :docs},
       {:dialyxir, "~> 0.3", only: [:dev]}
     ]
   end
