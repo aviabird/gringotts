@@ -41,12 +41,20 @@ defmodule Gringotts do
 
     This option specifies which payment gateway this request should be called for.
     Since `Gringotts` supports multiple payment gateway integrations at the same time
-    so this information get's critical.
+    so this information gets critical.
 
-  ### Amount
-    eg: 5000
+  ### Amount _and currency_
+    eg:
+        %{amount: Decimal.new(42), currency: "USD"}
 
-    Amount is the money an application wants to deduct in cents on the card.
+    This argument represents the "amount", annotated with the currency unit for
+    which the transaction is being requested. `amount` is polymorphic thanks to
+    the `Gringotts.Money` protocol which can be implemented by your custom Money
+    type.
+
+    We support [`ex_money`][ex_money] and [`monetized`][monetized] out of the
+    box, and you can drop their types in this argument and everything will work
+    as expected.
 
   ### Card Info
     eg: 
@@ -66,13 +74,14 @@ defmodule Gringotts do
     This stores all the credit card info of the customer along with some address info etc.
 
   ### Other options
-    eg: [currency: "usd"]
 
-    This is a keyword list of all the other options/information which the payment gateway 
-    needs apart from the above mentioned options. 
+    `opts` is a `keyword` list of other options/information which the
+    payment gateway needs apart from the above mandatory method arguments. These
+    are gateway specific options and you can see what's supported in the
+    gateway's docs.
 
-    > This is passed as is to the gateway and not modified, usually it comes back in the 
-    response object intact.
+  [ex_money]: https://hexdocs.pm/ex_money/readme.html
+  [monetized]: https://hexdocs.pm/monetized/
   """
   
   import GenServer, only: [call: 2]
@@ -80,7 +89,7 @@ defmodule Gringotts do
   @doc """
   This is the bare minimum API for a gateway to support, and consists of a single call:
        
-      @payment %{
+      payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -92,10 +101,8 @@ defmodule Gringotts do
         country: "US",
         postal_code: "11111"
       }
-
-      @options [currency: "usd"]
-
-      Gringotts.purchase(Gringotts.Gateways.Stripe, 5, @payment, @options)
+      amount = %{amount: Decimal.new(4.99), currency: "USD"}
+      Gringotts.purchase(Gringotts.Gateways.Stripe, amount, payment)
 
   This method is expected to authorize payment and transparently trigger eventual 
   settlement. Preferably it is implemented as a single call to the gateway, 
@@ -112,7 +119,7 @@ defmodule Gringotts do
   period of time. When implementing this API, authorize and capture are 
   both required.
 
-      @payment %{
+      payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -124,10 +131,8 @@ defmodule Gringotts do
         country: "US",
         postal_code: "11111"
       }
-
-      @options [currency: "usd"]
-
-      Gringotts.authorize(Gringotts.Gateways.Stripe, 5, @payment, @options)
+      amount = %{amount: Decimal.new(4.99), currency: "USD"}
+      Gringotts.authorize(Gringotts.Gateways.Stripe, amount, payment)
   """
   def authorize(gateway, amount, card, opts \\ []) do
     validate_config(gateway)
@@ -141,10 +146,11 @@ defmodule Gringotts do
   Not passing an amount to capture should always cause the full amount of the initial 
   authorization to be captured.
 
-  If the gateway does not support partial captures, calling `capture` with an amount 
-  other than nil should raise an error indicating partial capture is not supported.
+  If the gateway does not support partial captures, calling `capture` with a
+  `nil` amount should raise an error indicating partial capture is not
+  supported.
   
-      @payment %{
+      payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -157,11 +163,9 @@ defmodule Gringotts do
         postal_code: "11111"
       }
 
-      @options [currency: "usd"]
-
+      amount = %{amount: Decimal.new(4.99), currency: "USD"}
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-
-      Gringotts.capture(Gringotts.Gateways.Stripe, id, 5)
+      Gringotts.capture(Gringotts.Gateways.Stripe, id, amount)
   """
   def capture(gateway, id, amount, opts \\ []) do 
     validate_config(gateway)
@@ -173,7 +177,7 @@ defmodule Gringotts do
   API that should immediately cancel an authorized charge, clearing it off of the 
   underlying payment instrument without waiting for expiration.
 
-      @payment %{
+       payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -185,11 +189,7 @@ defmodule Gringotts do
         country: "US",
         postal_code: "11111"
       }
-
-      @options [currency: "usd"]
-
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-
       Gringotts.void(Gringotts.Gateways.Stripe, id)
 
   """
@@ -202,7 +202,7 @@ defmodule Gringotts do
   Cancels settlement or returns funds as appropriate for a referenced prior 
   `purchase` or `capture`.
 
-      @payment %{
+      payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -214,10 +214,9 @@ defmodule Gringotts do
         country: "US",
         postal_code: "11111"
       }
-
+      amount = %{amount: Decimal.new(4.99), currency: "USD"}  
       id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-
-      Gringotts.refund(Gringotts.Gateways.Stripe, 5, id)
+      Gringotts.refund(Gringotts.Gateways.Stripe, amount, id)
   """
   def refund(gateway, amount, id, opts \\ []) do 
     validate_config(gateway)
@@ -235,7 +234,7 @@ defmodule Gringotts do
   and `authorize`. Currently the standard is to return the token in the 
   `%Response{...}` `authorization` field.
 
-      @payment %{
+      payment = %{
         name: "John Doe",
         number: "4242424242424242",
         expiration: {2018, 12},
@@ -247,10 +246,7 @@ defmodule Gringotts do
         country: "US",
         postal_code: "11111"
       }
-
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-
-      Gringotts.store(Gringotts.Gateways.Stripe, @payment)
+      Gringotts.store(Gringotts.Gateways.Stripe, payment)
   """
   def store(gateway, card, opts \\ []) do 
     validate_config(gateway)
@@ -264,8 +260,7 @@ defmodule Gringotts do
   This should be done once the payment capture is done and you don't wish to make any
   further deductions for the same card.
 
-      customer_id = "random_customer"
-
+      customer_id = "some_privileged_customer"
       Gringotts.unstore(Gringotts.Gateways.Stripe, customer_id)
   """
   def unstore(gateway, customer_id, opts \\ []) do 
