@@ -103,7 +103,7 @@ defmodule Gringotts.Gateways.TrexleTest do
     test "with valid card" do
       with_mock HTTPoison,
       [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_authorize_with_valid_card end] do
-        {:ok, response} = Trexle.authorize(@amount, @invalid_card, @opts)
+        {:ok, response} = Trexle.authorize(@amount, @valid_card, @opts)
         assert response.status_code == 201
         assert response.raw["response"]["success"] == true
         assert response.raw["response"]["captured"] == false
@@ -192,6 +192,17 @@ defmodule Gringotts.Gateways.TrexleTest do
         [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_store_with_valid_card end] do
         {:ok, response} = Trexle.store(@valid_card, @opts)
         assert response.status_code == 201
+      end
+    end
+  end
+
+  describe "network failure" do
+    test "with authorization" do
+      with_mock HTTPoison,
+        [request: fn(_method, _url, _body, _headers, _options) -> MockResponse.test_for_network_failure end] do
+        {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
+        assert response.success == false
+        assert response.reason == :network_fail?
       end
     end
   end

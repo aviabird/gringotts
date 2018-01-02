@@ -236,4 +236,8 @@ defmodule Gringotts.Gateways.TrexleMock do
       }
     }
   end
+
+  def test_for_network_failure do
+    {:error, %HTTPoison.Error{id: nil, reason: :nxdomain}}
+  end
 end
