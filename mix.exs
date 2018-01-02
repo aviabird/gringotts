@@ -52,6 +52,7 @@ defmodule Gringotts.Mixfile do
       {:httpoison, "~> 0.13"},
       {:xml_builder, "~> 0.1.1"}, 
       {:elixir_xml_to_map, "~> 0.1"},
+      {:decimal, "~> 1.0", optional: true},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
@@ -74,8 +75,14 @@ defmodule Gringotts.Mixfile do
     [
       main: "Gringotts",
       logo: "images/lg.png",
-      source_url: "https://github.com/aviabird/gringotts"
+      source_url: "https://github.com/aviabird/gringotts",
+      groups_for_modules: groups_for_modules()
     ]
   end
-  
+
+  defp groups_for_modules do
+     [
+      "Gateways": ~r/^Gringotts.Gateways.?/,
+     ]
+  end  
 end
