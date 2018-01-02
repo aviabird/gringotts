@@ -26,7 +26,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   end
 
   test "authorize." do
-    case Gringotts.authorize(Gateway, 3.1, @card) do
+    case Gringotts.authorize(Gateway, amount(42), @card) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
@@ -37,7 +37,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @tag :skip
   test "capture." do
-    case Gringotts.capture(Gateway, 32.00, "s") do
+    case Gringotts.capture(Gateway, amount(42), "s") do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
@@ -48,7 +48,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   end
 
   test "purchase." do
-    case Gringotts.purchase(Gateway, 32, @card) do
+    case Gringotts.purchase(Gateway, amount(42), @card) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
@@ -62,4 +62,5 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     assert config[:adapter] == Gringotts.Gateways.Monei
   end
 
+  defp amount(amount, currency \\ "EUR"), do: %{amount: Decimal.new(amount), currency: currency}
 end
