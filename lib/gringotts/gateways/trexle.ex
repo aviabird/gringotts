@@ -186,7 +186,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   @spec store(map, list) :: map
   def store(payment, opts \\ []) do
-    params = [email: @email]++card_params(payment)
+    params = [email: opts[:email]]++card_params(payment)
     commit(:post, "customers", params, opts)
   end
 
