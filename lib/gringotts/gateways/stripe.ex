@@ -298,29 +298,23 @@ defmodule Gringotts.Gateways.Stripe do
   defp source_params(_, opts), do: []
 
   defp card_params(%CreditCard{} = card) do
-    card = Map.from_struct(card)
-
-    [ 
-      "card[name]": card[:name],
-      "card[number]": card[:number],
-      "card[exp_year]": card[:year],
-      "card[exp_month]": card[:month],
-      "card[cvc]": card[:verification_code]
+    [ "card[name]": CreditCard.full_name,
+      "card[number]": card.number,
+      "card[exp_year]": card.year,
+      "card[exp_month]": card.month,
+      "card[cvc]": card.verification_code
     ]   
   end
 
   defp card_params(_), do: []
 
   defp address_params(%Address{} = address) do
-    address = Map.from_struct(address)
-
-    [ 
-      "card[address_line1]": address[:street1],
-      "card[address_line2]": address[:street2],
-      "card[address_city]":  address[:city],
-      "card[address_state]": address[:region],
-      "card[address_zip]":   address[:postal_code],
-      "card[address_country]": address[:country]
+    [ "card[address_line1]": address.street1,
+      "card[address_line2]": address.street2,
+      "card[address_city]":  address.city,
+      "card[address_state]": address.region,
+      "card[address_zip]":   address.postal_code,
+      "card[address_country]": address.country
     ]
   end
 
