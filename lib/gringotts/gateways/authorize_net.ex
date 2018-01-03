@@ -353,8 +353,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec store(CreditCard.t, Keyword.t) :: tuple
   def store(card, opts) do
     request_data = cond  do
-      opts[:customer_profile_id] -> create_customer_payment_profile(card, opts) |> generate
-      true -> create_customer_profile(card, opts) |> generate
+      opts[:customer_profile_id] -> card |> create_customer_payment_profile(opts) |> generate
+      true -> card |> create_customer_profile(opts) |> generate
     end
     response_data = commit(:post, request_data, opts)
     respond(response_data)
@@ -374,7 +374,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   
   @spec unstore(String.t, Keyword.t) :: tuple
   def unstore(customer_profile_id, opts) do
-    request_data = delete_customer_profile(customer_profile_id, opts) |> generate
+    request_data = customer_profile_id |> delete_customer_profile(opts) |> generate
     response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
@@ -412,11 +412,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   # Functions to send successful and error responses depending on message received
   # from gateway.
 
-  defp response_check( %{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
+  defp response_check(%{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
     {:ok, Response.success(raw: raw_response)}
   end
 
-  defp response_check( %{"messages" => %{"resultCode" => "Error"}}, raw_response) do
+  defp response_check(%{"messages" => %{"resultCode" => "Error"}}, raw_response) do
     {:error, Response.error(raw: raw_response)}
   end
 
@@ -424,52 +424,55 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   # function for formatting the request as an xml for purchase and authorize method
   defp add_auth_purchase(amount, payment, opts, transaction_type) do
-    element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:config]),
-      add_order_id(opts),
-      add_purchase_transaction_request(amount, transaction_type, payment, opts),
-    ])
+    :createTransactionRequest
+    |> element(%{xmlns: @aut_net_namespace}, [
+       add_merchant_auth(opts[:config]),
+       add_order_id(opts),
+       add_purchase_transaction_request(amount, transaction_type, payment, opts),
+       ])
     |> generate
   end
   
   # function for formatting the request for  normal capture
   defp normal_capture(amount, id, opts, transaction_type) do
-    element(:createTransactionRequest,  %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:config]),
-      add_order_id(opts),
-      add_capture_transaction_request(amount, id, transaction_type, opts),
-    ])
+    :createTransactionRequest
+    |> element(%{xmlns: @aut_net_namespace}, [
+       add_merchant_auth(opts[:config]),
+       add_order_id(opts),
+       add_capture_transaction_request(amount, id, transaction_type, opts),
+      ])
     |> generate
   end
 
   # function to format the request as an xml for the authenticate method
   defp add_auth_request(opts) do
-    element(:authenticateTestRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:config])
-    ])
+    :authenticateTestRequest
+    |> element(%{xmlns: @aut_net_namespace}, [add_merchant_auth(opts[:config])])
     |> generate
   end
   
   #function to format the request for normal refund
   defp normal_refund(amount, id, opts, transaction_type) do
-    element(:createTransactionRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:config]),
-      add_order_id(opts),
-      add_refund_transaction_request(amount, id, opts, transaction_type),
-    ])
+    :createTransactionRequest
+    |> element(%{xmlns: @aut_net_namespace}, [
+        add_merchant_auth(opts[:config]),
+        add_order_id(opts),
+        add_refund_transaction_request(amount, id, opts, transaction_type),
+       ])
     |> generate
   end
 
   #function to format the request for normal void operation
   defp normal_void(id, opts, transaction_type) do
-    element(:createTransactionRequest, %{xmlns: @aut_net_namespace}, [
-      add_merchant_auth(opts[:config]),
-      add_order_id(opts),
-      element(:transactionRequest, [
-        add_transaction_type(transaction_type),
-        add_ref_trans_id(id)
-      ])
-    ])
+    :createTransactionRequest
+    |> element(%{xmlns: @aut_net_namespace}, [
+         add_merchant_auth(opts[:config]),
+         add_order_id(opts),
+         element(:transactionRequest, [
+           add_transaction_type(transaction_type),
+           add_ref_trans_id(id)
+         ])
+       ])
     |> generate
   end
 
@@ -501,7 +504,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   defp delete_customer_profile(id, opts) do
-    element(:deleteCustomerProfileRequest, %{xmlns: @aut_net_namespace},[
+    element(:deleteCustomerProfileRequest, %{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       element(:customerProfileId, id)
     ])

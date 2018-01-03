@@ -21,7 +21,7 @@ defmodule Gringotts.Gateways.Bogus do
   def refund(_amount, id, _opts),
     do: success(id)
 
-  def store(_card=%CreditCard{}, _opts),
+  def store(_card = %CreditCard{}, _opts),
     do: success()
 
   def unstore(customer_id, _opts),
