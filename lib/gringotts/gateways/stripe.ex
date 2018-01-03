@@ -296,7 +296,7 @@ defmodule Gringotts.Gateways.Stripe do
     |> with_currency(params, opts[:config])
   end
 
-  def with_currency(true, params, config), do: params
+  def with_currency(true, params, _), do: params
   def with_currency(false, params, config), do: [{:currency, config[:default_currency]} | params]
 
   defp create_card_token(params, opts) do
@@ -328,7 +328,7 @@ defmodule Gringotts.Gateways.Stripe do
     end
   end
 
-  defp source_params(_, opts), do: []
+  defp source_params(_, _), do: []
 
   defp card_params(%CreditCard{} = card) do
     [ "card[name]": CreditCard.full_name(card),
