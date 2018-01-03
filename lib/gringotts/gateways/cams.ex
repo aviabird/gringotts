@@ -231,6 +231,35 @@ defmodule Gringotts.Gateways.Cams do
     commit("void", post, options)
   end
 
+  @doc """
+    Validates the Account
+
+    This action is used for doing an "Account Verification" on the cardholder's credit card 
+    without actually doing an authorization.
+
+  ## Examples
+      payment = %{
+        number: "4111111111111111", month: 11, year: 2018,
+        first_name: "Longbob", last_name: "Longsen",
+        verification_code: "123", brand: "visa"
+      }
+
+      options = [currency: "USD"]
+     
+      
+      iex> Gringotts.validate(Gringotts.Gateways.Cams, payment, options)
+    
+  """
+  @spec validate(CreditCard.t, Keyword):: Response
+  def validate(payment, options) do
+    post = []
+      |> add_invoice(0, options)
+      |> add_payment(payment)
+      |> add_address(payment, options)
+
+      commit("verify", post, options)
+  end
+
   # private methods
 
   defp add_invoice(post, money, options) do
@@ -295,8 +324,8 @@ defmodule Gringotts.Gateways.Cams do
     @doc false
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = URI.decode_query(body)
-      opts = [status_code: 200]
-      opts
+
+      [status_code: 200]
       |> set_authorization(body)
       |> set_success(body)
       |> set_message(body)
@@ -307,14 +336,13 @@ defmodule Gringotts.Gateways.Cams do
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
       body = URI.decode_query(body)
-      opts = [status_code: 400]
-      set_params(opts, body)
+      set_params([status_code: 400], body)
     end
 
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
       body = URI.decode_query(body)
-      opts = [status_code: 404]
-      opts
+      
+      [status_code: 404]
       |> handle_not_found(body)
       |> handle_opts()
     end
@@ -354,12 +382,15 @@ defmodule Gringotts.Gateways.Cams do
 
     defp parse_html(body) do
       error_message = List.to_string(Map.keys(body))
-      [h | tail] = (Regex.run(~r|<title>(.*)</title>|, error_message))
-      List.to_string(tail)
+      [html_body | parse_message] = (Regex.run(~r|<title>(.*)</title>|, error_message))
+      List.to_string(parse_message)
     end
 
     defp handle_opts(opts) do
-      {:ok, Response.success(opts)}
+      case Keyword.fetch(opts, :success) do
+        {:ok, true} -> {:ok, Response.success(opts)}
+        {:ok, false} -> {:ok, Response.error(opts)}
+      end
     end
   end
 end
