@@ -57,7 +57,7 @@ Copy and paste this code in your module
 
 ```elixir
 alias Gringotts.Gateways.Stripe
-alias Gringotts.{CreditCard, Address, Worker, Gateways}
+alias Gringotts.{CreditCard, Address}
 
 card = %CreditCard{
   first_name: "John",
