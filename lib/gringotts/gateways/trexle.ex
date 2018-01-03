@@ -39,7 +39,7 @@ defmodule Gringotts.Gateways.Trexle do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key, :default_currency]
   import Poison, only: [decode: 1]
-  alias Gringotts.{Response}
+  alias Gringotts.{Response, CreditCard, Address}
 
   @doc """
   Performs the authorization of the card to be used for payment.
@@ -50,26 +50,33 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   iex> amount = 100
 
-  iex> card = %{
-    name: "John Doe",
+  iex> card = %CreditCard{
     number: "5200828282828210",
-    expiry_month: 1,
-    expiry_year: 2018,
-    cvc: "123",
-    address_line1: "456 My Street",
-    address_city: "Ottawa",
-    address_postcode: "K1C2N6",
-    address_state: "ON",
-    address_country: "CA"
+    month: 12,
+    year: 2018,
+    first_name: "John",
+    last_name: "Doe",
+    verification_code: "123",
+    brand: "visa"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" , description: "Store Purchase 1437598192"]
+  iex> @address %Address{
+    street1: "123 Main",
+    street2: "Suite 100",
+    city: "New York",
+    region: "NY",
+    country: "US",
+    postal_code: "11111",
+    phone: "(555)555-5555"
+  }
+
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: @address, description: "Store Purchase 1437598192"]
 
   iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Trexle, amount, card, options)
   ```
   """
 
-  @spec authorize(float, map, list) :: map
+  @spec authorize(float, CreditCard.t, list) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -82,20 +89,27 @@ defmodule Gringotts.Gateways.Trexle do
 
   ## Example
   ```
-  iex> card = %{
-    name: "John Doe",
+  iex> card = %CreditCard{
     number: "5200828282828210",
-    expiry_month: 1,
-    expiry_year: 2018,
-    cvc: "123",
-    address_line1: "456 My Street",
-    address_city: "Ottawa",
-    address_postcode: "K1C2N6",
-    address_state: "ON",
-    address_country: "CA"
+    month: 12,
+    year: 2018,
+    first_name: "John",
+    last_name: "Doe",
+    verification_code: "123",
+    brand: "visa"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,description: "Store Purchase 1437598192"]
+  iex> @address %Address{
+    street1: "123 Main",
+    street2: "Suite 100",
+    city: "New York",
+    region: "NY",
+    country: "US",
+    postal_code: "11111",
+    phone: "(555)555-5555"
+  }
+
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: @address, description: "Store Purchase 1437598192"]
 
   iex> amount = 50
 
@@ -103,7 +117,7 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-  @spec purchase(float, map, list) :: map
+  @spec purchase(float, CreditCard.t, list) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -165,28 +179,39 @@ defmodule Gringotts.Gateways.Trexle do
   ## Example
   The following session shows how one would store a card (a payment-source) for future use.
   ```
-  iex> card = %{
-    name: "John Doe",
+  iex> card = %CreditCard{
     number: "5200828282828210",
-    expiry_month: 1,
-    expiry_year: 2018,
-    cvc: "123",
-    address_line1: "456 My Street",
-    address_city: "Ottawa",
-    address_postcode: "K1C2N6",
-    address_state: "ON",
-    address_country: "CA"
+    month: 12,
+    year: 2018,
+    first_name: "John",
+    last_name: "Doe",
+    verification_code: "123",
+    brand: "visa"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", description: "Store Purchase 1437598192"]
+  iex> @address %Address{
+    street1: "123 Main",
+    street2: "Suite 100",
+    city: "New York",
+    region: "NY",
+    country: "US",
+    postal_code: "11111",
+    phone: "(555)555-5555"
+  }
+
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: @address, description: "Store Purchase 1437598192"]
 
   iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Trexle, card, options)
   ```
   """
 
-  @spec store(map, list) :: map
+  @spec store(CreditCard.t, list) :: map
   def store(payment, opts \\ []) do
-    params = [email: opts[:email]]++card_params(payment)
+    params = [
+              email: opts[:email]
+            ]
+            ++ card_params(payment)
+            ++ address_params(opts[:billing_address])
     commit(:post, "customers", params, opts)
   end
 
@@ -199,20 +224,29 @@ defmodule Gringotts.Gateways.Trexle do
       ip_address: opts[:ip_address],
       description: opts[:description]
     ] ++ card_params(payment)
+      ++ address_params(opts[:billing_address])
   end
 
-  defp card_params(%{} = card) do
+  defp card_params(%CreditCard{} = card) do
+    card = Map.from_struct(card)
     [
-      "card[name]": card[:name],
+      "card[name]": card[:first_name],
       "card[number]": card[:number],
-      "card[expiry_year]": card[:expiry_year],
-      "card[expiry_month]": card[:expiry_month],
-      "card[cvc]": card[:cvc],
-      "card[address_line1]": card[:address_line1],
-      "card[address_city]": card[:address_city],
-      "card[address_postcode]": card[:address_postcode],
-      "card[address_state]": card[:address_state],
-      "card[address_country]": card[:address_country]
+      "card[expiry_year]": card[:year],
+      "card[expiry_month]": card[:month],
+      "card[cvc]": card[:verification_code]
+    ]
+  end
+
+  defp address_params(%Address{} = address) do
+    address = Map.from_struct(address)
+    [
+      "card[address_line1]": address[:street1],
+      "card[address_line2]": address[:street2],
+      "card[address_city]": address[:city],
+      "card[address_postcode]": address[:postal_code],
+      "card[address_state]": address[:region],
+      "card[address_country]": address[:country]
     ]
   end
 
