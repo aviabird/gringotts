@@ -331,7 +331,7 @@ defmodule Gringotts.Gateways.Stripe do
   defp source_params(_, opts), do: []
 
   defp card_params(%CreditCard{} = card) do
-    [ "card[name]": CreditCard.full_name,
+    [ "card[name]": CreditCard.full_name(card),
       "card[number]": card.number,
       "card[exp_year]": card.year,
       "card[exp_month]": card.month,
