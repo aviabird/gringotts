@@ -272,6 +272,14 @@ defmodule Gringotts.Gateways.Stripe do
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
 
+  defp source_params(token_or_customer, _) when is_binary(token_or_customer) do
+    [head, _] = String.split(token_or_customer, "_")
+    case head do
+      "tok" -> [source: token_or_customer]
+      "cus" -> [customer: token_or_customer]
+    end
+  end
+
   defp source_params(%CreditCard{} = card, opts) do
     params = 
       card_params(card) ++ 
@@ -283,15 +291,7 @@ defmodule Gringotts.Gateways.Stripe do
       true -> []
       false -> response
         |> Map.get("id")
-        |> source_params
-    end
-  end
-
-  defp source_params(token_or_customer) do
-    [head, _] = String.split(token_or_customer, "_")
-    case head do
-      "tok" -> [source: token_or_customer]
-      "cus" -> [customer: token_or_customer]
+        |> source_params(opts)
     end
   end
 
