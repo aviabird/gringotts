@@ -83,16 +83,27 @@ defmodule Gringotts.Gateways.Stripe do
   ## Example
   The following session shows how one would (pre) authorize a payment of $10 on a sample `card`.
   
-      iex> payment = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = [currency: "usd"]
+      iex> opts = [currency: "usd", address: address]
       iex> amount = 10
 
-      iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
   @spec authorize(Float, Map, List) :: Map
   def authorize(amount, payment, opts \\ []) do
@@ -110,16 +121,27 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
-      iex> payemnt = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = [currency: "usd"]
+      iex> opts = [currency: "usd", address: address]
       iex> amount = 5
 
-      iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
   @spec purchase(Float, Map, List) :: Map
   def purchase(amount, payment, opts \\ []) do
@@ -218,15 +240,26 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would store a card (a payment-source) for
   future use.
       
-      iex> payment = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = []
+      iex> opts = [address: address]
 
-      iex> Gringotts.store(Gringotts.Gateways.Stripe, payment, opts)
+      iex> Gringotts.store(Gringotts.Gateways.Stripe, card, opts)
   """
   @spec store(Map, List) :: Map
   def store(payment, opts \\ []) do
