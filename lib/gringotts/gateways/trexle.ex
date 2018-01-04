@@ -60,7 +60,7 @@ defmodule Gringotts.Gateways.Trexle do
     brand: "visa"
   }
 
-  iex> @address %Address{
+  iex> address = %Address{
     street1: "123 Main",
     street2: "Suite 100",
     city: "New York",
@@ -70,7 +70,7 @@ defmodule Gringotts.Gateways.Trexle do
     phone: "(555)555-5555"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: @address, description: "Store Purchase 1437598192"]
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: address, description: "Store Purchase 1437598192"]
 
   iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Trexle, amount, card, options)
   ```
@@ -98,6 +98,18 @@ defmodule Gringotts.Gateways.Trexle do
     verification_code: "123",
     brand: "visa"
   }
+
+  iex> address = %Address{
+    street1: "123 Main",
+    street2: "Suite 100",
+    city: "New York",
+    region: "NY",
+    country: "US",
+    postal_code: "11111",
+    phone: "(555)555-5555"
+  }
+
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: address, description: "Store Purchase 1437598192"]
 
   iex> @address %Address{
     street1: "123 Main",
@@ -189,7 +201,7 @@ defmodule Gringotts.Gateways.Trexle do
     brand: "visa"
   }
 
-  iex> @address %Address{
+  iex> address = %Address{
     street1: "123 Main",
     street2: "Suite 100",
     city: "New York",
@@ -199,7 +211,7 @@ defmodule Gringotts.Gateways.Trexle do
     phone: "(555)555-5555"
   }
 
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: @address, description: "Store Purchase 1437598192"]
+  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: address, description: "Store Purchase 1437598192"]
 
   iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Trexle, card, options)
   ```
@@ -207,9 +219,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   @spec store(CreditCard.t, list) :: map
   def store(payment, opts \\ []) do
-    params = [
-              email: opts[:email]
-            ]
+    params = [email: opts[:email]]
             ++ card_params(payment)
             ++ address_params(opts[:billing_address])
     commit(:post, "customers", params, opts)
@@ -225,6 +235,26 @@ defmodule Gringotts.Gateways.Trexle do
       description: opts[:description]
     ] ++ card_params(payment)
       ++ address_params(opts[:billing_address])
+  end
+
+  defp card_params(%CreditCard{} = card) do
+    [
+      "card[name]": CreditCard.full_name(card),
+      "card[number]": card.number,
+      "card[expiry_year]": card.year,
+      "card[expiry_month]": card.month,
+      "card[cvc]": card.verification_code
+    ]
+  end
+
+  defp address_params(%Address{} = address) do
+    [
+      "card[address_line1]": address.street1,
+      "card[address_line2]": address.street2,
+      "card[address_city]": address.city,
+      "card[address_postcode]": address.postal_code,
+      "card[address_state]": address.region,
+      "card[address_country]": address.country
   end
 
   defp card_params(%CreditCard{} = card) do
@@ -250,7 +280,7 @@ defmodule Gringotts.Gateways.Trexle do
     ]
   end
 
-  defp commit(method, path, params \\ [], opts \\ []) do
+  defp commit(method, path, params, opts) do
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
     headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
     data = params_to_string(params)
