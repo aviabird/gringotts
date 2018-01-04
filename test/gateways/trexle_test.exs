@@ -4,33 +4,41 @@ defmodule Gringotts.Gateways.TrexleTest do
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.TrexleMock, as: MockResponse
   alias Gringotts.Gateways.Trexle
+  alias Gringotts.{
+    CreditCard,
+    Address
+  }
 
   import Mock
 
-  @valid_card %{
-    name: "John Doe",
+  @valid_card %CreditCard{
     number: "5200828282828210",
-    expiry_month: 1,
-    expiry_year: 2018,
-    cvc: "123",
-    address_line1: "456 My Street",
-    address_city: "Ottawa",
-    address_postcode: "K1C2N6",
-    address_state: "ON",
-    address_country: "CA"
+    month: 12,
+    year: 2018,
+    first_name: "John",
+    last_name: "Doe",
+    verification_code: "123",
+    brand: "visa"
   }
 
-  @invalid_card %{
-    name: "John Doe",
+  @invalid_card %CreditCard{
     number: "5200828282828210",
-    expiry_month: 1,
-    expiry_year: 2010,
-    cvc: "123",
-    address_line1: "456 My Street",
-    address_city: "Ottawa",
-    address_postcode: "K1C2N6",
-    address_state: "ON",
-    address_country: "CA"
+    month: 12,
+    year: 2010,
+    first_name: "John",
+    last_name: "Doe",
+    verification_code: "123",
+    brand: "visa"
+  }
+
+  @address %Address{
+    street1: "123 Main",
+    street2: "Suite 100",
+    city: "New York",
+    region: "NY",
+    country: "US",
+    postal_code: "11111",
+    phone: "(555)555-5555"
   }
 
   @amount 100
@@ -42,6 +50,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   @opts [
     config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "USD"},
     email: "john@trexle.com",
+    billing_address: @address,
     ip_address: "66.249.79.118",
     description: "Store Purchase 1437598192"
   ]
@@ -49,12 +58,14 @@ defmodule Gringotts.Gateways.TrexleTest do
   @missingip_opts [
     config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4", default_currency: "USD"},
     email: "john@trexle.com",
+    billing_address: @address,
     description: "Store Purchase 1437598192"
   ]
 
   @invalid_opts [
     config: %{api_key: "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4"},
     email: "john@trexle.com",
+    billing_address: @address,
     ip_address: "66.249.79.118",
     description: "Store Purchase 1437598192"
   ]
