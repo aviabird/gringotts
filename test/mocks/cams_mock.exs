@@ -201,4 +201,18 @@ defmodule Gringotts.Gateways.CamsMock do
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}
   end
+
+  def validate_creditcard do
+    {:ok,
+    %HTTPoison.Response{
+      body: "response=1&responsetext=&authcode=&transactionid=3933708264&avsresponse=&cvvresponse=&orderid=&type=verify&response_code=100",
+      headers: [
+      {"Date", "Thu, 04 Jan 2018 11:12:20 GMT"},
+      {"Server", "Apache"},
+      {"Content-Length", "124"}, 
+      {"Content-Type", "text/html; charset=UTF-8"}
+    ],
+     request_url: "https://secure.centralams.com/gw/api/transact.php",
+     status_code: 200}}
+  end
 end

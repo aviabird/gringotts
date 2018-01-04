@@ -190,4 +190,14 @@ defmodule Gringotts.Gateways.CamsTest do
       end
     end
   end
+
+  describe "validate" do
+    test "with all good" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) -> MockResponse.validate_creditcard end] do
+        {:ok, %Response{success: result}} = Gateway.validate(@payment, @options)
+        assert result
+      end
+    end
+  end
 end
