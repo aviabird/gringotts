@@ -57,13 +57,13 @@ Copy and paste this code in your module
 
 ```elixir
 alias Gringotts.Gateways.Stripe
-alias Gringotts.{CreditCard, Address, Worker, Gateways}
+alias Gringotts.{CreditCard, Address}
 
 card = %CreditCard{
   first_name: "John",
   last_name: "Smith",
   number: "4242424242424242",
-  year: "2017",
+  year: "2022",
   month: "12",
   verification_code: "123"
 }
