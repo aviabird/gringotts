@@ -255,28 +255,6 @@ defmodule Gringotts.Gateways.Trexle do
       "card[address_postcode]": address.postal_code,
       "card[address_state]": address.region,
       "card[address_country]": address.country
-  end
-
-  defp card_params(%CreditCard{} = card) do
-    card = Map.from_struct(card)
-    [
-      "card[name]": card[:first_name],
-      "card[number]": card[:number],
-      "card[expiry_year]": card[:year],
-      "card[expiry_month]": card[:month],
-      "card[cvc]": card[:verification_code]
-    ]
-  end
-
-  defp address_params(%Address{} = address) do
-    address = Map.from_struct(address)
-    [
-      "card[address_line1]": address[:street1],
-      "card[address_line2]": address[:street2],
-      "card[address_city]": address[:city],
-      "card[address_postcode]": address[:postal_code],
-      "card[address_state]": address[:region],
-      "card[address_country]": address[:country]
     ]
   end
 
