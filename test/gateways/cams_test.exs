@@ -56,7 +56,6 @@ defmodule Gringotts.Gateways.CamsTest do
   @bad_authorization "300000000"
 
   describe "purchase" do
-
     test "with all good" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.successful_purchase end] do
@@ -106,8 +105,14 @@ defmodule Gringotts.Gateways.CamsTest do
         assert String.contains?(result, "Invalid Credit Card Number")
       end
     end
+    test "with bad amount" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) -> MockResponse.failed_purchase_with_bad_money end] do
+        {:ok, %Response{message: result}} = Gateway.authorize(@bad_money, @payment, @options)
+        assert String.contains?(result, "Invalid amount")
+      end
+    end
   end
-
   describe "capture" do
     test "with full amount" do
       with_mock HTTPoison,
@@ -148,7 +153,6 @@ defmodule Gringotts.Gateways.CamsTest do
         assert String.contains?(result, "A capture requires that")
       end
     end
-
   end
 
   describe "refund" do
@@ -186,5 +190,14 @@ defmodule Gringotts.Gateways.CamsTest do
       end
     end
   end
-  
+
+  describe "validate" do
+    test "with all good" do
+      with_mock HTTPoison,
+      [post: fn(_url, _body, _headers) -> MockResponse.validate_creditcard end] do
+        {:ok, %Response{success: result}} = Gateway.validate(@payment, @options)
+        assert result
+      end
+    end
+  end
 end

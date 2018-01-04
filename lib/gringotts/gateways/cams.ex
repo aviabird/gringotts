@@ -231,6 +231,35 @@ defmodule Gringotts.Gateways.Cams do
     commit("void", post, options)
   end
 
+  @doc """
+    Validates the Account
+
+    This action is used for doing an "Account Verification" on the cardholder's credit card 
+    without actually doing an authorization.
+
+  ## Examples
+      payment = %{
+        number: "4111111111111111", month: 11, year: 2018,
+        first_name: "Longbob", last_name: "Longsen",
+        verification_code: "123", brand: "visa"
+      }
+
+      options = [currency: "USD"]
+     
+      
+      iex> Gringotts.validate(Gringotts.Gateways.Cams, payment, options)
+    
+  """
+  @spec validate(CreditCard.t, Keyword):: Response
+  def validate(payment, options) do
+    post = []
+      |> add_invoice(0, options)
+      |> add_payment(payment)
+      |> add_address(payment, options)
+
+      commit("verify", post, options)
+  end
+
   # private methods
 
   defp add_invoice(post, money, options) do
@@ -295,13 +324,35 @@ defmodule Gringotts.Gateways.Cams do
     @doc false
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
       body = URI.decode_query(body)
-      []
+
+      [status_code: 200]
       |> set_authorization(body)
       |> set_success(body)
       |> set_message(body)
       |> set_params(body)
       |> set_error_code(body)
       |> handle_opts()
+    end
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
+      body = URI.decode_query(body)
+      set_params([status_code: 400], body)
+    end
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
+      body = URI.decode_query(body)
+      
+      [status_code: 404]
+      |> handle_not_found(body)
+      |> handle_opts()
+    end
+
+    def parse({:error, %HTTPoison.Error{} = error}) do
+      [
+        message: "HTTPoison says #{error.reason}",
+        error_code: error.id,
+        success: false
+      ]
     end
 
     defp set_authorization(opts, %{"transactionid" => id}) do
@@ -323,10 +374,23 @@ defmodule Gringotts.Gateways.Cams do
     defp set_success(opts, %{"response_code" => response_code}) do
       opts ++ [success: response_code == "100"]
     end
-    
-    defp handle_opts(opts) do
-      {:ok, Response.success(opts)}
+
+    defp handle_not_found(opts, body) do
+      error = parse_html(body)
+      opts ++ [success: false, message: error]
     end
 
+    defp parse_html(body) do
+      error_message = List.to_string(Map.keys(body))
+      [html_body | parse_message] = (Regex.run(~r|<title>(.*)</title>|, error_message))
+      List.to_string(parse_message)
+    end
+
+    defp handle_opts(opts) do
+      case Keyword.fetch(opts, :success) do
+        {:ok, true} -> {:ok, Response.success(opts)}
+        {:ok, false} -> {:ok, Response.error(opts)}
+      end
+    end
   end
 end
