@@ -105,7 +105,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec authorize(Float, Map, List) :: Map
+  @spec authorize(number, CreditCard.t() | String.t(), keyword) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -143,7 +143,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec purchase(Float, Map, List) :: Map
+  @spec purchase(number, CreditCard.t() | String.t(), keyword) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -169,7 +169,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
-  @spec capture(String.t, Float, List) :: Map
+  @spec capture(String.t(), number, keyword) :: map
   def capture(id, amount, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
@@ -202,7 +202,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec void(String.t, List) :: Map
+  @spec void(String.t(), keyword) :: map
   def void(id, opts \\ []) do
     params = optional_params(opts)
     commit(:post, "charges/#{id}/refund", params, opts)
@@ -224,7 +224,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
-  @spec refund(Float, String.t, List) :: Map
+  @spec refund(number, String.t(), keyword) :: map
   def refund(amount, id, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/refund", params, opts)
@@ -261,7 +261,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.store(Gringotts.Gateways.Stripe, card, opts)
   """
-  @spec store(Map, List) :: Map
+  @spec store(CreditCard.t() | String.t(), keyword) :: map
   def store(payment, opts \\ []) do
     params = optional_params(opts) ++ source_params(payment, opts)
     commit(:post, "customers", params, opts)
@@ -280,7 +280,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.unstore(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec unstore(String.t) :: Map
+  @spec unstore(String.t()) :: map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
 
   # Private methods
