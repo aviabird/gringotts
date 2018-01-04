@@ -83,18 +83,29 @@ defmodule Gringotts.Gateways.Stripe do
   ## Example
   The following session shows how one would (pre) authorize a payment of $10 on a sample `card`.
   
-      iex> payment = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = [currency: "usd"]
+      iex> opts = [currency: "usd", address: address]
       iex> amount = 10
 
-      iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec authorize(Float, Map, List) :: Map
+  @spec authorize(number, CreditCard.t() | String.t(), keyword) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -110,18 +121,29 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
-      iex> payemnt = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = [currency: "usd"]
+      iex> opts = [currency: "usd", address: address]
       iex> amount = 5
 
-      iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, payment, opts)
+      iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec purchase(Float, Map, List) :: Map
+  @spec purchase(number, CreditCard.t() | String.t(), keyword) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -147,7 +169,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
-  @spec capture(String.t, Float, List) :: Map
+  @spec capture(String.t(), number, keyword) :: map
   def capture(id, amount, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
@@ -180,7 +202,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec void(String.t, List) :: Map
+  @spec void(String.t(), keyword) :: map
   def void(id, opts \\ []) do
     params = optional_params(opts)
     commit(:post, "charges/#{id}/refund", params, opts)
@@ -202,7 +224,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
-  @spec refund(Float, String.t, List) :: Map
+  @spec refund(number, String.t(), keyword) :: map
   def refund(amount, id, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/refund", params, opts)
@@ -218,17 +240,28 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would store a card (a payment-source) for
   future use.
       
-      iex> payment = %{
-            expiration: {2018, 12}, number: "4242424242424242", cvc:  "123", name: "John Doe",
-            street1: "123 Main", street2: "Suite 100", city: "New York", region: "NY", country: "US",
+      iex> card = %CreditCard{
+            first_name: "John",
+            last_name: "Smith",
+            number: "4242424242424242",
+            year: "2017",
+            month: "12",
+            verification_code: "123"
+          }
+
+          address = %Address{
+            street1: "123 Main",
+            city: "New York",
+            region: "NY",
+            country: "US",
             postal_code: "11111"
           }
 
-      iex> opts = []
+      iex> opts = [address: address]
 
-      iex> Gringotts.store(Gringotts.Gateways.Stripe, payment, opts)
+      iex> Gringotts.store(Gringotts.Gateways.Stripe, card, opts)
   """
-  @spec store(Map, List) :: Map
+  @spec store(CreditCard.t() | String.t(), keyword) :: map
   def store(payment, opts \\ []) do
     params = optional_params(opts) ++ source_params(payment, opts)
     commit(:post, "customers", params, opts)
@@ -247,7 +280,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.unstore(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec unstore(String.t) :: Map
+  @spec unstore(String.t()) :: map
   def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
 
   # Private methods
@@ -263,7 +296,7 @@ defmodule Gringotts.Gateways.Stripe do
     |> with_currency(params, opts[:config])
   end
 
-  def with_currency(true, params, config), do: params
+  def with_currency(true, params, _), do: params
   def with_currency(false, params, config), do: [{:currency, config[:default_currency]} | params]
 
   defp create_card_token(params, opts) do
@@ -271,6 +304,14 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   defp amount_params(amount), do: [amount: money_to_cents(amount)]
+
+  defp source_params(token_or_customer, _) when is_binary(token_or_customer) do
+    [head, _] = String.split(token_or_customer, "_")
+    case head do
+      "tok" -> [source: token_or_customer]
+      "cus" -> [customer: token_or_customer]
+    end
+  end
 
   defp source_params(%CreditCard{} = card, opts) do
     params = 
@@ -283,44 +324,30 @@ defmodule Gringotts.Gateways.Stripe do
       true -> []
       false -> response
         |> Map.get("id")
-        |> source_params
+        |> source_params(opts)
     end
   end
 
-  defp source_params(token_or_customer) do
-    [head, _] = String.split(token_or_customer, "_")
-    case head do
-      "tok" -> [source: token_or_customer]
-      "cus" -> [customer: token_or_customer]
-    end
-  end
-
-  defp source_params(_, opts), do: []
+  defp source_params(_, _), do: []
 
   defp card_params(%CreditCard{} = card) do
-    card = Map.from_struct(card)
-
-    [ 
-      "card[name]": card[:name],
-      "card[number]": card[:number],
-      "card[exp_year]": card[:year],
-      "card[exp_month]": card[:month],
-      "card[cvc]": card[:verification_code]
+    [ "card[name]": CreditCard.full_name(card),
+      "card[number]": card.number,
+      "card[exp_year]": card.year,
+      "card[exp_month]": card.month,
+      "card[cvc]": card.verification_code
     ]   
   end
 
   defp card_params(_), do: []
 
   defp address_params(%Address{} = address) do
-    address = Map.from_struct(address)
-
-    [ 
-      "card[address_line1]": address[:street1],
-      "card[address_line2]": address[:street2],
-      "card[address_city]":  address[:city],
-      "card[address_state]": address[:region],
-      "card[address_zip]":   address[:postal_code],
-      "card[address_country]": address[:country]
+    [ "card[address_line1]": address.street1,
+      "card[address_line2]": address.street2,
+      "card[address_city]":  address.city,
+      "card[address_state]": address.region,
+      "card[address_zip]":   address.postal_code,
+      "card[address_country]": address.country
     ]
   end
 

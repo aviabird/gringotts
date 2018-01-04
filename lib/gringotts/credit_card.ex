@@ -43,5 +43,9 @@ defmodule Gringotts.CreditCard do
   Joins `first_name` and `last_name` with a space in between.
   """
   @spec full_name(t) :: String.t
-  def full_name(card), do: "#{card.first_name} #{card.last_name}"
+  def full_name(card) do
+    name = "#{card.first_name} #{card.last_name}"
+    String.trim(name)    
+  end
+
 end
