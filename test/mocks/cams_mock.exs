@@ -200,9 +200,6 @@ defmodule Gringotts.Gateways.CamsMock do
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}
   end
-<<<<<<< HEAD
-
-<<<<<<< HEAD
   def validate_creditcard do
     {:ok,
     %HTTPoison.Response{
@@ -216,30 +213,4 @@ defmodule Gringotts.Gateways.CamsMock do
      request_url: "https://secure.centralams.com/gw/api/transact.php",
      status_code: 200}}
   end
-=======
-  def network_error do
-    {:error, 
-    %HTTPoison.Error{
-      id: nil, 
-      reason: :nxdomain}
-    }    
-  end
-
-  def bad_url_error do
-    {:ok,
-    %HTTPoison.Response{
-      body: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html><head>\n<title>404 Not Found</title>\n</head><body>\n<h1>Not Found</h1>\n<p>The requested URL /gw/api/transact.ph was not found on this server.</p>\n</body></html>\n",
-      headers: [
-        {"Date", "Thu, 28 Dec 2017 13:20:09 GMT"},
-        {"Server", "Apache"},
-        {"Content-Length", "216"},
-        {"Content-Type", "text/html; charset=iso-8859-1"}
-      ],
-     request_url: "https://secure.centralams.com/gw/api/transact.ph",
-     status_code: 404}}   
-  end
-
->>>>>>> affba64... Added test,Error handling
-=======
->>>>>>> 4d78bed... removed unsued mock response
 end
