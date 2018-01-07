@@ -199,7 +199,7 @@ defmodule Gringotts.Gateways.MoneiTest do
   end
 
   defp amount(amount, currency \\ "USD") do
-    %{amount: Decimal.new(amount), currency: currency}
+    %{value: Decimal.new(amount), currency: currency}
   end
   
 

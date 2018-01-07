@@ -25,15 +25,15 @@ defprotocol Gringotts.Money do
   """
   def currency(money)
 
-  @spec amount(t) :: Decimal.t
+  @spec value(t) :: Decimal.t
   @doc """
   Returns a Decimal representing the "worth" of this sum of money in the
   associated `currency`.
   """
-  def amount(money)
+  def value(money)
 end
 
 defimpl Gringotts.Money, for: Any do
   def currency(money), do: Map.get(money, :currency)
-  def amount(money), do: Map.get(money, :amount)
+  def value(money), do: Map.get(money, :amount) || Map.get(money, :value)
 end

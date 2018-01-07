@@ -106,12 +106,13 @@ defmodule Gringotts.Gateways.Monei do
   aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
-  iex> amount = %{amount: 40, currency: "EUR"}
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
   iex> card = %CreditCard{first_name: "Jo",
                           last_name: "Doe",
                           number: "4200000000000000",
                           year: 2099, month: 12,
-                          verification_code:  "123", brand: "VISA"}
+                          verification_code:  "123",
+                          brand: "VISA"}
   ```
 
   We'll be using these in the examples below.
@@ -176,7 +177,7 @@ defmodule Gringotts.Gateways.Monei do
 
   The following session shows how one would (pre) authorize a payment of $40 on a sample `card`.
 
-      iex> amount = %{amount: 40, currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
@@ -186,7 +187,7 @@ defmodule Gringotts.Gateways.Monei do
     params =
       [
         paymentType: "PA",
-        amount: amount |> Money.amount |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+        amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
         currency: Money.currency(amount)
       ] ++ card_params(card)
 
@@ -213,7 +214,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would (partially) capture a previously
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
-      iex> amount = %{amount: 40, currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
@@ -223,7 +224,7 @@ defmodule Gringotts.Gateways.Monei do
   def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
     params = [
       paymentType: "CP",
-      amount: amount |> Money.amount |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
       currency: Money.currency(amount)
     ]
 
@@ -242,7 +243,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
-      iex> amount = %{amount: 40, currency: "EUR"}
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
   """
@@ -252,7 +253,7 @@ defmodule Gringotts.Gateways.Monei do
       card_params(card) ++
         [
           paymentType: "DB",
-          amount: amount |> Money.amount |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+          amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
           currency: Money.currency(amount)
         ]
 
@@ -289,7 +290,6 @@ defmodule Gringotts.Gateways.Monei do
   authorization. Remember that our `capture/3` example only did a partial
   capture.
 
-      iex> amount = %{amount: 40, currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
@@ -318,7 +318,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would refund a previous purchase (and
   similarily for captures).
 
-      iex> amount = %{amount: 40, currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
@@ -326,7 +326,7 @@ defmodule Gringotts.Gateways.Monei do
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
     params = [
       paymentType: "RF",
-      amount: amount |> Money.amount |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
       currency: Money.currency(amount)
     ]
 
