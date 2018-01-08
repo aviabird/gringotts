@@ -25,7 +25,10 @@ Add gringotts to the list of dependencies.
 ```elixir
 def deps do
   [
-    {:gringotts, "~> 1.0"}
+    {:gringotts, "~> 1.0"},
+    # ex_money provides an excellent Money library, and integrates
+    # out-of-the-box with Gringotts
+    {:ex_money, "~> 1.1.0"}
   ]
 end
 ```
@@ -67,7 +70,7 @@ card = %CreditCard{first_name: "Jo",
     brand: "VISA"
 }
 
-amount = %{value: Decimal.new(42), currency: "USD"}
+amount = Money.new(42, :USD)
 
 case Gringotts.purchase(Monei, amount, card, opts) do
   {:ok,    %{id: id}} ->

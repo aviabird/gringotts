@@ -33,6 +33,11 @@ defprotocol Gringotts.Money do
   def value(money)
 end
 
+defimpl Gringotts.Money, for: Money do
+  def currency(money), do: money.currency |> Atom.to_string
+  def value(money), do: money.amount
+end  
+
 defimpl Gringotts.Money, for: Any do
   def currency(money), do: Map.get(money, :currency)
   def value(money), do: Map.get(money, :amount) || Map.get(money, :value)

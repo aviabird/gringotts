@@ -52,14 +52,22 @@ defmodule Gringotts.Mixfile do
       {:httpoison, "~> 0.13"},
       {:xml_builder, "~> 0.1.1"}, 
       {:elixir_xml_to_map, "~> 0.1"},
+
+      # Money related
       {:decimal, "~> 1.0", optional: true},
+      # ex_money is just needed for tests.
+      {:ex_money, "~> 1.1.0", only: [:dev, :test], optional: true},
+
+      # docs and tests
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
       {:excoveralls, "~> 0.7", only: :test},
+
+      # various analyses tools
       {:credo, "~> 0.3", only: [:dev, :test]},
       {:inch_ex, "~> 0.5", only: :docs},
-      {:dialyxir, "~> 0.3", only: [:dev]}
+      {:dialyxir, "~> 0.3", only: :dev}
     ]
   end
 
