@@ -75,7 +75,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       end
       Bypass.down bypass
       {:error, response} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
-      assert response.reason == :network_fail?
+      assert response.reason == "network related failure"
 
       Bypass.up bypass
       {:ok, _} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])

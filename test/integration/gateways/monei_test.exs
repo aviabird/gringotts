@@ -18,6 +18,37 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     brand: "VISA"
   }
 
+  @customer %{"givenName": "Harry",
+              "surname": "Potter",
+              "merchantCust omerId": "the_boy_who_lived",
+              "sex": "M", 
+              "birthDate": "1980-07-31", 
+              "mobile": "+15252525252", 
+              "email": "masterofdeath@ministryofmagic.go v",
+              "ip": "1.1.1", 
+              "status": "NEW"} 
+  @merchant %{"name": "Ollivanders",
+              "city": "South Side",
+              "street": "Diagon Alley",
+              "state": "London",
+              "country": "GB",
+              "submerchantId": "Makers of Fine Wands since 382 B.C."}
+  @billing %{"street1": "301, Gryffindor",
+             "street2": "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+             "city": "Highlands",
+             "state": "Scotland",
+             "country": "GB"}
+  @shipping Map.merge(
+    %{"method": "SAME_DAY_SERVICE",
+      "comment": "For our valued customer, Mr. Potter"},
+    @billing)
+
+  @extra_opts [customer: @customer,
+               merchant: @merchant,
+               billing_address: @billing,
+               shipping_address: @shipping
+              ]
+
   setup_all do
     Application.put_env(:gringotts, Gringotts.Gateways.Monei, [adapter: Gringotts.Gateways.Monei,
                                                                userId: "8a8294186003c900016010a285582e0a",
@@ -25,18 +56,18 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
                                                                entityId: "8a82941760036820016010a28a8337f6"])
   end
 
-  test "authorize." do
-    case Gringotts.authorize(Gateway, Money.new(42, :EUR), @card) do
+  test "authorize" do
+    case Gringotts.authorize(Gateway, Money.new(42, :EUR), @card, @extra_opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
         assert String.length(response.id) == 32
-      {:error, _err} -> flunk()
+      {:error, _err} -> flunk(_err)
     end
   end
 
   @tag :skip
-  test "capture." do
+  test "capture" do
     case Gringotts.capture(Gateway, Money.new(42, :EUR), "s") do
       {:ok, response} ->
         assert response.code == "000.100.110"
@@ -47,8 +78,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     end
   end
 
-  test "purchase." do
-    case Gringotts.purchase(Gateway, Money.new(42, :EUR), @card) do
+  test "purchase" do
+    case Gringotts.purchase(Gateway, Money.new(42, :EUR), @card, @extra_opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"

@@ -23,19 +23,19 @@ defmodule Gringotts.Gateways.Monei do
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
-  optional arguments for transactions with the MONEI gateway. The following keys
-  are supported:
+  [optional arguments](https://docs.monei.net/reference/parameters) for
+  transactions with the MONEI gateway. The following keys are supported:
 
   | Key                 | Remark                                                                                        | Status          |
   | ----                | ---                                                                                           | ----            |
-  | `billing_address`   |                                                                                               | Not implemented |
+  | `billing_address`   | Address of the customer, which can be used for AVS risk check                                 | **Partial**     |
   | `cart`              |                                                                                               | Not implemented |
   | `customParameters`  |                                                                                               | Not implemented |
   | `customer`          | Annotate transactions with customer info on your Monei account, and helps in risk management. | **Implemented** |
   | `invoice`           |                                                                                               | Not implemented |
-  | `merchant`          |                                                                                               | Not implemented |
-  | `shipping_address`  |                                                                                               | Not implemented |
-  | `shipping_customer` |                                                                                               | Not implemented |
+  | `merchant`          | Information about the merchant, which overrides the cardholder's bank statement               | **Implemented** |
+  | `shipping_address`  | Location of recipient of goods, for logistics                                                 | **Partial**     |
+  | `shipping_customer` | Recipient details, could be different from `customer`                                         | Not implemented |
 
   > All these keys are being implemented, track progress in
   > [issue #36](https://github.com/aviabird/gringotts/issues/36)!
@@ -113,6 +113,37 @@ defmodule Gringotts.Gateways.Monei do
                           year: 2099, month: 12,
                           verification_code:  "123",
                           brand: "VISA"}
+  iex> customer = %{"givenName": "Harry",
+                    "surname": "Potter",
+                    "merchantCustomerId": "the_boy_who_lived",
+                    "sex": "M", 
+                    "birthDate": "1980-07-31", 
+                    "mobile": "+15252525252", 
+                    "email": "masterofdeath@ministryofmagic.go v",
+                    "ip": "1.1.1", 
+                    "status": "NEW"} 
+  iex> merchant = %{"name": "Ollivanders",
+                    "city": "South Side",
+                    "street": "Diagon Alley",
+                    "state": "London",
+                    "country": "GB",
+                    "submerchantId": "Makers of Fine Wands since 382 B.C."}
+  iex> billing = %{"street1": "301, Gryffindor",
+                   "street2": "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                   "city": "Highlands",
+                   "state": "Scotland",
+                   "country": "GB"}
+  iex> shipping = %{"street1": "301, Gryffindor",
+                    "street2": "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                    "city": "Highlands",
+                    "state": "Scotland",
+                    "country": "GB",
+                    "method": "SAME_DAY_SERVICE",
+                    "comment": "For our valued customer, Mr. Potter"}
+  iex> opts = [customer: customer,
+               merchant: merchant,
+               billing_address: billing,
+               shipping_address: shipping]
   ```
 
   We'll be using these in the examples below.
@@ -251,11 +282,10 @@ defmodule Gringotts.Gateways.Monei do
     {currency, value} = Money.to_string(amount)
 
     params =
-      card_params(card) ++
-        [
-          paymentType: "DB",
-          amount: value
-        ]
+      [
+        paymentType: "DB",
+        amount: value
+      ] ++ card_params(card)
     commit(:post, "payments", params, [{:currency, currency} | opts])
   end
 
@@ -440,7 +470,10 @@ defmodule Gringotts.Gateways.Monei do
     Enum.reduce_while(params, [], fn {k, v}, acc ->
       case k do
         :currency -> if valid_currency?(v), do: {:cont, [{:currency, v} | acc]}, else: {:halt, {:error, "Invalid currency"}}
-        :customer -> {:cont, acc ++ make_customer v}
+        :customer -> {:cont, acc ++ make("customer", v)}
+        :merchant -> {:cont, acc ++ make("merchant", v)}
+        :billing_address -> {:cont, acc ++ make("billing", v)}
+        :shipping_address -> {:cont, acc ++ make("shipping", v)}
         _ -> {:cont, acc}
       end
     end)
@@ -470,8 +503,8 @@ defmodule Gringotts.Gateways.Monei do
     end
   end
 
-  defp make_customer(customer) do
-    Enum.into(customer, [], fn {k, v} -> {"customer.#{k}", v} end)
+  defp make(prefix, param) do
+    Enum.into(param, [], fn {k, v} -> {"#{prefix}.#{k}", v} end)
   end
   
   defp base_url(opts), do: opts[:config][:test_url] || @base_url
