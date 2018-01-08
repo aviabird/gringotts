@@ -63,10 +63,7 @@ defmodule Gringotts.Gateways.MoneiTest do
 
   describe "core" do
     test "with unsupported currency.",
-      %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
-        Plug.Conn.resp(conn, 400, "<html></html>")
-      end
+      %{auth: auth} do
       {:error, response} = Gateway.authorize(@bad_currency, @card, [config: auth])
       assert response.description == "Invalid currency"
     end

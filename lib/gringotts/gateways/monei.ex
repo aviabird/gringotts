@@ -134,7 +134,6 @@ defmodule Gringotts.Gateways.Monei do
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
   @supported_currencies ["EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN", "NIO", "NGN", "NOK", "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG", "PHP", "QAR", "RUB", "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND", "SOS", "ZAR", "ZWL", "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB", "TOP", "TTD", "AED", "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS", "UYU", "UZS", "WST", "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN", "AZN", "MDL", "TRY", "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN", "TJS", "AOA", "BYN", "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"]
-  @default_currency "EUR"
 
   @version "v1"
 
@@ -191,12 +190,9 @@ defmodule Gringotts.Gateways.Monei do
     params =
       [
         paymentType: "PA",
-        amount: value,
-        currency: currency
-      ] ++ card_params(card) ++ extra_params(opts)
-
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments", params, auth_info)
+        amount: value
+      ] ++ card_params(card)
+    commit(:post, "payments", params, [{:currency, currency} | opts])
   end
 
   @doc """
@@ -230,12 +226,9 @@ defmodule Gringotts.Gateways.Monei do
 
     params = [
       paymentType: "CP",
-      amount: value,
-      currency: currency
+      amount: value
     ]
-
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{payment_id}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, [{:currency, currency} | opts])
   end
 
   @doc """
@@ -261,12 +254,9 @@ defmodule Gringotts.Gateways.Monei do
       card_params(card) ++
         [
           paymentType: "DB",
-          amount: value,
-          currency: currency
+          amount: value
         ]
-
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments", params, auth_info)
+    commit(:post, "payments", params, [{:currency, currency} | opts])
   end
 
   @doc """
@@ -306,8 +296,7 @@ defmodule Gringotts.Gateways.Monei do
 
   def void(<<payment_id::bytes-size(32)>>, opts) do
     params = [paymentType: "RV"]
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{payment_id}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, opts)
   end
 
   @doc """
@@ -336,12 +325,9 @@ defmodule Gringotts.Gateways.Monei do
 
     params = [
       paymentType: "RF",
-      amount: value,
-      currency: currency
+      amount: value
     ]
-
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "payments/#{payment_id}", params, auth_info)
+    commit(:post, "payments/#{payment_id}", params, [{:currency, currency} | opts])
   end
 
   @doc """
@@ -370,8 +356,7 @@ defmodule Gringotts.Gateways.Monei do
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do
     params = card_params(card)
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:post, "registrations", params, auth_info)
+    commit(:post, "registrations", params, opts)
   end
 
   @doc """
@@ -383,8 +368,7 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
   def unstore(<<registrationId::bytes-size(32)>>, opts) do
-    auth_info = Keyword.fetch!(opts, :config)
-    commit(:delete, "registrations/#{registrationId}", [], auth_info)
+    commit(:delete, "registrations/#{registrationId}", [], opts)
   end
 
   defp card_params(card) do
@@ -399,25 +383,25 @@ defmodule Gringotts.Gateways.Monei do
   end
 
   # Makes the request to MONEI's network.
-  @spec commit(atom, String.t(), keyword, map) :: {:ok | :error, Response}
+  @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response}
   defp commit(method, endpoint, params, opts) do
     auth_params = [
-      "authentication.userId": opts[:userId],
-      "authentication.password": opts[:password],
-      "authentication.entityId": opts[:entityId]
+      "authentication.userId": opts[:config][:userId],
+      "authentication.password": opts[:config][:password],
+      "authentication.entityId": opts[:config][:entityId]
     ]
 
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
-    case validate_params params do
-      :ok ->
-      network_response =
+    case expand_params opts do
+      {:error, reason} -> 
+        {:error, Response.error(description: reason)}
+      validated_params ->
+        network_response =
           case method do
-            :post -> HTTPoison.post(url, {:form, params ++ auth_params}, @default_headers)
+            :post -> HTTPoison.post(url, {:form, params ++ validated_params ++ auth_params}, @default_headers)
             :delete -> HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
           end
-      respond(network_response)
-    {:error, {code, reason}} -> 
-        {:error, Response.error(code: code, description: reason)}
+        respond(network_response)
     end
   end
 
@@ -452,22 +436,18 @@ defmodule Gringotts.Gateways.Monei do
     }
   end
 
-  defp extra_params(opts) do
-    Enum.reduce(opts, [], fn {k, v}, acc ->
+  defp expand_params(params) do
+    Enum.reduce_while(params, [], fn {k, v}, acc ->
       case k do
-        :customer -> acc ++ make_customer v
-        _ -> acc
+        :currency -> if valid_currency?(v), do: {:cont, [{:currency, v} | acc]}, else: {:halt, {:error, "Invalid currency"}}
+        :customer -> {:cont, acc ++ make_customer v}
+        _ -> {:cont, acc}
       end
     end)
   end
 
-  defp validate_params(params) do
-    currency = params[:currency]
-    if currency && currency not in @supported_currencies do
-      {:error, {nil, "#{params[:currency]} is not supported"}}
-    else
-      :ok
-    end
+  defp valid_currency?(currency) do
+    currency in @supported_currencies
   end
   
   defp verification_result(%{"result" => result} = data) do
@@ -494,7 +474,6 @@ defmodule Gringotts.Gateways.Monei do
     Enum.into(customer, [], fn {k, v} -> {"customer.#{k}", v} end)
   end
   
-  defp base_url(opts), do: opts[:test_url] || @base_url
-  defp version(opts), do: opts[:api_version] || @version
+  defp base_url(opts), do: opts[:config][:test_url] || @base_url
+  defp version(opts), do: opts[:config][:api_version] || @version
 end
-  
