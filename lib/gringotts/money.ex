@@ -33,10 +33,21 @@ defprotocol Gringotts.Money do
   def value(money)
 end
 
-defimpl Gringotts.Money, for: Money do
-  def currency(money), do: money.currency |> Atom.to_string
-  def value(money), do: money.amount
-end  
+# this implementation is used for dispatch on ex_money (and will also fire for
+# money)
+if Code.ensure_compiled?(Money) do
+  defimpl Gringotts.Money, for: Money do
+    def currency(money), do: money.currency |> Atom.to_string
+    def value(money), do: money.amount
+  end  
+end
+
+if Code.ensure_compiled?(Monetized.Money) do
+  defimpl Gringotts.Money, for: Monetized.Money do
+    def currency(money), do: money.currency
+    def value(money), do: money.amount
+  end
+end
 
 defimpl Gringotts.Money, for: Any do
   def currency(money), do: Map.get(money, :currency)
