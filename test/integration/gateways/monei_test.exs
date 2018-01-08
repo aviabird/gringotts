@@ -20,7 +20,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @customer %{"givenName": "Harry",
               "surname": "Potter",
-              "merchantCust omerId": "the_boy_who_lived",
+              "merchantCustomerId": "the_boy_who_lived",
               "sex": "M", 
               "birthDate": "1980-07-31", 
               "mobile": "+15252525252", 
@@ -45,9 +45,10 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @extra_opts [customer: @customer,
                merchant: @merchant,
-               billing_address: @billing,
-               shipping_address: @shipping
-              ]
+               billing: @billing,
+               shipping: @shipping,
+               category: "EC",
+               custom: %{"voldemort": "he who must not be named"}]
 
   setup_all do
     Application.put_env(:gringotts, Gringotts.Gateways.Monei, [adapter: Gringotts.Gateways.Monei,
@@ -56,18 +57,24 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
                                                                entityId: "8a82941760036820016010a28a8337f6"])
   end
 
-  test "authorize" do
-    case Gringotts.authorize(Gateway, Money.new(42, :EUR), @card, @extra_opts) do
+  setup do
+    randoms = [invoice_id: Base.encode16(:crypto.hash(:md5, :crypto.strong_rand_bytes(32))),
+               transaction_id: Base.encode16(:crypto.hash(:md5, :crypto.strong_rand_bytes(32)))]
+    {:ok, opts: randoms ++ @extra_opts}
+  end
+
+  test "authorize", %{opts: opts} do
+    case Gringotts.authorize(Gateway, Money.new(42, :EUR), @card, opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
         assert String.length(response.id) == 32
-      {:error, _err} -> flunk(_err)
+      {:error, _err} -> flunk()
     end
   end
 
   @tag :skip
-  test "capture" do
+  test "capture", %{opts: _opts} do
     case Gringotts.capture(Gateway, Money.new(42, :EUR), "s") do
       {:ok, response} ->
         assert response.code == "000.100.110"
@@ -78,8 +85,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     end
   end
 
-  test "purchase" do
-    case Gringotts.purchase(Gateway, Money.new(42, :EUR), @card, @extra_opts) do
+  test "purchase", %{opts: opts} do
+    case Gringotts.purchase(Gateway, Money.new(42, :EUR), @card, opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"

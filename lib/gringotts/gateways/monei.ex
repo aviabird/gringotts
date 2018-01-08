@@ -28,14 +28,16 @@ defmodule Gringotts.Gateways.Monei do
 
   | Key                 | Remark                                                                                        | Status          |
   | ----                | ---                                                                                           | ----            |
-  | `billing_address`   | Address of the customer, which can be used for AVS risk check                                 | **Partial**     |
+  | `billing`           | Address of the customer, which can be used for AVS risk check                                 | **Implemented** |
   | `cart`              |                                                                                               | Not implemented |
-  | `customParameters`  |                                                                                               | Not implemented |
+  | `custom`            | It's a map of "name"-"value" pairs, and all of it is echoed back in the response              | **Implemented** |
   | `customer`          | Annotate transactions with customer info on your Monei account, and helps in risk management. | **Implemented** |
-  | `invoice`           |                                                                                               | Not implemented |
+  | `invoice_id`        | Merchant provided invoice identifier, must be unique per transaction with Monei               | **Implemented** |
+  | `transaction_id`    | Merchant provided token for a transaction, must be unique per transaction with Monei          | **Implemented** |
+  | `category`          | The category of the transaction                                                               | **Implemented** |
   | `merchant`          | Information about the merchant, which overrides the cardholder's bank statement               | **Implemented** |
-  | `shipping_address`  | Location of recipient of goods, for logistics                                                 | **Partial**     |
-  | `shipping_customer` | Recipient details, could be different from `customer`                                         | Not implemented |
+  | `shipping`          | Location of recipient of goods, for logistics                                                 | **Implemented** |
+  | `shipping_customer` | Recipient details, could be different from `customer`                                         | **Implemented** |
 
   > All these keys are being implemented, track progress in
   > [issue #36](https://github.com/aviabird/gringotts/issues/36)!
@@ -43,7 +45,8 @@ defmodule Gringotts.Gateways.Monei do
   ## Registering your MONEI account at `Gringotts`
 
   After [making an account on MONEI](https://dashboard.monei.net/signin), head
-  to the dashboard and find your account "secrets" in the `Sub-Accounts > Overview` section.
+  to the dashboard and find your account "secrets" in the `Sub-Accounts >
+  Overview` section.
 
   Here's how the secrets map to the required configuration parameters for MONEI:
 
@@ -65,7 +68,8 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Scope of this module, and _quirks_
 
-  * MONEI does not process money in cents, and the `amount` is rounded to 2 decimal places.
+  * MONEI does not process money in cents, and the `amount` is rounded to 2
+    decimal places.
   * Although MONEI supports payments from [various
   cards](https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods),
   banks and virtual accounts (like some wallets), this library only accepts
@@ -142,8 +146,10 @@ defmodule Gringotts.Gateways.Monei do
                     "comment": "For our valued customer, Mr. Potter"}
   iex> opts = [customer: customer,
                merchant: merchant,
-               billing_address: billing,
-               shipping_address: shipping]
+               billing: billing,
+               shipping: shipping,
+               category: "EC",
+               custom: %{"voldemort": "he who must not be named"}]
   ```
 
   We'll be using these in the examples below.
@@ -164,7 +170,14 @@ defmodule Gringotts.Gateways.Monei do
 
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
-  @supported_currencies ["EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN", "NIO", "NGN", "NOK", "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG", "PHP", "QAR", "RUB", "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND", "SOS", "ZAR", "ZWL", "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB", "TOP", "TTD", "AED", "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS", "UYU", "UZS", "WST", "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN", "AZN", "MDL", "TRY", "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN", "TJS", "AOA", "BYN", "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"]
+  @supported_currencies ["EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN",
+  "NIO", "NGN", "NOK", "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG",
+  "PHP", "QAR", "RUB", "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND",
+  "SOS", "ZAR", "ZWL", "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB",
+  "TOP", "TTD", "AED", "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS",
+  "UYU", "UZS", "WST", "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN",
+  "AZN", "MDL", "TRY", "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN",
+  "TJS", "AOA", "BYN", "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"]
 
   @version "v1"
 
@@ -185,8 +198,8 @@ defmodule Gringotts.Gateways.Monei do
     nil => {nil, nil}
   }
 
-  # MONEI supports payment by card, bank account and even something obscure: virtual account
-  # opts has the auth keys.
+  # MONEI supports payment by card, bank account and even something obscure:
+  # virtual account opts has the auth keys.
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -207,7 +220,8 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would (pre) authorize a payment of $40 on a sample `card`.
+  The following session shows how one would (pre) authorize a payment of $40 on
+  a sample `card`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
@@ -435,7 +449,8 @@ defmodule Gringotts.Gateways.Monei do
     end
   end
 
-  # Parses MONEI's response and returns a `Gringotts.Response` struct in a `:ok`, `:error` tuple.
+  # Parses MONEI's response and returns a `Gringotts.Response` struct in a
+  # `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
   defp respond(monei_response)
 
@@ -472,8 +487,13 @@ defmodule Gringotts.Gateways.Monei do
         :currency -> if valid_currency?(v), do: {:cont, [{:currency, v} | acc]}, else: {:halt, {:error, "Invalid currency"}}
         :customer -> {:cont, acc ++ make("customer", v)}
         :merchant -> {:cont, acc ++ make("merchant", v)}
-        :billing_address -> {:cont, acc ++ make("billing", v)}
-        :shipping_address -> {:cont, acc ++ make("shipping", v)}
+        :billing -> {:cont, acc ++ make("billing", v)}
+        :shipping -> {:cont, acc ++ make("shipping", v)}
+        :invoice_id -> {:cont, [{"merchantInvoiceId", v} | acc]}
+        :transaction_id -> {:cont, [{"merchantTransactionId", v} | acc]}
+        :category -> {:cont, [{"transactionCategory", v} | acc]}
+        :shipping_customer -> {:cont, acc ++ make("shipping.customer", v)}
+        :custom -> {:cont, acc ++ make_custom(v)}
         _ -> {:cont, acc}
       end
     end)
@@ -505,6 +525,10 @@ defmodule Gringotts.Gateways.Monei do
 
   defp make(prefix, param) do
     Enum.into(param, [], fn {k, v} -> {"#{prefix}.#{k}", v} end)
+  end
+
+  defp make_custom(custom_map) do
+    Enum.into(custom_map, [], fn {k, v} -> {"customParameters[#{k}]", "#{v}"} end)
   end
   
   defp base_url(opts), do: opts[:config][:test_url] || @base_url
