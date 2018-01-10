@@ -34,6 +34,9 @@ defmodule Gringotts do
   box, and you can drop their types in this argument and everything will work
   as expected.
 
+  Otherwise, just wrap your `amount` with the `currency` together in a `Map` like so,
+      money = %{amount: Decimal.new(100.50), currency: "USD"}
+
   #### Example
 
   If you use `ex_money` in your project, and want to make an authorization for
