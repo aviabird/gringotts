@@ -22,9 +22,11 @@ defmodule Gringotts.Gateways.MoneiTest do
     number: "4200000000000000",
     year: 2000,
     month: 12,
-    verification_code:  "123",
+    verification_code: "123",
     brand: "VISA"
   }
+
+  @bad_currency Money.new(42, :INR)
 
   @auth_success ~s[
     {"id": "8a82944a603b12d001603c1a1c2d5d90",
@@ -66,8 +68,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 400, "<html></html>")
       end
-      {:error, response} = Gateway.authorize(52, @card, [config: auth,
-                                                         currency: "INR"])
+      {:error, response} = Gateway.authorize(@bad_currency, @card, [config: auth])
       assert response.code == :unsupported_currency
     end
 
@@ -77,11 +78,11 @@ defmodule Gringotts.Gateways.MoneiTest do
         Plug.Conn.resp(conn, 200, @auth_success)
       end
       Bypass.down bypass
-      {:error, response} = Gateway.authorize(52.00, @card, [config: auth])
+      {:error, response} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
       assert response.reason == :network_fail?
 
       Bypass.up bypass
-      {:ok, _} = Gateway.authorize(52.00, @card, [config: auth])
+      {:ok, _} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
     end
   end
 
@@ -90,7 +91,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
       end
-      {:ok, response} = Gateway.authorize(52.00, @card, [config: auth])
+      {:ok, response} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
       assert response.code == "000.100.110"
     end
 
@@ -98,14 +99,14 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 400, "<html></html>")
       end
-      {:error, _} = Gateway.authorize(52.00, @card, [config: auth])
+      {:error, _} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
     end
 
     test "when card has expired.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 400, "")
       end
-      {:error, _response} = Gateway.authorize(52, @bad_card, [config: auth])
+      {:error, _response} = Gateway.authorize(Money.new(42, :USD), @bad_card, [config: auth])
     end
   end
 
@@ -114,7 +115,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
       end
-      {:ok, response} = Gateway.purchase(15, @card, [config: auth])
+      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, [config: auth])
       assert response.code == "000.100.110"
     end
   end
@@ -135,11 +136,11 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once(
         bypass,
         "POST",
-        "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+        "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
         end)
-      {:ok, response} = Gateway.capture(4000, "7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth])
       assert response.code == "000.100.110"
     end
   end
@@ -149,11 +150,11 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once(
         bypass,
         "POST",
-        "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+        "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
         end)
-      {:ok, response} = Gateway.refund(3, "7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+      {:ok, response} = Gateway.refund(Money.new(3, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth])
       assert response.code == "000.100.110"
     end
   end
@@ -163,11 +164,11 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once(
         bypass,
         "DELETE",
-        "/v1/registrations/7214344252e11af79c0b9e7b4f3f6234",
+        "/v1/registrations/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, "<html></html>")
         end)
-      {:error, response} = Gateway.unstore("7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+      {:error, response} = Gateway.unstore("7214344242e11af79c0b9e7b4f3f6234", [config: auth])
       assert response.code == :undefined_response_from_monei
     end
   end
@@ -177,11 +178,11 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once(
         bypass,
         "POST",
-        "/v1/payments/7214344252e11af79c0b9e7b4f3f6234",
+        "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
         end)
-      {:ok, response} = Gateway.void("7214344252e11af79c0b9e7b4f3f6234", [config: auth])
+      {:ok, response} = Gateway.void("7214344242e11af79c0b9e7b4f3f6234", [config: auth])
       assert response.code == "000.100.110"
     end
   end
