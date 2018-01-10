@@ -1,133 +1,150 @@
 defmodule Gringotts do
-  @moduledoc ~S"""
-  Gringotts is a payment gateway integration library supporting many gateway integrations.
+  @moduledoc """
+  Gringotts is a payment gateway integration library for merchants
+
+  Gringotts provides a unified interface for multiple Payment Gateways to make it
+  easy for merchants to use multiple gateways.
+  All gateways must conform to the API as described in this module, but can also
+  support more gateway features than those required by Gringotts.
   
+  ## Standard API arguments
+
+  All requests to Gringotts are served by a supervised worker, this might be
+  made optional in future releases.
+  
+  ### `gateway` (Module) Name
+  
+  The `gateway` to which this request is made. This is required in all API calls
+  because Gringotts supports multiple Gateways.
+
+  #### Example
+  If you've configured Gringotts to work with Stripe, you'll do this
+  to make an `authorization` request:
+  
+      Gringotts.authorize(Gingotts.Gateways.Stripe, other args ...)
+
+  ### `amount` _and currency_
+
+  This argument represents the "amount", annotated with the currency unit for
+  the transaction. `amount` is polymorphic thanks to the `Gringotts.Money`
+  protocol which can be implemented by your custom Money type.
+
+  #### Note
+  We support [`ex_money`][ex_money] and [`monetized`][monetized] out of the
+  box, and you can drop their types in this argument and everything will work
+  as expected.
+
+  Otherwise, just wrap your `amount` with the `currency` together in a `Map` like so,
+      money = %{amount: Decimal.new(100.50), currency: "USD"}
+
+  #### Example
+
+  If you use `ex_money` in your project, and want to make an authorization for
+  $2.99 to MONEI, you'll do the following:
+  
+      amount = Money.new(2.99, :USD)
+      Gringotts.authorize(Gringotts.Gateways.Monei, amount, some_card, extra_options)
+
+  ### `card`, a payment source
+
+  Gringotts provides a `Gringotts.CreditCard` type to hold card parameters
+  which merchants fetch from their clients. The same type can also hold Debit
+  card details.
+
+  #### Note
+  Gringotts only supports payment by debit or credit card, even though the
+  gateways might support payment via other instruments such as e-wallets,
+  vouchers, bitcoins or banks. Support for these instruments is planned in
+  future releases.
+  
+      %CreditCard {
+          first_name: "Harry",
+          last_name: "Potter",
+          number: "4242424242424242",
+          month: 12,
+          year: 2099,
+          verification_code: "123",
+          brand: "VISA"}
+    
+  ### `opts` for optional params
+
+  `opts` is a `keyword` list of other options/information accepted by the
+  gateway. The format, use and structure is gateway specific and documented in
+  the Gateway's docs.
+
+  [ex_money]: https://hexdocs.pm/ex_money/readme.html
+  [monetized]: https://hexdocs.pm/monetized/
+
   ## Configuration
   
-  The configuration for `Gringotts` must be in your application environment, 
-  usually defined in your `config/config.exs` and is **mandatory**:
-
-  **Global Configuration**
+  Merchants must provide Gateway specific configuration in their application
+  config in the usual elixir style. The required and optional fields are
+  documented in every Gateway.
   
-  The global configuration sets the library level configurations to interact with the gateway.
-  If the mode is not set then by 'default' the sandbox account is selected.
+  > The required config keys are validated at runtime, as they include
+  > authentication information. See `Gringotts.Adapter.validate_config/2`.
+  
+  ### Global config
+  
+  This is set using the `:global_config` key once in your application.
 
-  To integrate with the sandbox account set.
+  #### `:mode`
+
+  Gateways usually provide sandboxed environments to test applications and the
+  merchant can use the `:mode` switch to choose between the sandbox or live
+  environment.
+
+  **Available Options:**
+
+  * `:test` -- for sandbox environment, all requests will be routed to the
+    gateway's sandbox/test API endpoints. Use this in your `:dev` and `:test`
+    environments.  
+  * `:prod` -- for live environment, all requests will reach the financial and
+    banking networks. Switch to this in your application's `:prod` environment.
+  
+  **Example**
+  
       config :gringotts, :global_config,
-        mode: :test
-  To integrate with the live account set.
-      config :gringotts, :global_config,
-        mode: :prod
+          # for live environment
+          mode: :prod
 
-  **Gateway Configuration**
+  ### Gateway specific config
 
-  The gateway level configurations are for fields related to a specific gateway. 
-      config :Gringotts, Gringotts.Gateways.Stripe,
-        adapter: Gringotts.Gateways.Stripe,
-        api_key: "sk_test_vIX41hC0sdfBKrPWQerLuOMld",
-        default_currency: "USD"
+  The gateway level config is documented in their docs. They must be of the
+  following format:
 
-  `Key` for the configuration and the adapter value should be the same, we could have
-  chosen to pick adapter and used it as the key but we have chosen to be explicit rather 
-  than implicit.
+      config :gringotts, Gringotts.Gateways.XYZ,
+          adapter: Gringotts.Gateways.XYZ,
+        # some_documented_key: associated_value
+        # some_other_key: another_value
 
-  ## Standard Arguments
-
-  The public API is designed in such a way that library users end up passing mostly a 
-  standard params for almost all requests.
-
-  ### Gateway Name
-    eg: Gringotts.Gateways.Stripe
-
-    This option specifies which payment gateway this request should be called for.
-    Since `Gringotts` supports multiple payment gateway integrations at the same time
-    so this information get's critical.
-
-  ### Amount
-    eg: 5000
-
-    Amount is the money an application wants to deduct in cents on the card.
-
-  ### Card Info
-    eg: 
-        %CreditCard {
-          name: "John Doe",
-          number: "4242424242424242",
-          expiration: {2018, 12},
-          cvc:  "123",
-          street1: "123 Main",
-          street2: "Suite 100",
-          city: "New York",
-          region: "NY",
-          country: "US",
-          postal_code: "11111" 
-        }
-    
-    This stores all the credit card info of the customer along with some address info etc.
-
-  ### Other options
-    eg: [currency: "usd"]
-
-    This is a keyword list of all the other options/information which the payment gateway 
-    needs apart from the above mentioned options. 
-
-    > This is passed as is to the gateway and not modified, usually it comes back in the 
-    response object intact.
+  > ***Note!***
+  > The config key matches the `:adapter`! Both ***must*** be the Gateway module
+  > name!
   """
   
   import GenServer, only: [call: 2]
 
   @doc """
-  This is the bare minimum API for a gateway to support, and consists of a single call:
-       
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
+  Performs a (pre) Authorize operation.
 
-      @options [currency: "usd"]
+  The authorization validates the `card` details with the banking network,
+  places a hold on the transaction `amount` in the customer’s issuing bank and
+  may also trigger risk management. Funds are not transferred, until the
+  authorization is `capture/3`d.
 
-      Gringotts.purchase(Gringotts.Gateways.Stripe, 5, @payment, @options)
+  > `capture/3` must also be implemented alongwith this.
 
-  This method is expected to authorize payment and transparently trigger eventual 
-  settlement. Preferably it is implemented as a single call to the gateway, 
-  but it can also be implemented as chained `authorize` and `capture` calls.
-  """
-  def purchase(gateway, amount, card, opts \\ []) do
-    validate_config(gateway)
-    call(:payment_worker, {:purchase, gateway, amount, card, opts})
-  end
+  ## Example
 
-  @doc """
-  Authorize should authorize funds on a payment instrument that will 
-  not be settled without a following call to `capture` within some finite 
-  period of time. When implementing this API, authorize and capture are 
-  both required.
+  To (pre) authorize a payment of $4.20 on a sample `card` with the `XYZ`
+  gateway,
 
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
-
-      @options [currency: "usd"]
-
-      Gringotts.authorize(Gringotts.Gateways.Stripe, 5, @payment, @options)
+      amount = Money.new(4.2, :USD)
+      # IF YOU DON'T USE ex_money OR monetized
+      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
+      {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.XYZ, amount, card, opts)
   """
   def authorize(gateway, amount, card, opts \\ []) do
     validate_config(gateway)
@@ -135,33 +152,22 @@ defmodule Gringotts do
   end
 
   @doc """
-  Captures deducts an amount from the card, this happens once the card is authorised.
+  Captures a pre-authorized `amount`.
 
-  Partial captures, if supported by the gateway, are achieved by passing an amount. 
-  Not passing an amount to capture should always cause the full amount of the initial 
-  authorization to be captured.
+  `amount` is transferred to the merchant account. The gateway might support,
+  * partial captures,
+  * multiple captures, per authorization
 
-  If the gateway does not support partial captures, calling `capture` with an amount 
-  other than nil should raise an error indicating partial capture is not supported.
+  ## Example
   
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
+  To capture $4.20 on a previously authorized payment worth $4.20 by referencing
+  the obtained authorization `id` with the `XYZ` gateway,
 
-      @options [currency: "usd"]
-
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
-
-      Gringotts.capture(Gringotts.Gateways.Stripe, id, 5)
+      amount = Money.new(4.2, :USD)
+      # IF YOU DON'T USE ex_money OR monetized
+      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
+      Gringotts.capture(Gringotts.Gateways.XYZ, amount, auth_result.id, opts)
   """
   def capture(gateway, id, amount, opts \\ []) do 
     validate_config(gateway)
@@ -169,55 +175,47 @@ defmodule Gringotts do
   end
 
   @doc """
-  Void is an optional (but highly recommended) supplement to `authorise` & `capture` 
-  API that should immediately cancel an authorized charge, clearing it off of the 
-  underlying payment instrument without waiting for expiration.
+  Transfers `amount` from the customer to the merchant.
 
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
+  Gateway attempts to process a purchase on behalf of the customer, by debiting
+  `amount` from the customer's account by charging the customer's `card`.
 
-      @options [currency: "usd"]
+  This method _can_ be implemented as a chained call to `authorize/3` and
+  `capture/3`. But it must be implemented as a single call to the Gateway if it
+  provides a specific endpoint or action for this.
+  
+  > ***Note!**
+  > All gateways must implement (atleast) this method.
 
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  ## Example
 
-      Gringotts.void(Gringotts.Gateways.Stripe, id)
-
+  To process a purchase worth $4.2, with the `XYZ` gateway,
+  
+      amount = Money.new(4.2, :USD)
+      # IF YOU DON'T USE ex_money OR monetized
+      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
+      Gringotts.purchase(Gringotts.Gateways.XYZ, amount, card, opts)
   """
-  def void(gateway, id, opts \\ []) do 
+  def purchase(gateway, amount, card, opts \\ []) do
     validate_config(gateway)
-    call(:payment_worker, {:void, gateway, id, opts})
+    call(:payment_worker, {:purchase, gateway, amount, card, opts})
   end
 
   @doc """
-  Cancels settlement or returns funds as appropriate for a referenced prior 
-  `purchase` or `capture`.
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
+  The end customer will usually see two bookings/records on his statement.
 
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  ## Example
 
-      Gringotts.refund(Gringotts.Gateways.Stripe, 5, id)
+  To refund a previous purchase worth $4.20 referenced by `id`, with the `XYZ`
+  gateway,
+
+      amount = Money.new(4.2, :USD)
+      # IF YOU DON'T USE ex_money OR monetized
+      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      Gringotts.purchase(Gringotts.Gateways.XYZ, amount, id, opts)
   """
   def refund(gateway, amount, id, opts \\ []) do 
     validate_config(gateway)
@@ -225,32 +223,20 @@ defmodule Gringotts do
   end
 
   @doc """
-  Tokenizes a supported payment method in the gateway's vault. If the gateway 
-  conflates tokenization with customer management, `Gringotts` should hide all 
-  customer management and any customer identifier(s) within the token returned. 
-  It's certainly legitimate to have a library that interacts with all the features 
-  in a gateway's vault, but `Gringotts` is not the right place for it.
+  Stores the payment-source data for later use, returns a `token`.
 
-  It's critical that `store` returns a token that can be used against `purchase` 
-  and `authorize`. Currently the standard is to return the token in the 
-  `%Response{...}` `authorization` field.
+  > The token must be returned in the `Response.authorization` field.
+  
+  ## Note
 
-      @payment %{
-        name: "John Doe",
-        number: "4242424242424242",
-        expiration: {2018, 12},
-        cvc:  "123",
-        street1: "123 Main",
-        street2: "Suite 100",
-        city: "New York",
-        region: "NY",
-        country: "US",
-        postal_code: "11111"
-      }
+  This usually enables _One-Click_ and _Recurring_ payments.
 
-      id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
+  ## Example
 
-      Gringotts.store(Gringotts.Gateways.Stripe, @payment)
+  To store a card (a payment-source) for future use, with the `XYZ` gateway,
+
+      card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      Gringotts.store(Gringotts.Gateways.XYZ, card, opts)
   """
   def store(gateway, card, opts \\ []) do 
     validate_config(gateway)
@@ -258,20 +244,44 @@ defmodule Gringotts do
   end
 
   @doc """
-  Removes the token from the payment gateway, once `unstore` request is fired the 
-  token which could enable `authorise` & `capture` would not work with this token.
+  Removes a previously `token` from the gateway
 
-  This should be done once the payment capture is done and you don't wish to make any
-  further deductions for the same card.
+  Once `unstore/3`d, the `token` must becom invalid, though some gateways might
+  not support this feature.
 
-      customer_id = "random_customer"
+  ## Example
 
-      Gringotts.unstore(Gringotts.Gateways.Stripe, customer_id)
+  To unstore with the `XYZ` gateway,
+  
+      token = "some_privileged_customer"
+      Gringotts.unstore(Gringotts.Gateways.XYZ, token)
   """
-  def unstore(gateway, customer_id, opts \\ []) do 
+  def unstore(gateway, token, opts \\ []) do 
     validate_config(gateway)
-    call(:payment_worker, {:unstore, gateway, customer_id, opts})
+    call(:payment_worker, {:unstore, gateway, token, opts})
   end
+
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal/immediate cancellation of the a previous
+  transaction referenced by `id`.
+
+  As a consequence, the customer usually **won't** see any booking on his
+  statement.
+
+  ## Example
+
+  To void a previous (pre) authorization with the `XYZ` gateway,
+
+      id = "some_previously_obtained_token"
+      Gringotts.void(Gringotts.Gateways.XYZ, id, opts)
+  """
+  def void(gateway, id, opts \\ []) do 
+    validate_config(gateway)
+    call(:payment_worker, {:void, gateway, id, opts})
+  end
+
 
   # TODO: This is runtime error reporting fix this so that it does compile
   # time error reporting.

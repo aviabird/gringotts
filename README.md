@@ -25,7 +25,10 @@ Add gringotts to the list of dependencies.
 ```elixir
 def deps do
   [
-    {:gringotts, "~> 1.0"}
+    {:gringotts, "~> 1.0"},
+    # ex_money provides an excellent Money library, and integrates
+    # out-of-the-box with Gringotts
+    {:ex_money, "~> 1.1.0"}
   ]
 end
 ```
@@ -46,59 +49,58 @@ This simple example demonstrates how a purchase can be made using a person's cre
 Add configs in `config/config.exs` file.
 
 ```elixir
-config :gringotts, Gringotts.Gateways.Stripe,
-  adapter: Gringotts.Gateways.Stripe,
-  secret_key: "YOUR_KEY",
-  default_currency: "USD"
-
+config :gringotts, Gringotts.Gateways.Monei,
+    adapter: Gringotts.Gateways.Monei,
+    userId: "your_secret_user_id",
+    password: "your_secret_password",
+    entityId: "your_secret_channel_id"
 ```
 
 Copy and paste this code in your module
 
 ```elixir
-alias Gringotts.Gateways.Stripe
-alias Gringotts.{CreditCard, Address}
+alias Gringotts.Gateways.Monei
+alias Gringotts.{CreditCard}
 
 card = %CreditCard{
-  first_name: "John",
-  last_name: "Smith",
-  number: "4242424242424242",
-  year: "2022",
-  month: "12",
-  verification_code: "123"
+  first_name: "Harry Potter",
+  last_name: "Doe",
+  number: "4200000000000000",
+  year: 2099, month: 12,
+  verification_code:  "123",
+  brand: "VISA"
 }
 
-address = %Address{
-  street1: "123 Main",
-  city: "New York",
-  region: "NY",
-  country: "US",
-  postal_code: "11111"
-}
+amount = Money.new(42, :USD)
 
-opts = [address: address, currency: "eur"]
+case Gringotts.purchase(Monei, amount, card, opts) do
+  {:ok,    %{id: id}} ->
+    IO.puts("Payment authorized, reference token: '#{id}'")
 
-case Gringotts.purchase(Stripe, 10, card, opts) do
-  {:ok,    %{authorization: authorization}} ->
-    IO.puts("Payment authorized #{authorization}")
-
-  {:error, %{code: :declined, reason: reason}} ->
-    IO.puts("Payment declined #{reason}")
-
-  {:error, %{code: error}} ->
-    IO.puts("Payment error #{error}")
+  {:error, %{status_code: error, raw: raw_response}} ->
+    IO.puts("Error: #{error}\nRaw:\n#{raw_response}")
 end
 ```
 
 ## Supported Gateways
 
-* [Authorize.Net](http://www.authorize.net/) - AD, AT, AU, BE, BG, CA, CH, CY, CZ, DE, DK, ES, FI, FR, GB, GB, GI, GR, HU, IE, IT, LI, LU, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, US, VA
-* [CAMS: Central Account Management System](https://www.centralams.com/) - AU, US
-* [MONEI](http://www.monei.net/) - AD, AT, BE, BG, CA, CH, CY, CZ, DE, DK, EE, ES, FI, FO, FR, GB, GI, GR, HU, IE, IL, IS, IT, LI, LT, LU, LV, MT, NL, NO, PL, PT, RO, SE, SI, SK, TR, US, VA
-* [PAYMILL](https://paymill.com) - AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FO, FR, GB, GI, GR, HU, IE, IL, IS, IT, LI, LT, LU, LV, MT, NL, NO, PL, PT, RO, SE, SI, SK, TR, VA
-* [Stripe](https://stripe.com/) - AT, AU, BE, CA, CH, DE, DK, ES, FI, FR, GB, IE, IN, IT, LU, NL, NO, SE, SG, US
-* [TREXLE](https://docs.trexle.com/) - AD, AE, AT, AU, BD, BE, BG, BN, CA, CH, CY, CZ, DE, DK, EE, EG, ES, FI, FR, GB, GI, GR, HK, HU, ID, IE, IL, IM, IN, IS, IT, JO, KW, LB, LI, LK, LT, LU, LV, MC, MT, MU, MV, MX, MY, NL, NO, NZ, OM, PH, PL, PT, QA, RO, SA, SE, SG, SI, SK, SM, TR, TT, UM, US, VA, VN, ZA
-* [Wirecard](http://www.wirecard.com) - AD, CY, GI, IM, MT, RO, CH, AT, DK, GR, IT, MC, SM, TR, BE, EE, HU, LV, NL, SK, GB, BG, FI, IS, LI, NO, SI, VA, FR, IL, LT, PL, ES, CZ, DE, IE, LU, PT, SE
+| Gateway               | Supported countries                                                                                                                                                                                                                                                        |
+| ------                | -----                                                                                                                                                                                                                                                                      |
+| [Authorize.Net][anet] | AD, AT, AU, BE, BG, CA, CH, CY, CZ, DE, DK, ES, FI, FR, GB, GB, GI, GR, HU, IE, IT, LI, LU, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, US, VA                                                                                                                         |
+| [CAMS][cams]          | AU, US                                                                                                                                                                                                                                                                     |
+| [MONEI][anet]         | DE, EE, ES, FR, IT, US                                                                                                                                                                                                                                                     |
+| [PAYMILL][paymill]    | AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FO, FR, GB, GI, GR, HU, IE, IL, IS, IT, LI, LT, LU, LV, MT, NL, NO, PL, PT, RO, SE, SI, SK, TR, VA                                                                                                                         |
+| [Stripe][stripe]      | AT, AU, BE, CA, CH, DE, DK, ES, FI, FR, GB, IE, IN, IT, LU, NL, NO, SE, SG, US                                                                                                                                                                                             |
+| [TREXLE][trexle]      | AD, AE, AT, AU, BD, BE, BG, BN, CA, CH, CY, CZ, DE, DK, EE, EG, ES, FI, FR, GB, GI, GR, HK, HU, ID, IE, IL, IM, IN, IS, IT, JO, KW, LB, LI, LK, LT, LU, LV, MC, MT, MU, MV, MX, MY, NL, NO, NZ, OM, PH, PL, PT, QA, RO, SA, SE, SG, SI, SK, SM, TR, TT, UM, US, VA, VN, ZA |
+| [Wirecard][wirecard]  | AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FR, GB, GI, GR, HU, IE, IL, IM, IS, IT, LI, LT, LU, LV, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, VA                                                                                                                 |
+
+[anet]: http://www.authorize.net/
+[cams]: https://www.centralams.com/
+[monei]: http://www.monei.net/
+[paymill]: https://www.paymill.com
+[stripe]: https://www.stripe.com/
+[trexle]: https://www.trexle.com/
+[wirecard]: http://www.wirecard.com
 
 ## Road Map
 
