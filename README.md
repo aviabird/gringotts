@@ -62,12 +62,13 @@ Copy and paste this code in your module
 alias Gringotts.Gateways.Monei
 alias Gringotts.{CreditCard}
 
-card = %CreditCard{first_name: "Jo",
-    last_name: "Doe",
-    number: "4200000000000000",
-    year: 2099, month: 12,
-    verification_code:  "123",
-    brand: "VISA"
+card = %CreditCard{
+  first_name: "Harry Potter",
+  last_name: "Doe",
+  number: "4200000000000000",
+  year: 2099, month: 12,
+  verification_code:  "123",
+  brand: "VISA"
 }
 
 amount = Money.new(42, :USD)
