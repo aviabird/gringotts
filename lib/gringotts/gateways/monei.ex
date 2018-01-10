@@ -107,8 +107,8 @@ defmodule Gringotts.Gateways.Monei do
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
   iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-  iex> card = %CreditCard{first_name: "Jo",
-                          last_name: "Doe",
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
                           number: "4200000000000000",
                           year: 2099, month: 12,
                           verification_code:  "123",
