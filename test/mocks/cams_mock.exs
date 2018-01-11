@@ -68,6 +68,7 @@ defmodule Gringotts.Gateways.CamsMock do
   end
   
   def successful_capture do
+    {:ok,
     %HTTPoison.Response{
       body: "response=1&responsetext=SUCCESS&authcode=123456&transactionid=3921111362&avsresponse=&cvvresponse=&orderid=&type=capture&response_code=100",
       headers: [
