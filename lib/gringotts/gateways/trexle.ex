@@ -39,7 +39,7 @@ defmodule Gringotts.Gateways.Trexle do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key, :default_currency]
   import Poison, only: [decode: 1]
-  alias Gringotts.{Response, CreditCard, Address}
+  alias Gringotts.{Response, CreditCard, Address, Money}
 
   @doc """
   Performs the authorization of the card to be used for payment.
@@ -76,7 +76,7 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-  @spec authorize(float, CreditCard.t, list) :: map
+  @spec authorize(Money.t, CreditCard.t, list) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -129,7 +129,7 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-  @spec purchase(float, CreditCard.t, list) :: map
+  @spec purchase(Money.t, CreditCard.t, list) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -152,9 +152,9 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-  @spec capture(String.t, float, list) :: map
+  @spec capture(String.t, Money.t, list) :: map
   def capture(charge_token, amount, opts \\ []) do
-    params = [amount: amount]
+    params = [amount: Money.value(amount)]
     commit(:put, "charges/#{charge_token}/capture", params, opts)
   end
 
@@ -179,9 +179,9 @@ defmodule Gringotts.Gateways.Trexle do
   ```
   """
 
-  @spec refund(float, String.t, list) :: map
+  @spec refund(Money.t, String.t, list) :: map
   def refund(amount, charge_token, opts \\ []) do
-    params = [amount: amount]
+    params = [amount: Money.value(amount)]
     commit(:post, "charges/#{charge_token}/refunds", params, opts)
   end
 
@@ -220,16 +220,16 @@ defmodule Gringotts.Gateways.Trexle do
   @spec store(CreditCard.t, list) :: map
   def store(payment, opts \\ []) do
     params = [email: opts[:email]]
-            ++ card_params(payment)
-            ++ address_params(opts[:billing_address])
+      ++ card_params(payment)
+      ++ address_params(opts[:billing_address])
     commit(:post, "customers", params, opts)
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     [
       capture: capture,
-      amount: amount,
-      currency: opts[:config][:default_currency],
+      amount: Money.value(amount),
+      currency: Money.currency(amount),
       email: opts[:email],
       ip_address: opts[:ip_address],
       description: opts[:description]

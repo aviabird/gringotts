@@ -41,8 +41,8 @@ defmodule Gringotts.Gateways.TrexleTest do
     phone: "(555)555-5555"
   }
 
-  @amount 100
-  @bad_amount 20
+  @amount %{amount: Decimal.new(50), currency: "USD"}
+  @bad_amount %{amount: Decimal.new(20), currency: "USD"}
 
   @valid_token "J5RGMpDlFlTfv9mEFvNWYoqHufyukPP4"
   @invalid_token "30"
