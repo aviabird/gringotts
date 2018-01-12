@@ -36,6 +36,7 @@ defmodule Gringotts.Gateways.Monei do
   | `transaction_id`    | Merchant provided token for a transaction, must be unique per transaction with Monei          | **Implemented** |
   | `category`          | The category of the transaction                                                               | **Implemented** |
   | `merchant`          | Information about the merchant, which overrides the cardholder's bank statement               | **Implemented** |
+  | `register`          | Also store payment data included in this request for future use.                              | **Implemented** |
   | `shipping`          | Location of recipient of goods, for logistics                                                 | **Implemented** |
   | `shipping_customer` | Recipient details, could be different from `customer`                                         | **Implemented** |
 
@@ -149,7 +150,8 @@ defmodule Gringotts.Gateways.Monei do
                billing: billing,
                shipping: shipping,
                category: "EC",
-               custom: %{"voldemort": "he who must not be named"}]
+               custom: %{"voldemort": "he who must not be named"},
+               register: true]
   ```
 
   We'll be using these in the examples below.
@@ -216,9 +218,11 @@ defmodule Gringotts.Gateways.Monei do
   * `capture/3` _an_ amount.
   * `void/2` a pre-authorization.
 
-  ## Note  
+  ## Note
 
-  A stand-alone pre-authorization [expires in
+  * The `:register` option when set to `true` will store this card for future
+  use, and you will recieve a registration `token` in the `Response` struct.
+  * A stand-alone pre-authorization [expires in
   72hrs](https://docs.monei.net/tutorials/manage-payments/backoffice).
 
   ## Example
@@ -285,6 +289,11 @@ defmodule Gringotts.Gateways.Monei do
   MONEI attempts to process a purchase on behalf of the customer, by debiting
   `amount` from the customer's account by charging the customer's `card`.
 
+  ## Note
+
+  * The `:register` option when set to `true` will store this card for future
+  use, and you will recieve a registration `token` in the `Response` struct.
+  
   ## Example
 
   The following session shows how one would process a payment in one-shot,
@@ -440,7 +449,7 @@ defmodule Gringotts.Gateways.Monei do
 
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
 
-    case expand_params(opts) do
+    case expand_params(opts, params[:paymentType]) do
       {:error, reason} ->
         {:error, Response.error(description: reason)}
 
@@ -495,7 +504,7 @@ defmodule Gringotts.Gateways.Monei do
     }
   end
 
-  defp expand_params(params) do
+  defp expand_params(params, action_type) do
     Enum.reduce_while(params, [], fn {k, v}, acc ->
       case k do
         :currency ->
@@ -530,6 +539,16 @@ defmodule Gringotts.Gateways.Monei do
         :custom ->
           {:cont, acc ++ make_custom(v)}
 
+        :register ->
+          {
+            :cont,
+            if action_type in ["PA", "DB"] do
+              [{"createRegistration", true} | acc]
+            else
+              acc
+            end
+          }
+          
         _ ->
           {:cont, acc}
       end
@@ -543,8 +562,8 @@ defmodule Gringotts.Gateways.Monei do
   defp verification_result(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
     code = result["code"]
-
-    results = [
+    token = data["registrationId"]
+    common = [
       code: code,
       description: result["description"],
       risk: data["risk"]["score"],
@@ -553,6 +572,7 @@ defmodule Gringotts.Gateways.Monei do
       raw: data
     ]
 
+    results = if token != nil, do: common ++ [token: token], else: common
     if String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
       {:ok, results}
     else

@@ -35,6 +35,14 @@ defmodule Gringotts.Gateways.MoneiTest do
        "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
     }]
 
+  @register_success ~s[
+    {"id": "8a82944960e073640160e92da2204743",
+     "registrationId": "8a82944a60e09c550160e92da144491e",
+     "result": {
+       "code": "000.100.110",
+       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
+    }]
+  
   @store_success ~s[
     {"result":{
         "code":"000.100.110",
@@ -114,6 +122,17 @@ defmodule Gringotts.Gateways.MoneiTest do
       {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, [config: auth])
       assert response.code == "000.100.110"
     end
+
+    test "with createRegistration.", %{bypass: bypass, auth: auth} do
+      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
+        conn_ = parse(conn)
+        assert conn_.body_params["createRegistration"] == "true"
+        Plug.Conn.resp(conn, 200, @register_success)
+      end
+      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, [config: auth, register: true])
+      assert response.code == "000.100.110"
+      assert response.token == "8a82944a60e09c550160e92da144491e"
+    end
   end
 
   describe "store" do
@@ -137,6 +156,20 @@ defmodule Gringotts.Gateways.MoneiTest do
           Plug.Conn.resp(conn, 200, @auth_success)
         end)
       {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth])
+      assert response.code == "000.100.110"
+    end
+
+    test "with createRegistration that is ignored", %{bypass: bypass, auth: auth} do
+      Bypass.expect_once(
+        bypass,
+        "POST",
+        "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
+        fn conn ->
+          conn_ = parse(conn)
+          assert :error == Map.fetch conn_.body_params, "createRegistration"
+          Plug.Conn.resp(conn, 200, @auth_success)
+        end)
+      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth, register: true])
       assert response.code == "000.100.110"
     end
   end
@@ -192,6 +225,11 @@ defmodule Gringotts.Gateways.MoneiTest do
     all = [json_200, json_not_200, html_200, html_not_200]
     then = Enum.map(all, &Gateway.respond({:ok, &1}))
     assert Keyword.keys(then) == [:ok, :error, :error, :error]
+  end
+
+  def parse(conn, opts \\ []) do
+    opts = Keyword.put_new(opts, :parsers, [Plug.Parsers.URLENCODED])
+    Plug.Parsers.call(conn, Plug.Parsers.init(opts))
   end
 end
 
