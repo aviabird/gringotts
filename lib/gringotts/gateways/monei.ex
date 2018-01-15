@@ -22,7 +22,7 @@ defmodule Gringotts.Gateways.Monei do
 
   [home]: https://monei.net
   [docs]: https://docs.monei.net
-  
+
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
@@ -32,7 +32,7 @@ defmodule Gringotts.Gateways.Monei do
   | Key                      | Remark                                                                                        |
   | ----                     | ---                                                                                           |
   | [`billing`][ba]          | Address of the customer, which can be used for AVS risk check.                                |
-  | [`cart`][cart]           | **Not Implemented**                                                                                              |
+  | [`cart`][cart]           | **Not Implemented**                                                                           |
   | [`custom`][custom]       | It's a map of "name"-"value" pairs, and all of it is echoed back in the response.             |
   | [`customer`][c]          | Annotate transactions with customer info on your Monei account, and helps in risk management. |
   | [`invoice_id`][b]        | Merchant provided invoice identifier, must be unique per transaction with Monei.              |
@@ -55,7 +55,7 @@ defmodule Gringotts.Gateways.Monei do
   [t]: https://docs.monei.net/reference/parameters#tokenization
   [sa]: https://docs.monei.net/reference/parameters#shipping-address
   [iss36]: https://github.com/aviabird/gringotts/issues/36
-  
+
   ## Registering your MONEI account at `Gringotts`
 
   After [making an account on MONEI][dashboard], head to the dashboard and find
@@ -79,7 +79,7 @@ defmodule Gringotts.Gateways.Monei do
         entityId: "your_secret_channel_id"
 
   [dashboard]: https://dashboard.monei.net/signin
-  
+
   ## Scope of this module
 
   * MONEI does not process money in cents, and the `amount` is rounded to 2
@@ -108,13 +108,13 @@ defmodule Gringotts.Gateways.Monei do
 
   > [Here][all-currency-list] is the up-to-date currency list. _Please [raise an
     issue][new-issue] if the list above has become out-of-date!_
-  
+
   MONEI supports the countries listed [here][all-country-list].
 
   [all-currency-list]: https://support.monei.net/international/currencies-supported-by-monei
   [new-issue]: https://github.com/aviabird/gringotts/issues
   [all-country-list]: https://support.monei.net/international/what-countries-does-monei-support
-  
+
   ## Following the examples
 
   1. First, set up a sample application and configure it to work with MONEI.
@@ -139,12 +139,12 @@ defmodule Gringotts.Gateways.Monei do
   iex> customer = %{"givenName": "Harry",
                     "surname": "Potter",
                     "merchantCustomerId": "the_boy_who_lived",
-                    "sex": "M", 
-                    "birthDate": "1980-07-31", 
-                    "mobile": "+15252525252", 
+                    "sex": "M",
+                    "birthDate": "1980-07-31",
+                    "mobile": "+15252525252",
                     "email": "masterofdeath@ministryofmagic.go v",
-                    "ip": "1.1.1", 
-                    "status": "NEW"} 
+                    "ip": "1.1.1",
+                    "status": "NEW"}
   iex> merchant = %{"name": "Ollivanders",
                     "city": "South Side",
                     "street": "Diagon Alley",
@@ -315,7 +315,7 @@ defmodule Gringotts.Gateways.Monei do
   * The `:register` option when set to `true` will store this card for future
     use, and you will recieve a registration `token` in the `:token` field of
     the `Response` struct.
-  
+
   ## Example
 
   The following session shows how one would process a payment in one-shot,
@@ -503,7 +503,7 @@ defmodule Gringotts.Gateways.Monei do
   defp respond({:ok, %{status_code: 200, body: body}}) do
     case decode(body) do
       {:ok, decoded_json} ->
-        case verification_result(decoded_json) do
+        case parse_response(decoded_json) do
           {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
           {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
         end
@@ -572,7 +572,7 @@ defmodule Gringotts.Gateways.Monei do
               acc
             end
           }
-          
+
         _ ->
           {:cont, acc}
       end
@@ -583,24 +583,27 @@ defmodule Gringotts.Gateways.Monei do
     currency in @supported_currencies
   end
 
-  defp verification_result(%{"result" => result} = data) do
+  defp parse_response(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
-    code = result["code"]
-    token = data["registrationId"]
-    common = [
-      code: code,
-      description: result["description"],
-      risk: data["risk"]["score"],
-      cvc_result: @cvc_code_translator[result["cvvResponse"]],
-      avs_result: [address: address, zip_code: zip_code],
-      raw: data
-    ]
+    results =
+      [
+        code: result["code"],
+        description: result["description"],
+        risk: data["risk"]["score"],
+        cvc_result: @cvc_code_translator[result["cvvResponse"]],
+        avs_result: [address: address, zip_code: zip_code],
+        raw: data,
+        token: data["registrationId"]
+      ]
+    filtered = Enum.filter(results, fn {_, v} -> v != nil end)
+    verify(filtered)
+  end
 
-    results = if token != nil, do: common ++ [token: token], else: common
-    if String.match?(code, ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
+  defp verify(results) do
+    if String.match?(results[:code], ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
       {:ok, results}
     else
-      {:error, [{:reason, result["description"]} | results]}
+      {:error, [{:reason, results[:description]} | results]}
     end
   end
 
