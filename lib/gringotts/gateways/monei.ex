@@ -1,8 +1,8 @@
 defmodule Gringotts.Gateways.Monei do
   @moduledoc """
-  [MONEI](https://www.monei.net) gateway implementation.
+  [MONEI][home] gateway implementation.
 
-  For reference see [MONEI's API (v1) documentation](https://docs.monei.net).
+  For reference see [MONEI's API (v1) documentation][docs].
 
   The following features of MONEI are implemented:
 
@@ -15,39 +15,51 @@ defmodule Gringotts.Gateways.Monei do
   | Debit                        | `purchase/3`  | `DB`   |
   | Tokenization / Registrations | `store/2`     |        |
 
-  > **What's this last column `type`?**\
+  > **What's this last column `type`?**
+  >
   > That's the `paymentType` of the request, which you can ignore unless you'd
-  > like to contribute to this module. Please read the [MONEI
-  > Guides](https://docs.monei.net).
+  > like to contribute to this module. Please read the [MONEI Guides][docs].
 
+  [home]: https://monei.net
+  [docs]: https://docs.monei.net
+  
   ## The `opts` argument
 
-  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
-  [optional arguments](https://docs.monei.net/reference/parameters) for
-  transactions with the MONEI gateway. The following keys are supported:
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  [optional arguments][extra-arg-docs] for transactions with the MONEI
+  gateway. The following keys are supported:
 
-  | Key                 | Remark                                                                                        | Status          |
-  | ----                | ---                                                                                           | ----            |
-  | `billing`           | Address of the customer, which can be used for AVS risk check                                 | **Implemented** |
-  | `cart`              |                                                                                               | Not implemented |
-  | `custom`            | It's a map of "name"-"value" pairs, and all of it is echoed back in the response              | **Implemented** |
-  | `customer`          | Annotate transactions with customer info on your Monei account, and helps in risk management. | **Implemented** |
-  | `invoice_id`        | Merchant provided invoice identifier, must be unique per transaction with Monei               | **Implemented** |
-  | `transaction_id`    | Merchant provided token for a transaction, must be unique per transaction with Monei          | **Implemented** |
-  | `category`          | The category of the transaction                                                               | **Implemented** |
-  | `merchant`          | Information about the merchant, which overrides the cardholder's bank statement               | **Implemented** |
-  | `register`          | Also store payment data included in this request for future use.                              | **Implemented** |
-  | `shipping`          | Location of recipient of goods, for logistics                                                 | **Implemented** |
-  | `shipping_customer` | Recipient details, could be different from `customer`                                         | **Implemented** |
+  | Key                      | Remark                                                                                        |
+  | ----                     | ---                                                                                           |
+  | [`billing`][ba]          | Address of the customer, which can be used for AVS risk check.                                |
+  | [`cart`][cart]           | **Not Implemented**                                                                                              |
+  | [`custom`][custom]       | It's a map of "name"-"value" pairs, and all of it is echoed back in the response.             |
+  | [`customer`][c]          | Annotate transactions with customer info on your Monei account, and helps in risk management. |
+  | [`invoice_id`][b]        | Merchant provided invoice identifier, must be unique per transaction with Monei.              |
+  | [`transaction_id`][b]    | Merchant provided token for a transaction, must be unique per transaction with Monei.         |
+  | [`category`][b]          | The category of the transaction.                                                              |
+  | [`merchant`][m]          | Information about the merchant, which overrides the cardholder's bank statement.              |
+  | [`register`][t]          | Also store payment data included in this request for future use.                              |
+  | [`shipping`][sa]         | Location of recipient of goods, for logistics.                                                |
+  | [`shipping_customer`][c] | Recipient details, could be different from `customer`.                                        |
 
-  > All these keys are being implemented, track progress in
-  > [issue #36](https://github.com/aviabird/gringotts/issues/36)!
+  > These keys are being implemented, track progress in [issue #36][iss36]!
 
+  [extra-arg-docs]: https://docs.monei.net/reference/parameters
+  [ba]: https://docs.monei.net/reference/parameters#billing-address
+  [cart]: https://docs.monei.net/reference/parameters#cart
+  [custom]: https://docs.monei.net/reference/parameters#custom-parameters
+  [c]: https://docs.monei.net/reference/parameters#customer
+  [b]: https://docs.monei.net/reference/parameters#basic
+  [m]: https://docs.monei.net/reference/parameters#merchant
+  [t]: https://docs.monei.net/reference/parameters#tokenization
+  [sa]: https://docs.monei.net/reference/parameters#shipping-address
+  [iss36]: https://github.com/aviabird/gringotts/issues/36
+  
   ## Registering your MONEI account at `Gringotts`
 
-  After [making an account on MONEI](https://dashboard.monei.net/signin), head
-  to the dashboard and find your account "secrets" in the `Sub-Accounts >
-  Overview` section.
+  After [making an account on MONEI][dashboard], head to the dashboard and find
+  your account "secrets" in the `Sub-Accounts > Overview` section.
 
   Here's how the secrets map to the required configuration parameters for MONEI:
 
@@ -66,15 +78,21 @@ defmodule Gringotts.Gateways.Monei do
         password: "your_secret_password",
         entityId: "your_secret_channel_id"
 
-
-  ## Scope of this module, and _quirks_
+  [dashboard]: https://dashboard.monei.net/signin
+  
+  ## Scope of this module
 
   * MONEI does not process money in cents, and the `amount` is rounded to 2
     decimal places.
-  * Although MONEI supports payments from [various
-  cards](https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods),
-  banks and virtual accounts (like some wallets), this library only accepts
-  payments by (supported) cards.
+  * Although MONEI supports payments from [various][all-card-list]
+    [cards][card-acc], [banks][bank-acc] and [virtual accounts][virtual-acc]
+    (like some wallets), this library only accepts payments by [(supported)
+    cards][all-card-list].
+
+  [all-card-list]: https://support.monei.net/charges-and-refunds/accepted-credit-cards-payment-methods
+  [card-acc]: https://docs.monei.net/reference/parameters#card
+  [bank-acc]: https://docs.monei.net/reference/parameters#bank-account
+  [virtual-acc]: https://docs.monei.net/reference/parameters#virtual-account
 
   ## Supported currencies and countries
 
@@ -88,22 +106,22 @@ defmodule Gringotts.Gateways.Monei do
   `SRD`, `MGA`, `AFN`, `TJS`, `AOA`, `BYN`, `BGN`, `CDF`, `BAM`, `UAH`, `GEL`,
   `PLN`, `BRL` and `CUC`.
 
-  > [Here](https://support.monei.net/international/currencies-supported-by-monei)
-  > is the up-to-date currency list. _Please [raise an
-  > issue](https://github.com/aviabird/gringotts/issues) if the list above has
-  > become out-of-date!_
+  > [Here][all-currency-list] is the up-to-date currency list. _Please [raise an
+    issue][new-issue] if the list above has become out-of-date!_
+  
+  MONEI supports the countries listed [here][all-country-list].
 
-  MONEI supports the countries listed
-  [here](https://support.monei.net/international/what-countries-does-monei-support).
-
+  [all-currency-list]: https://support.monei.net/international/currencies-supported-by-monei
+  [new-issue]: https://github.com/aviabird/gringotts/issues
+  [all-country-list]: https://support.monei.net/international/what-countries-does-monei-support
+  
   ## Following the examples
 
   1. First, set up a sample application and configure it to work with MONEI.
       - You could do that from scratch by following our [Getting Started](#) guide.
-      - To save you time, we recommend [cloning our example
-  repo](https://github.com/aviabird/gringotts_example) that gives you a
-  pre-configured sample app ready-to-go.
-          + You could use the same config or update it the with your "secrets"
+      - To save you time, we recommend [cloning our example repo][example-repo]
+        that gives you a pre-configured sample app ready-to-go.
+        + You could use the same config or update it the with your "secrets"
           that you see in `Dashboard > Sub-accounts` as described
           [above](#module-registering-your-monei-account-at-gringotts).
 
@@ -155,6 +173,8 @@ defmodule Gringotts.Gateways.Monei do
   ```
 
   We'll be using these in the examples below.
+
+  [example-repo]: https://github.com/aviabird/gringotts_example
 
   ## TODO
 
@@ -221,9 +241,10 @@ defmodule Gringotts.Gateways.Monei do
   ## Note
 
   * The `:register` option when set to `true` will store this card for future
-  use, and you will recieve a registration `token` in the `Response` struct.
+    use, and you will recieve a registration `token` in the `:token` field of
+    the `Response` struct.
   * A stand-alone pre-authorization [expires in
-  72hrs](https://docs.monei.net/tutorials/manage-payments/backoffice).
+    72hrs](https://docs.monei.net/tutorials/manage-payments/backoffice).
 
   ## Example
 
@@ -232,8 +253,9 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
+      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
+      iex> auth_result.token # This is the registration ID/token
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
@@ -267,8 +289,7 @@ defmodule Gringotts.Gateways.Monei do
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VIS      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
   @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
@@ -292,7 +313,8 @@ defmodule Gringotts.Gateways.Monei do
   ## Note
 
   * The `:register` option when set to `true` will store this card for future
-  use, and you will recieve a registration `token` in the `Response` struct.
+    use, and you will recieve a registration `token` in the `:token` field of
+    the `Response` struct.
   
   ## Example
 
@@ -301,7 +323,8 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
+      iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
+      iex> purchase_result.token # This is the registration ID/token
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
@@ -345,7 +368,7 @@ defmodule Gringotts.Gateways.Monei do
   capture.
 
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
+      iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(payment_id, opts)
@@ -373,7 +396,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
+      iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
@@ -407,7 +430,7 @@ defmodule Gringotts.Gateways.Monei do
   future use.
 
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> store_result = Gringotts.store(Gringotts.Gateways.Monei, card, [])
+      iex> {:ok, store_result} = Gringotts.store(Gringotts.Gateways.Monei, card, [])
   """
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do
@@ -423,8 +446,9 @@ defmodule Gringotts.Gateways.Monei do
   Deletes previously stored payment-source data.
   """
   @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
-  def unstore(<<registrationId::bytes-size(32)>>, opts) do
-    commit(:delete, "registrations/#{registrationId}", [], opts)
+  def unstore(registration_id, opts)
+  def unstore(<<registration_id::bytes-size(32)>>, opts) do
+    commit(:delete, "registrations/#{registration_id}", [], opts)
   end
 
   defp card_params(card) do

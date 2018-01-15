@@ -1,5 +1,5 @@
 defmodule Gringotts.Integration.Gateways.MoneiTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Gringotts.{
     CreditCard
@@ -7,6 +7,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   alias Gringotts.Gateways.Monei, as: Gateway
 
   @moduletag :integration
+
+  @amount Money.new(42, :EUR)
   
   @card %CreditCard{
     first_name: "Jo",
@@ -64,7 +66,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   end
 
   test "authorize", %{opts: opts} do
-    case Gringotts.authorize(Gateway, Money.new(42, :EUR), @card, opts) do
+    case Gringotts.authorize(Gateway, @amount, @card, opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
@@ -75,7 +77,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @tag :skip
   test "capture", %{opts: _opts} do
-    case Gringotts.capture(Gateway, Money.new(42, :EUR), "s") do
+    case Gringotts.capture(Gateway, @amount, "s") do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
@@ -86,7 +88,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   end
 
   test "purchase", %{opts: opts} do
-    case Gringotts.purchase(Gateway, Money.new(42, :EUR), @card, opts) do
+    case Gringotts.purchase(Gateway, @amount, @card, opts) do
       {:ok, response} ->
         assert response.code == "000.100.110"
         assert response.description == "Request successfully processed in 'Merchant in Integrator Test Mode'"
