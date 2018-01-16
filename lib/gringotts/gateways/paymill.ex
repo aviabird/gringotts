@@ -27,7 +27,7 @@ defmodule Gringotts.Gateways.Paymill do
         public_key: "your_public_key"
   """
   use Gringotts.Gateways.Base
-  alias Gringotts.{ CreditCard, Address, Response}
+  alias Gringotts.{CreditCard, Address, Response}
   alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
 
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
@@ -165,7 +165,8 @@ defmodule Gringotts.Gateways.Paymill do
   end
 
   defp get_save_card_params(card, options) do
-    [ {"transaction.mode" , "CONNECTOR_TEST"},
+    [
+      {"transaction.mode" , "CONNECTOR_TEST"},
       {"channel.id" , get_config(:public_key, options)},
       {"jsonPFunction" , "jsonPFunction"},
       {"account.number" , card.number},
@@ -208,7 +209,7 @@ defmodule Gringotts.Gateways.Paymill do
   end
 
   defp commit(method, action, parameters \\ nil, options) do
-    HTTPoison.request(method, @live_url <> action, {:form, parameters }, get_headers(options), [])
+    HTTPoison.request(method, @live_url <> action, {:form, parameters}, get_headers(options), [])
     |> ResponseParser.parse
   end
 
@@ -341,7 +342,7 @@ defmodule Gringotts.Gateways.Paymill do
     defp set_success(opts, %{"error" => error}) do
       opts ++ [message: error, success: false]
     end
-    defp set_success(opts, %{"transaction" => %{ "response_code" => 20000}}) do
+    defp set_success(opts, %{"transaction" => %{"response_code" => 20000}}) do
       opts ++ [success: true]
     end
 
@@ -367,7 +368,7 @@ defmodule Gringotts.Gateways.Paymill do
       response_msg = Map.get(@response_code, response_code, -1)
       opts ++ [message: response_msg]
     end
-    defp parse_status_code(opts, %{ "transaction" => transaction}) do
+    defp parse_status_code(opts, %{"transaction" => transaction}) do
       response_code = Map.get(transaction, "response_code", -1)
       response_msg = Map.get(@response_code, response_code, -1)
       opts ++ [status_code: response_code, message: response_msg]
@@ -381,7 +382,7 @@ defmodule Gringotts.Gateways.Paymill do
     defp parse_authorization(opts, %{"status" => "failed"}) do
       opts ++ [success: false]
     end
-    defp parse_authorization(opts, %{ "id" => id} = auth) do
+    defp parse_authorization(opts, %{"id" => id} = auth) do
       opts ++ [authorization: id]
     end
 
