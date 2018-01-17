@@ -1,0 +1,36 @@
+defmodule Gringotts.Integration.Gateways.<%= gateway_module <> "Test"%> do
+  # Integration tests for the <%= gateway_module%> 
+
+  use ExUnit.Case, async: false
+  alias Gringotts.Gateways.<%= gateway_module%>
+
+  @moduletag :integration
+
+  setup_all do
+    Application.put_env(:gringotts, Gringotts.Gateways.<%= gateway_module%>,
+      [
+        adapter: Gringotts.Gateways.<%= gateway_module%><%= if required_config_keys != [] do %><%= for key <- Enum.intersperse(required_config_keys, ",") do %><%= if key === "," do %><%= "#{key}" %><%= else %>
+        <%= "#{key}" %>: "your_secret_<%= "#{key}" %>"<% end %><% end %><% end %>
+      ]
+    )
+  end
+  
+  # Group the test cases by public api
+  describe "purchase" do
+  end
+
+  describe "authorize" do
+  end
+
+  describe "capture" do 
+  end
+
+  describe "void" do
+  end
+
+  describe "refund" do
+  end
+
+  describe "environment setup" do
+  end
+end
