@@ -76,14 +76,21 @@ Comma separated list of required configuration keys:
       gateway_module: module_name,
       gateway_underscore: Macro.underscore(name),
       required_config_keys: required_keys,
-      gateway_url: url
+      gateway_url: url,
+      gateway_mock_test: Macro.underscore(name) <> "_test",
+      gateway_mock_response: Macro.underscore(name) <> "_mock",
     ]
 
     if (Mix.Shell.IO.yes? "\nDoes this look good?\n#{inspect(bindings, pretty: true)}\n>") do
       gateway = EEx.eval_file("templates/gateway.eex", bindings)
-      # mock = ""
-      # integration = ""
+      mock = EEx.eval_file("templates/test.eex", bindings)
+      mock_response = EEx.eval_file("templates/mock_response.eex", bindings)
+      integration = EEx.eval_file("templates/integration.eex", bindings)
+
       create_file("lib/gringotts/gateways/#{bindings[:gateway_underscore]}.ex", gateway)
+      create_file("test/gateways/#{bindings[:gateway_mock_test]}.exs", mock)
+      create_file("test/mocks/#{bindings[:gateway_mock_response]}.exs", mock_response)
+      create_file("test/integration/gateways/#{bindings[:gateway_mock_test]}.exs", integration)      
     else
       Mix.Shell.IO.info("Doing nothing, bye!")
     end
