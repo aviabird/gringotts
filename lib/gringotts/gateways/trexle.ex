@@ -37,7 +37,7 @@ defmodule Gringotts.Gateways.Trexle do
   @base_url "https://core.trexle.com/api/v1/"
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:api_key, :default_currency]
+  use Gringotts.Adapter, required_config: [:api_key]
   import Poison, only: [decode: 1]
   alias Gringotts.{Response, CreditCard, Address, Money}
 
