@@ -94,22 +94,24 @@ defmodule Gringotts.Gateways.Monei do
   [bank-acc]: https://docs.monei.net/reference/parameters#bank-account
   [virtual-acc]: https://docs.monei.net/reference/parameters#virtual-account
 
-  ## Supported currencies and countries
+  ## Supported countries
 
-  The following currencies are supported: `EUR`, `USD`, `GBP`, `NAD`, `TWD`,
-  `VUV`, `NZD`, `NGN`, `NIO`, `NGN`, `NOK`, `PKR`, `PAB`, `PGK`, `PYG`, `PEN`,
-  `NPR`, `ANG`, `AWG`, `PHP`, `QAR`, `RUB`, `RWF`, `SHP`, `STD`, `SAR`, `SCR`,
-  `SLL`, `SGD`, `VND`, `SOS`, `ZAR`, `ZWL`, `YER`, `SDG`, `SZL`, `SEK`, `CHF`,
-  `SYP`, `TJS`, `THB`, `TOP`, `TTD`, `AED`, `TND`, `TRY`, `AZN`, `UGX`, `MKD`,
-  `EGP`, `GBP`, `TZS`, `UYU`, `UZS`, `WST`, `YER`, `RSD`, `ZMW`, `TWD`, `AZN`,
-  `GHS`, `RSD`, `MZN`, `AZN`, `MDL`, `TRY`, `XAF`, `XCD`, `XOF`, `XPF`, `MWK`,
-  `SRD`, `MGA`, `AFN`, `TJS`, `AOA`, `BYN`, `BGN`, `CDF`, `BAM`, `UAH`, `GEL`,
-  `PLN`, `BRL` and `CUC`.
+  MONEI supports the countries listed [here][all-country-list]
 
-  > [Here][all-currency-list] is the up-to-date currency list. _Please [raise an
-    issue][new-issue] if the list above has become out-of-date!_
+  ## Supported currencies
+  
+  MONEI supports the currecncies [listed here][all-currency-list], and ***this
+  module*** supports a subset of those:
 
-  MONEI supports the countries listed [here][all-country-list].
+      :AED, :AFN, :ANG, :AOA, :AWG, :AZN, :BAM, :BGN, :BRL, :BYN, :CDF, :CHF, :CUC,
+      :EGP, :EUR, :GBP, :GEL, :GHS, :MDL, :MGA, :MKD, :MWK, :MZN, :NAD, :NGN, :NIO,
+      :NOK, :NPR, :NZD, :PAB, :PEN, :PGK, :PHP, :PKR, :PLN, :PYG, :QAR, :RSD, :RUB,
+      :RWF, :SAR, :SCR, :SDG, :SEK, :SGD, :SHP, :SLL, :SOS, :SRD, :STD, :SYP, :SZL,
+      :THB, :TJS, :TOP, :TRY, :TTD, :TWD, :TZS, :UAH, :UGX, :USD, :UYU, :UZS, :VND,
+      :VUV, :WST, :XAF, :XCD, :XOF, :XPF, :YER, :ZAR, :ZMW, :ZWL
+
+  > Please [raise an issue][new-issue] if you'd like us to add support for more
+  > currencies
 
   [all-currency-list]: https://support.monei.net/international/currencies-supported-by-monei
   [new-issue]: https://github.com/aviabird/gringotts/issues
@@ -194,14 +196,13 @@ defmodule Gringotts.Gateways.Monei do
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
 
   @supported_currencies [
-    "EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN", "NIO", "NGN", "NOK",
-    "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG", "PHP", "QAR", "RUB",
-    "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND", "SOS", "ZAR", "ZWL",
-    "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB", "TOP", "TTD", "AED",
-    "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS", "UYU", "UZS", "WST",
-    "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN", "AZN", "MDL", "TRY",
-    "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN", "TJS", "AOA", "BYN",
-    "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"
+    "AED", "AFN", "ANG", "AOA", "AWG", "AZN", "BAM", "BGN", "BRL", "BYN", "CDF",
+    "CHF", "CUC", "EGP", "EUR", "GBP", "GEL", "GHS", "MDL", "MGA", "MKD", "MWK",
+    "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "PAB", "PEN", "PGK", "PHP",
+    "PKR", "PLN", "PYG", "QAR", "RSD", "RUB", "RWF", "SAR", "SCR", "SDG", "SEK",
+    "SGD", "SHP", "SLL", "SOS", "SRD", "STD", "SYP", "SZL", "THB", "TJS", "TOP",
+    "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "UYU", "UZS", "VND", "VUV",
+    "WST", "XAF", "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL"
   ]
 
   @version "v1"
