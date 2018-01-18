@@ -11,7 +11,7 @@ defprotocol Gringotts.Money do
   Otherwise, just wrap your `amount` with the `currency` together in a `Map`
   like so,
 
-      price = %{amount: Decimal.new(20.18), currency: "USD"}
+      price = %{value: Decimal.new(20.18), currency: "USD"}
 
   and the API will accept it (as long as the currency is valid [ISO 4217
   currency code](https://www.iso.org/iso-4217-currency-codes.html)).
@@ -48,13 +48,13 @@ defprotocol Gringotts.Money do
 
       # the money lib is aliased as "MoneyLib"
 
-      iex> usd_price = MoneyLib.new(4.1234, :USD)
+      iex> usd_price = MoneyLib.new("4.1234", :USD)
       #MoneyLib<4.1234, "USD">
       iex> Gringotts.Money.to_integer(usd_price)
       {"USD", 412, -2}
       
-      iex> bhd_price = MoneyLib.new(4.1234, :BHD)
-      #MoneyLib<4.1234, "USD">
+      iex> bhd_price = MoneyLib.new("4.1234", :BHD)
+      #MoneyLib<4.1234, "BHD">
       iex> Gringotts.Money.to_integer(bhd_price)
       {"BHD", 4123, -3}
       # the Bahraini dinar is divided into 1000 fils unlike the dollar which is
@@ -76,12 +76,12 @@ defprotocol Gringotts.Money do
 
       # the money lib is aliased as "MoneyLib"
       
-      iex> usd_price = MoneyLib.new(4.1234, :USD)
+      iex> usd_price = MoneyLib.new("4.1234", :USD)
       #MoneyLib<4.1234, "USD">
       iex> Gringotts.Money.to_string(usd_price)
       {"USD", "4.12"}
       
-      iex> bhd_price = MoneyLib.new(4.1234, :BHD)
+      iex> bhd_price = MoneyLib.new("4.1234", :BHD)
       #MoneyLib<4.1234, "BHD">
       iex> Gringotts.Money.to_string(bhd_price)
       {"BHD", "4.123"} 

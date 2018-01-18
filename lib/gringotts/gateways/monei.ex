@@ -182,14 +182,15 @@ defmodule Gringotts.Gateways.Monei do
       iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
-  @spec authorize(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
-    {currency, value} = Money.to_string amount
+    {currency, value} = Money.to_string(amount)
+
     params =
       [
         paymentType: "PA",
         amount: value,
-        currency: currency,
+        currency: currency
       ] ++ card_params(card)
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -219,11 +220,12 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
-  @spec capture(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
 
   def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
-    {currency, value} = Money.to_string amount
+    {currency, value} = Money.to_string(amount)
+
     params = [
       paymentType: "CP",
       amount: value,
@@ -245,13 +247,14 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
-  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
-    {currency, value} = Money.to_string amount
+    {currency, value} = Money.to_string(amount)
+
     params =
       card_params(card) ++
         [
@@ -325,9 +328,10 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
-    {currency, value} = Money.to_string amount
+    {currency, value} = Money.to_string(amount)
+
     params = [
       paymentType: "RF",
       amount: value,
