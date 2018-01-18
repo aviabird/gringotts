@@ -184,11 +184,12 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec authorize(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
+    {currency, value} = Money.to_string amount
     params =
       [
         paymentType: "PA",
-        amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-        currency: Money.currency(amount)
+        amount: value,
+        currency: currency,
       ] ++ card_params(card)
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -222,10 +223,11 @@ defmodule Gringotts.Gateways.Monei do
   def capture(amount, payment_id, opts)
 
   def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
+    {currency, value} = Money.to_string amount
     params = [
       paymentType: "CP",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-      currency: Money.currency(amount)
+      amount: value,
+      currency: currency
     ]
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -249,12 +251,13 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
+    {currency, value} = Money.to_string amount
     params =
       card_params(card) ++
         [
           paymentType: "DB",
-          amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-          currency: Money.currency(amount)
+          amount: value,
+          currency: currency
         ]
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -324,10 +327,11 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
+    {currency, value} = Money.to_string amount
     params = [
       paymentType: "RF",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-      currency: Money.currency(amount)
+      amount: value,
+      currency: currency
     ]
 
     auth_info = Keyword.fetch!(opts, :config)

@@ -22,32 +22,32 @@ defprotocol Gringotts.Money do
   is 2 digits after decimal.
   """
   @fallback_to_any true
-  @type t :: Gringotts.Money.t
-  
+  @type t :: Gringotts.Money.t()
+
   @doc """
   Returns the ISO 4217 compliant currency code associated with this sum of money.
 
   This must be an UPCASE `string`
   """
-  @spec currency(t) :: String.t
+  @spec currency(t) :: String.t()
   def currency(money)
 
   @doc """
   Returns a Decimal representing the "worth" of this sum of money in the
   associated `currency`.
   """
-  @spec value(t) :: Decimal.t
+  @spec value(t) :: Decimal.t()
   def value(money)
 
   @doc """
   Returns the ISO4217 `currency` code as string and `value` as an integer.
-  
+
   Useful for gateways that require amount as integer (like cents instead of dollars)
 
   ## Examples
 
       # the money lib is aliased as "MoneyLib"
-  
+
       iex> usd_price = MoneyLib.new(4.1234, :USD)
       #MoneyLib<4.1234, "USD">
       iex> Gringotts.Money.to_integer(usd_price)
@@ -60,7 +60,8 @@ defprotocol Gringotts.Money do
       # the Bahraini dinar is divided into 1000 fils unlike the dollar which is
       # divided in 100 cents
   """
-  @spec to_integer(Money.t) :: {currency :: String.t, value :: integer, exponent :: neg_integer}
+  @spec to_integer(Money.t()) ::
+          {currency :: String.t(), value :: integer, exponent :: neg_integer}
   def to_integer(money)
 
   @doc """
@@ -85,7 +86,7 @@ defprotocol Gringotts.Money do
       iex> Gringotts.Money.to_string(bhd_price)
       {"BHD", "4.123"} 
   """
-  @spec to_string(t) :: {currency :: String.t, value :: String.t}
+  @spec to_string(t) :: {currency :: String.t(), value :: String.t()}
   def to_string(money)
 end
 
@@ -93,25 +94,26 @@ end
 # money)
 if Code.ensure_compiled?(Money) do
   defimpl Gringotts.Money, for: Money do
-    def currency(money), do: money.currency |> Atom.to_string
+    def currency(money), do: money.currency |> Atom.to_string()
     def value(money), do: money.amount
 
     def to_integer(money) do
-      {_, int_value, exponent, _} = Money.to_integer_exp money
+      {_, int_value, exponent, _} = Money.to_integer_exp(money)
       {currency(money), int_value, exponent}
     end
 
     def to_string(money) do
       {:ok, currency_data} = Cldr.Currency.currency_for_code(currency(money))
-      reduced = Money.reduce money
+      reduced = Money.reduce(money)
+
       {
         currency(reduced),
         value(reduced)
         |> Decimal.round(currency_data.digits)
-        |> Decimal.to_string
+        |> Decimal.to_string()
       }
     end
-  end  
+  end
 end
 
 if Code.ensure_compiled?(Monetized.Money) do
@@ -132,15 +134,15 @@ defimpl Gringotts.Money, for: Any do
       value
       |> Decimal.mult(Decimal.new(100))
       |> Decimal.round(0)
-      |> Decimal.to_integer,
+      |> Decimal.to_integer(),
       -2
     }
   end
-  
+
   def to_string(%{value: %Decimal{} = value, currency: currency}) do
     {
       currency,
-      value |> Decimal.round(2) |> Decimal.to_string
+      value |> Decimal.round(2) |> Decimal.to_string()
     }
   end
 end
