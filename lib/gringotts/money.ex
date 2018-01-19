@@ -11,14 +11,14 @@ defprotocol Gringotts.Money do
   Otherwise, just wrap your `amount` with the `currency` together in a `Map`
   like so,
 
-      price = %{value: Decimal.new(20.18), currency: "USD"}
+      price = %{value: Decimal.new("20.18"), currency: "USD"}
 
   and the API will accept it (as long as the currency is valid [ISO 4217
   currency code](https://www.iso.org/iso-4217-currency-codes.html)).
 
   ## Note on the `Any` implementation
 
-  Both `to_string` and `to_integer` assume that the precision for the `currency`
+  Both `to_string/1` and `to_integer/1` assume that the precision for the `currency`
   is 2 digits after decimal.
   """
   @fallback_to_any true
@@ -33,7 +33,7 @@ defprotocol Gringotts.Money do
   def currency(money)
 
   @doc """
-  Returns a Decimal representing the "worth" of this sum of money in the
+  Returns a `Decimal.t` representing the "worth" of this sum of money in the
   associated `currency`.
   """
   @spec value(t) :: Decimal.t()
@@ -42,7 +42,23 @@ defprotocol Gringotts.Money do
   @doc """
   Returns the ISO4217 `currency` code as string and `value` as an integer.
 
-  Useful for gateways that require amount as integer (like cents instead of dollars)
+  Useful for gateways that require amount as integer (like cents instead of
+  dollars).
+
+  ## Note
+
+  Conversion from `Decimal.t` to `integer` is potentially lossy and the rounding
+  (if required) is performed (automatically) by the Money library defining the
+  type, or in the implementation of this protocol method.
+
+  If you want to implement this method for your custom type, please ensure that
+  the rounding strategy (if any rounding is applied) must be
+  [`half_even`][wiki-half-even].
+
+  **To keep things predictable and transparent, merchants should round the
+  `amount` themselves**, perhaps by explicitly calling the relevant method of
+  the Money library in their application _before_ passing it to `Gringotts`'s
+  public API.
 
   ## Examples
 
@@ -59,6 +75,8 @@ defprotocol Gringotts.Money do
       {"BHD", 4123, -3}
       # the Bahraini dinar is divided into 1000 fils unlike the dollar which is
       # divided in 100 cents
+
+  [wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
   """
   @spec to_integer(Money.t()) ::
           {currency :: String.t(), value :: integer, exponent :: neg_integer}
@@ -67,10 +85,26 @@ defprotocol Gringotts.Money do
   @doc """
   Returns a tuple of ISO4217 `currency` code and the `value` as strings.
 
-  The `value` must match this regex: `~r[\\d+\\.\\d\\d{n}]` where `n+1` should
-  match the required precision for the `currency`.
+  The stringified `value` must match this regex: `~r/-?\\d+\\.\\d\\d{n}/` where
+  `n+1` should match the required precision for the `currency`. There should be
+  no place value separators except the decimal point (like commas).
 
   > Gringotts will not (and cannot) validate this of course.
+
+  ## Note
+
+  Conversion from `Decimal.t` to `string` is potentially lossy and the rounding
+  (if required) is performed (automatically) by the Money library defining the
+  type, or in the implementation of this protocol method.
+
+  If you want to implement this method for your custom type, please ensure that
+  the rounding strategy (if any rounding is applied) must be
+  [`half_even`][wiki-half-even].
+
+  **To keep things predictable and transparent, merchants should round the
+  `amount` themselves**, perhaps by explicitly calling the relevant method of
+  the Money library in their application _before_ passing it to `Gringotts`'s
+  public API.
 
   ## Examples
 
@@ -84,7 +118,9 @@ defprotocol Gringotts.Money do
       iex> bhd_price = MoneyLib.new("4.1234", :BHD)
       #MoneyLib<4.1234, "BHD">
       iex> Gringotts.Money.to_string(bhd_price)
-      {"BHD", "4.123"} 
+      {"BHD", "4.123"}
+
+  [wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
   """
   @spec to_string(t) :: {currency :: String.t(), value :: String.t()}
   def to_string(money)

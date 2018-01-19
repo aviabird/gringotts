@@ -178,7 +178,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would (pre) authorize a payment of $40 on a sample `card`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
@@ -217,7 +217,7 @@ defmodule Gringotts.Gateways.Monei do
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
   @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
@@ -248,7 +248,7 @@ defmodule Gringotts.Gateways.Monei do
   without (pre) authorization.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
@@ -296,7 +296,7 @@ defmodule Gringotts.Gateways.Monei do
   authorization. Remember that our `capture/3` example only did a partial
   capture.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
@@ -325,7 +325,7 @@ defmodule Gringotts.Gateways.Monei do
   similarily for captures).
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
@@ -362,7 +362,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would store a card (a payment-source) for
   future use.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> store_result = Gringotts.store(Gringotts.Gateways.Monei, card, [])
   """
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
