@@ -51,8 +51,8 @@ defmodule Gringotts.Gateways.CamsTest do
   ]
 
   @money Money.new(:USD, 100)
-  @money_more Money.new(:USD,101)
-  @money_less Money.new(:USD ,99)
+  @money_more Money.new(:USD, 101)
+  @money_less Money.new(:USD, 99)
   @bad_money Money.new!(:INR, 100)
   @authorization "3921111362"
   @bad_authorization "300000000"
