@@ -87,14 +87,13 @@ defmodule Gringotts.Gateways.Cams do
     - Refund
   """
   @live_url  "https://secure.centralams.com/gw/api/transact.php"
-  @default_currency  "USD"
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   use Gringotts.Gateways.Base
   use Gringotts.Adapter,
   required_config: [:username, :password, :default_currency]
-  alias Gringotts.{CreditCard, Response}
+  alias Gringotts.{CreditCard, Response, Money}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
-
+ 
   import Poison, only: [decode!: 1]
   @doc """
     Transfers `amount` from the customer to the merchant.
@@ -118,7 +117,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.purchase(Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec purchase(number, CreditCard.t, Keyword) :: Response
+  @spec purchase(Money.t, CreditCard.t, Keyword) :: Response
   def purchase(money, payment, options) do
     post = []
           |> add_invoice(money, options)
@@ -152,7 +151,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.authorize(Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec authorize(number, CreditCard.t, Keyword) :: Response
+  @spec authorize(Money.t, CreditCard.t, Keyword) :: Response
   def authorize(money, payment, options) do
     post = []
       |> add_invoice(money, options)
@@ -177,7 +176,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.capture(Gringotts.Gateways.Cams, money, authorization, options)
   """
-  @spec capture(number, String.t, Keyword) :: Response
+  @spec capture(Money.t, String.t, Keyword) :: Response
   def capture(money, authorization, options) do
     post = [transactionid: authorization]
     add_invoice(post, money, options)
@@ -204,7 +203,7 @@ defmodule Gringotts.Gateways.Cams do
       
       iex> Gringotts.refund(Gringotts.Gateways.Cams, money, authorization, options)
   """
-  @spec refund(number, String.t, Keyword) :: Response
+  @spec refund(Money.t, String.t, Keyword) :: Response
   def refund(money, authorization, options) do
     post = [transactionid:  authorization]
     add_invoice(post, money, options)
@@ -253,7 +252,7 @@ defmodule Gringotts.Gateways.Cams do
   @spec validate(CreditCard.t, Keyword):: Response
   def validate(payment, options) do
     post = []
-      |> add_invoice(0, options)
+      |> add_invoice(%{value: Decimal.new(0), currency: "USD"}, options)
       |> add_payment(payment)
       |> add_address(payment, options)
 
@@ -264,8 +263,8 @@ defmodule Gringotts.Gateways.Cams do
 
   defp add_invoice(post, money, options) do
     post
-      |> Keyword.put(:amount, money)
-      |> Keyword.put(:currency, (options[:config][:currency]) || @default_currency)
+      |> Keyword.put(:amount, Money.value(money))
+      |> Keyword.put(:currency, Money.currency(money))
   end
 
   defp add_payment(post, payment) do
