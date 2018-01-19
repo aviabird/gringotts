@@ -2,7 +2,8 @@ defmodule Gringotts.Gateways.WireCardMock do
   # Authorization success
   def successful_authorization_response do
     {:ok,
-    %HTTPoison.Response{body: ~s{
+     %HTTPoison.Response{
+       body: ~s{
         <?xml version="1.0" encoding="UTF-8"?>
         <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -15,7 +16,8 @@ defmodule Gringotts.Gateways.WireCardMock do
                 <PROCESSING_STATUS>
                   <GuWID>C822580121385121429927</GuWID>
                   <AuthorizationCode>709678</AuthorizationCode>
-                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000. NO REAL MONEY WILL BE TRANSFERED.</Info>
+                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000.
+ NO REAL MONEY WILL BE TRANSFERED.</Info>
                   <StatusType>INFO</StatusType>
                   <FunctionResult>ACK</FunctionResult>
                   <TimeStamp>2008-06-19 06:53:33</TimeStamp>
@@ -25,21 +27,26 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
       </W_RESPONSE>
     </WIRECARD_BXML>},
-     request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-     status_code: 200}}  
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   def wrong_creditcard_authorization_response do
     {:ok,
-    %HTTPoison.Response{body: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<WIRECARD_BXML xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"wirecard.xsd\">\n\t<W_RESPONSE>\n\t\t<W_JOB>\n\t\t\t<JobID></JobID>\n\t\t\t<FNC_CC_PREAUTHORIZATION>\n\t\t\t\t<FunctionID>dummy_description</FunctionID>\n\t\t\t\t<CC_TRANSACTION>\n\t\t\t\t\t<TransactionID>1</TransactionID>\n\t\t\t\t\t<PROCESSING_STATUS>\n\t\t\t\t\t\t<GuWID>C784893151437179785993</GuWID>\n\t\t\t\t\t\t<AuthorizationCode></AuthorizationCode>\n\t\t\t\t\t\t<StatusType>INFO</StatusType>\n\t\t\t\t\t\t<FunctionResult>NOK</FunctionResult>\n\t\t\t\t\t\t<ERROR>\n\t\t\t\t\t\t\t<Type>DATA_ERROR</Type>\n\t\t\t\t\t\t\t<Number>24997</Number>\n\t\t\t\t\t\t\t<Message>Credit card number not allowed in demo mode.</Message>\n\t\t\t\t\t\t\t<Advice>Only demo card number is allowed for VISA in demo mode.</Advice>\n\t\t\t\t\t\t</ERROR>\n\t\t\t\t\t\t<TimeStamp>2017-12-27 11:49:57</TimeStamp>\n\t\t\t\t\t</PROCESSING_STATUS>\n\t\t\t\t</CC_TRANSACTION>\n\t\t\t</FNC_CC_PREAUTHORIZATION>\n\t\t</W_JOB>\n\t</W_RESPONSE>\n</WIRECARD_BXML>\n",
-     request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-     status_code: 200}}   
+     %HTTPoison.Response{
+       body:
+         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<WIRECARD_BXML xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"wirecard.xsd\">\n\t<W_RESPONSE>\n\t\t<W_JOB>\n\t\t\t<JobID></JobID>\n\t\t\t<FNC_CC_PREAUTHORIZATION>\n\t\t\t\t<FunctionID>dummy_description</FunctionID>\n\t\t\t\t<CC_TRANSACTION>\n\t\t\t\t\t<TransactionID>1</TransactionID>\n\t\t\t\t\t<PROCESSING_STATUS>\n\t\t\t\t\t\t<GuWID>C784893151437179785993</GuWID>\n\t\t\t\t\t\t<AuthorizationCode></AuthorizationCode>\n\t\t\t\t\t\t<StatusType>INFO</StatusType>\n\t\t\t\t\t\t<FunctionResult>NOK</FunctionResult>\n\t\t\t\t\t\t<ERROR>\n\t\t\t\t\t\t\t<Type>DATA_ERROR</Type>\n\t\t\t\t\t\t\t<Number>24997</Number>\n\t\t\t\t\t\t\t<Message>Credit card number not allowed in demo mode.</Message>\n\t\t\t\t\t\t\t<Advice>Only demo card number is allowed for VISA in demo mode.</Advice>\n\t\t\t\t\t\t</ERROR>\n\t\t\t\t\t\t<TimeStamp>2017-12-27 11:49:57</TimeStamp>\n\t\t\t\t\t</PROCESSING_STATUS>\n\t\t\t\t</CC_TRANSACTION>\n\t\t\t</FNC_CC_PREAUTHORIZATION>\n\t\t</W_JOB>\n\t</W_RESPONSE>\n</WIRECARD_BXML>\n",
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Capture success
   def successful_capture_response do
     {:ok,
-    %HTTPoison.Response{body: ~s{
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -52,7 +59,8 @@ defmodule Gringotts.Gateways.WireCardMock do
                 <PROCESSING_STATUS>
                   <GuWID>C833707121385268439116</GuWID>
                   <AuthorizationCode>915025</AuthorizationCode>
-                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000. NO REAL MONEY WILL BE TRANSFERED.</Info>
+                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000.
+ NO REAL MONEY WILL BE TRANSFERED.</Info>
                   <StatusType>INFO</StatusType>
                   <FunctionResult>ACK</FunctionResult>
                   <TimeStamp>2008-06-19 07:18:04</TimeStamp>
@@ -62,13 +70,16 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-     request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-     status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Capture failure
   def unauthorized_capture_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -86,7 +97,9 @@ defmodule Gringotts.Gateways.WireCardMock do
                   <ERROR>
                     <Type>DATA_ERROR</Type>
                     <Number>20080</Number>
-                    <Message>Could not find referenced transaction for GuWID 1234567890123456789012.</Message>
+                    <Message>
+                      Could not find referenced transaction for GuWID 1234567890123456789012.
+                    </Message>
                   </ERROR>
                   <TimeStamp>2008-06-19 08:09:20</TimeStamp>
                 </PROCESSING_STATUS>
@@ -95,13 +108,16 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-     request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-     status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Purchase success
   def successful_purchase_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -114,7 +130,10 @@ defmodule Gringotts.Gateways.WireCardMock do
                 <PROCESSING_STATUS>
                   <GuWID>C865402121385575982910</GuWID>
                   <AuthorizationCode>531750</AuthorizationCode>
-                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000. NO REAL MONEY WILL BE TRANSFERED.</Info>
+                  <Info>
+                    THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000.
+                    NO REAL MONEY WILL BE TRANSFERED.
+                  </Info>
                   <StatusType>INFO</StatusType>
                   <FunctionResult>ACK</FunctionResult>
                   <TimeStamp>2008-06-19 08:09:19</TimeStamp>
@@ -124,13 +143,16 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Refund success
   def successful_refund_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
           <W_RESPONSE>
@@ -153,13 +175,16 @@ defmodule Gringotts.Gateways.WireCardMock do
               </W_JOB>
           </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Refund Failed
   def failed_refund_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -186,14 +211,16 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
-
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Void Success
   def successful_void_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
        <W_RESPONSE>
@@ -216,13 +243,16 @@ defmodule Gringotts.Gateways.WireCardMock do
          </W_JOB>
        </W_RESPONSE>
      </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
-  
-  # Void Failed  
+
+  # Void Failed
   def failed_void_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
           <W_RESPONSE>
@@ -249,13 +279,16 @@ defmodule Gringotts.Gateways.WireCardMock do
               </W_JOB>
           </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # Purchase failure
   def wrong_creditcard_purchase_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -271,9 +304,12 @@ defmodule Gringotts.Gateways.WireCardMock do
                   <StatusType>INFO</StatusType>
                   <FunctionResult>NOK</FunctionResult>
                   <ERROR>
-                    <Type>DATA_ERROR</Type>                                                    <Number>24997</Number>
+                    <Type>DATA_ERROR</Type>
+                    <Number>24997</Number>
                     <Message>Credit card number not allowed in demo mode.</Message>
-                    <Advice>Only demo card number '4200000000000000' is allowed for VISA in demo mode.</Advice>
+                    <Advice>
+                      Only demo card number '4200000000000000' is allowed for VISA in demo mode.
+                    </Advice>
                   </ERROR>
                   <TimeStamp>2008-06-19 06:58:51</TimeStamp>
                 </PROCESSING_STATUS>
@@ -282,13 +318,16 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   # AVS failure
   def failed_avs_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -301,16 +340,24 @@ defmodule Gringotts.Gateways.WireCardMock do
                 <PROCESSING_STATUS>
                   <GuWID>C997753139988691610455</GuWID>
                   <AuthorizationCode>732129</AuthorizationCode>
-                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000. NO REAL MONEY WILL BE TRANSFERED.</Info>
+                  <Info>
+                    THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000.
+                    NO REAL MONEY WILL BE TRANSFERED.
+                  </Info>
                   <StatusType>INFO</StatusType>
                   <FunctionResult>PENDING</FunctionResult>
                   <AVS>
                     <ResultCode>U</ResultCode>
                     <Message>AVS Unavailable.</Message>
                     <AuthorizationEntity>5</AuthorizationEntity>
-                    <AuthorizationEntityMessage>Response provided by issuer processor.</AuthorizationEntityMessage>
+                    <AuthorizationEntityMessage>
+                      Response provided by issuer processor.
+                    </AuthorizationEntityMessage>
                     <ProviderResultCode>A</ProviderResultCode>
-                    <ProviderResultMessage>Address information is unavailable, or the Issuer does not support AVS. Acquirer has representment rights.</ProviderResultMessage>
+                    <ProviderResultMessage>
+                      Address information is unavailable, or the Issuer does not support AVS.
+                      Acquirer has representment rights.
+                    </ProviderResultMessage>
                   </AVS>
                   <TimeStamp>2014-05-12 11:28:36</TimeStamp>
                 </PROCESSING_STATUS>
@@ -319,12 +366,15 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   def system_error_response do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -337,7 +387,8 @@ defmodule Gringotts.Gateways.WireCardMock do
                 <PROCESSING_STATUS>
                   <GuWID>C967464140265180577024</GuWID>
                   <AuthorizationCode></AuthorizationCode>
-                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000. NO REAL MONEY WILL BE TRANSFERED.</Info>
+                  <Info>THIS IS A DEMO TRANSACTION USING CREDIT CARD NUMBER 420000****0000.
+ NO REAL MONEY WILL BE TRANSFERED.</Info>
                   <StatusType>INFO</StatusType>
                   <FunctionResult>NOK</FunctionResult>
                   <ERROR>
@@ -352,13 +403,15 @@ defmodule Gringotts.Gateways.WireCardMock do
           </W_JOB>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
-
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 
   def system_error_response_without_job do
-    {:ok, %HTTPoison.Response{body: ~s{
+    {:ok,
+     %HTTPoison.Response{
+       body: ~s{
       <?xml version="1.0" encoding="UTF-8"?>
       <WIRECARD_BXML xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:noNamespaceSchemaLocation="wirecard.xsd">
         <W_RESPONSE>
@@ -369,7 +422,8 @@ defmodule Gringotts.Gateways.WireCardMock do
           </ERROR>
         </W_RESPONSE>
       </WIRECARD_BXML>},
-      request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
-      status_code: 200}}
+       request_url: "https://c3-test.wirecard.com/secure/ssl-gateway",
+       status_code: 200
+     }}
   end
 end
