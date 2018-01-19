@@ -83,15 +83,16 @@ defmodule Gringotts.Gateways.Cams do
     - Void
     - Refund
   """
-  @live_url  "https://secure.centralams.com/gw/api/transact.php"
-  @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
+
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter,
-  required_config: [:username, :password]
+  use Gringotts.Adapter, required_config: [:username, :password]
+  import Poison, only: [decode!: 1]
   alias Gringotts.{CreditCard, Response, Money}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
- 
-  import Poison, only: [decode!: 1]
+  
+  @live_url  "https://secure.centralams.com/gw/api/transact.php"
+  @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
+
   @doc """
     Transfers `amount` from the customer to the merchant.
 
