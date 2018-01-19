@@ -51,7 +51,7 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Scope of this module, and _quirks_
 
-  * Cams process money in cents.
+  * Cams does not process money in cents.
   * Although Cams supports payments from electronic check & various cards this library only 
   accepts payments by cards like *visa*, *master*, *american_express* and *discover*.
 
@@ -68,7 +68,6 @@ defmodule Gringotts.Gateways.Cams do
   aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Cams}
-  iex> opts = [currency: "USD"] # The default currency is USD, and this is just for an example.
   iex> payment = %CreditCard{number: "4111111111111111", month: 11, year: 2018,
                             first_name: "Longbob", last_name: "Longsen",
                             verification_code: "123", brand: "visa"}
@@ -90,7 +89,7 @@ defmodule Gringotts.Gateways.Cams do
   @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
   use Gringotts.Gateways.Base
   use Gringotts.Adapter,
-  required_config: [:username, :password, :default_currency]
+  required_config: [:username, :password]
   alias Gringotts.{CreditCard, Response, Money}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
  
@@ -106,18 +105,17 @@ defmodule Gringotts.Gateways.Cams do
     * `void/2` a transaction(*if Not settled*).
 
   ## Examples
-      payment = %CreditCard{
+      iex> payment = %CreditCard{
         number: "4111111111111111", month: 11, year: 2018,
         first_name: "Longbob", last_name: "Longsen",
         verification_code: "123", brand: "visa"
       }
-
-      options = [currency: "USD"]
-      money   = 100
+      iex> options = [billing_address: %{}]
+      iex> money   = Money.new(:USD, 100)
       
       iex> Gringotts.purchase(Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec purchase(Money.t, CreditCard.t, Keyword) :: Response
+  @spec purchase(Money.t(), CreditCard.t(), Keyword) :: {:ok | :error, Response}
   def purchase(money, payment, options) do
     post = []
           |> add_invoice(money, options)
@@ -140,18 +138,17 @@ defmodule Gringotts.Gateways.Cams do
 
 
   ## Examples
-      payment = %{
+      iex> payment = %CreditCard{
         number: "4111111111111111", month: 11, year: 2018,
         first_name: "Longbob", last_name: "Longsen",
         verification_code: "123", brand: "visa"
       }
-
-      options = [currency: "USD"]
-      money   = 100
+      iex> options = [billing_address: %{}]
+      iex> money   = Money.new(:USD, 100)
       
       iex> Gringotts.authorize(Gringotts.Gateways.Cams, money, payment, options)
   """
-  @spec authorize(Money.t, CreditCard.t, Keyword) :: Response
+  @spec authorize(Money.t(), CreditCard.t(), Keyword) :: {:ok | :error, Response}
   def authorize(money, payment, options) do
     post = []
       |> add_invoice(money, options)
@@ -170,13 +167,13 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Examples
 
-      authorization = "3904093075"
-      options = [currency: "USD"]
-      money   = 100
+      iex> authorization = "3904093075"
+      iex> options = [billing_address: %{}]
+      iex> money   = Money.new(:USD, 100)
       
       iex> Gringotts.capture(Gringotts.Gateways.Cams, money, authorization, options)
   """
-  @spec capture(Money.t, String.t, Keyword) :: Response
+  @spec capture(Money.t(), String.t(), Keyword) :: {:ok | :error, Response}
   def capture(money, authorization, options) do
     post = [transactionid: authorization]
     add_invoice(post, money, options)
@@ -197,13 +194,13 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Examples
 
-      authorization = "3904093078"
-      options = [currency: "USD"]
-      money   = 100
+      iex> authorization = "3904093075"
+      iex> options = [billing_address: %{}]
+      iex> money   = Money.new(:USD, 100)
       
       iex> Gringotts.refund(Gringotts.Gateways.Cams, money, authorization, options)
   """
-  @spec refund(Money.t, String.t, Keyword) :: Response
+  @spec refund(Money.t(), String.t(), Keyword) :: {:ok | :error, Response}
   def refund(money, authorization, options) do
     post = [transactionid:  authorization]
     add_invoice(post, money, options)
@@ -219,12 +216,12 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Examples
 
-      authorization = "3904093075"
-      options = []
+      iex> authorization = "3904093075"
+      iex> options = [billing_address: %{}]
       
       iex> Gringotts.void(Gringotts.Gateways.Cams, authorization, options)
   """
-  @spec void(String.t, Keyword) :: Response
+  @spec void(String.t(), Keyword) :: {:ok | :error, Response}
   def void(authorization , options) do
     post = [transactionid: authorization]
     commit("void", post, options)
@@ -237,19 +234,18 @@ defmodule Gringotts.Gateways.Cams do
     without actually doing an authorization.
 
   ## Examples
-      payment = %{
+
+      iex> payment = %CreditCard{
         number: "4111111111111111", month: 11, year: 2018,
         first_name: "Longbob", last_name: "Longsen",
         verification_code: "123", brand: "visa"
       }
-
-      options = [currency: "USD"]
+      iex> options = [billing_address: %{}]
      
-      
       iex> Gringotts.validate(Gringotts.Gateways.Cams, payment, options)
     
   """
-  @spec validate(CreditCard.t, Keyword):: Response
+  @spec validate(CreditCard.t(), Keyword) :: {:ok | :error, Response}
   def validate(payment, options) do
     post = []
       |> add_invoice(%{value: Decimal.new(0), currency: "USD"}, options)
