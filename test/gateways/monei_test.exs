@@ -2,13 +2,14 @@ defmodule Gringotts.Gateways.MoneiTest do
   use ExUnit.Case, async: false
 
   alias Gringotts.{
-    CreditCard,
+    CreditCard
   }
+
   alias Gringotts.Gateways.Monei, as: Gateway
 
   @card %CreditCard{
-    first_name: "Jo",
-    last_name: "Doe",
+    first_name: "Harry",
+    last_name: "Potter",
     number: "4200000000000000",
     year: 2099,
     month: 12,
@@ -17,8 +18,8 @@ defmodule Gringotts.Gateways.MoneiTest do
   }
 
   @bad_card %CreditCard{
-    first_name: "Jo",
-    last_name: "Doe",
+    first_name: "Harry",
+    last_name: "Potter",
     number: "4200000000000000",
     year: 2000,
     month: 12,
@@ -42,7 +43,7 @@ defmodule Gringotts.Gateways.MoneiTest do
        "code": "000.100.110",
        "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
     }]
-  
+
   @store_success ~s[
     {"result":{
         "code":"000.100.110",
@@ -57,79 +58,146 @@ defmodule Gringotts.Gateways.MoneiTest do
      }
     }]
 
+  @customer %{
+    givenName: "Harry",
+    surname: "Potter",
+    merchantCustomerId: "the_boy_who_lived",
+    sex: "M",
+    birthDate: "1980-07-31",
+    mobile: "+15252525252",
+    email: "masterofdeath@ministryofmagic.gov",
+    ip: "1.1.1",
+    status: "NEW"
+  }
+  @merchant %{
+    name: "Ollivanders",
+    city: "South Side",
+    street: "Diagon Alley",
+    state: "London",
+    country: "GB",
+    submerchantId: "Makers of Fine Wands since 382 B.C."
+  }
+  @billing %{
+    street1: "301, Gryffindor",
+    street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+    city: "Highlands",
+    state: "Scotland",
+    country: "GB"
+  }
+  @shipping Map.merge(
+              %{method: "SAME_DAY_SERVICE", comment: "For our valued customer, Mr. Potter"},
+              @billing
+            )
+
+  @extra_opts [
+    customer: @customer,
+    merchant: @merchant,
+    billing: @billing,
+    shipping: @shipping,
+    shipping_customer: @customer,
+    category: "EC",
+    register: true,
+    custom: %{"voldemort" => "he who must not be named"}
+  ]
+
   # A new Bypass instance is needed per test, so that we can do parallel tests
   setup do
-    bypass = Bypass.open
+    bypass = Bypass.open()
+
     auth = %{
       userId: "8a829417539edb400153c1eae83932ac",
       password: "6XqRtMGS2N",
       entityId: "8a829417539edb400153c1eae6de325e",
       test_url: "http://localhost:#{bypass.port}"
     }
+
     {:ok, bypass: bypass, auth: auth}
   end
 
   describe "core" do
-    test "with unsupported currency.",
-      %{auth: auth} do
-      {:error, response} = Gateway.authorize(@bad_currency, @card, [config: auth])
+    test "with unsupported currency.", %{auth: auth} do
+      {:error, response} = Gateway.authorize(@bad_currency, @card, config: auth)
       assert response.description == "Invalid currency"
     end
 
-    test "when MONEI is down or unreachable.",
-      %{bypass: bypass, auth: auth} do
-      Bypass.expect_once  bypass, fn conn ->
+    test "when MONEI is down or unreachable.", %{bypass: bypass, auth: auth} do
+      Bypass.expect_once(bypass, fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
-      end
-      Bypass.down bypass
-      {:error, response} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
+      end)
+
+      Bypass.down(bypass)
+      {:error, response} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
       assert response.reason == "network related failure"
 
-      Bypass.up bypass
-      {:ok, _} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
+      Bypass.up(bypass)
+      {:ok, _} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
+    end
+
+    test "with all extra_params.", %{bypass: bypass, auth: auth} do
+      randoms = [
+        invoice_id: Base.encode16(:crypto.hash(:md5, :crypto.strong_rand_bytes(32))),
+        transaction_id: Base.encode16(:crypto.hash(:md5, :crypto.strong_rand_bytes(32)))
+      ]
+
+      Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
+        conn_ = parse(conn)
+        assert conn_.body_params["createRegistration"] == "true"
+        assert conn_.body_params["customParameters"] == @extra_opts[:custom]
+        assert conn_.body_params["merchantInvoiceId"] == randoms[:invoice_id]
+        assert conn_.body_params["merchantTransactionId"] == randoms[:transaction_id]
+        assert conn_.body_params["transactionCategory"] == @extra_opts[:category]
+        assert conn_.body_params["customer.merchantCustomerId"] == @customer[:merchantCustomerId]
+        assert conn_.body_params["shipping.customer.merchantCustomerId"] == @customer[:merchantCustomerId]
+        assert conn_.body_params["merchant.submerchantId"] == @merchant[:submerchantId]
+        assert conn_.body_params["billing.city"] == @billing[:city]
+        assert conn_.body_params["shipping.method"] == @shipping[:method]
+        Plug.Conn.resp(conn, 200, @register_success)
+      end)
+
+      opts = [{:config, auth} | randoms] ++ @extra_opts
+      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, opts)
+      assert response.code == "000.100.110"
+      assert response.token == "8a82944a60e09c550160e92da144491e"
+    end
+
+    test "when card has expired.", %{bypass: bypass, auth: auth} do
+      Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
+        Plug.Conn.resp(conn, 400, "<html></html>")
+      end)
+
+      {:error, _} = Gateway.authorize(Money.new(42, :USD), @bad_card, config: auth)
     end
   end
 
   describe "authorize" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
-      Bypass.expect bypass, "POST", "/v1/payments", fn conn ->
+      Bypass.expect(bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
-      end
-      {:ok, response} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
+      end)
+
+      {:ok, response} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
       assert response.code == "000.100.110"
-    end
-
-    test "when we get non-json.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
-        Plug.Conn.resp(conn, 400, "<html></html>")
-      end
-      {:error, _} = Gateway.authorize(Money.new(42, :USD), @card, [config: auth])
-    end
-
-    test "when card has expired.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
-        Plug.Conn.resp(conn, 400, "")
-      end
-      {:error, _response} = Gateway.authorize(Money.new(42, :USD), @bad_card, [config: auth])
     end
   end
 
   describe "purchase" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
+      Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 200, @auth_success)
-      end
-      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, [config: auth])
+      end)
+
+      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, config: auth)
       assert response.code == "000.100.110"
     end
 
     test "with createRegistration.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/payments", fn conn ->
+      Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
         conn_ = parse(conn)
         assert conn_.body_params["createRegistration"] == "true"
         Plug.Conn.resp(conn, 200, @register_success)
-      end
-      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, [config: auth, register: true])
+      end)
+
+      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, config: auth, register: true)
       assert response.code == "000.100.110"
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
@@ -137,10 +205,11 @@ defmodule Gringotts.Gateways.MoneiTest do
 
   describe "store" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once bypass, "POST", "/v1/registrations", fn conn ->
+      Bypass.expect_once(bypass, "POST", "/v1/registrations", fn conn ->
         Plug.Conn.resp(conn, 200, @store_success)
-      end
-      {:ok, response} = Gateway.store(@card, [config: auth])
+      end)
+
+      {:ok, response} = Gateway.store(@card, config: auth)
       assert response.code == "000.100.110"
       assert response.raw["card"]["holder"] == "Jo Doe"
     end
@@ -154,8 +223,12 @@ defmodule Gringotts.Gateways.MoneiTest do
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
-        end)
-      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth])
+        end
+      )
+
+      {:ok, response} =
+        Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth)
+
       assert response.code == "000.100.110"
     end
 
@@ -166,10 +239,13 @@ defmodule Gringotts.Gateways.MoneiTest do
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           conn_ = parse(conn)
-          assert :error == Map.fetch conn_.body_params, "createRegistration"
+          assert :error == Map.fetch(conn_.body_params, "createRegistration")
           Plug.Conn.resp(conn, 200, @auth_success)
-        end)
-      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth, register: true])
+        end
+      )
+
+      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth, register: true)
+
       assert response.code == "000.100.110"
     end
   end
@@ -182,12 +258,16 @@ defmodule Gringotts.Gateways.MoneiTest do
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
-        end)
-      {:ok, response} = Gateway.refund(Money.new(3, :USD), "7214344242e11af79c0b9e7b4f3f6234", [config: auth])
+        end
+      )
+
+      {:ok, response} =
+        Gateway.refund(Money.new(3, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth)
+
       assert response.code == "000.100.110"
     end
   end
-  
+
   describe "unstore" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(
@@ -196,8 +276,10 @@ defmodule Gringotts.Gateways.MoneiTest do
         "/v1/registrations/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, "<html></html>")
-        end)
-      {:error, response} = Gateway.unstore("7214344242e11af79c0b9e7b4f3f6234", [config: auth])
+        end
+      )
+
+      {:error, response} = Gateway.unstore("7214344242e11af79c0b9e7b4f3f6234", config: auth)
       assert response.code == :undefined_response_from_monei
     end
   end
@@ -210,8 +292,10 @@ defmodule Gringotts.Gateways.MoneiTest do
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
           Plug.Conn.resp(conn, 200, @auth_success)
-        end)
-      {:ok, response} = Gateway.void("7214344242e11af79c0b9e7b4f3f6234", [config: auth])
+        end
+      )
+
+      {:ok, response} = Gateway.void("7214344242e11af79c0b9e7b4f3f6234", config: auth)
       assert response.code == "000.100.110"
     end
   end
@@ -237,5 +321,5 @@ defmodule Gringotts.Gateways.MoneiDocTest do
   use ExUnit.Case, async: true
 
   # doctest Gringotts.Gateways.Monei
-  # doctests will never work. Track progress: https://github.com/aviabird/gringotts/issues/37
+  # doctests can work. Track progress: https://github.com/aviabird/gringotts/issues/37
 end

@@ -99,7 +99,7 @@ defmodule Gringotts.Gateways.Monei do
   MONEI supports the countries listed [here][all-country-list]
 
   ## Supported currencies
-  
+
   MONEI supports the currecncies [listed here][all-currency-list], and ***this
   module*** supports a subset of those:
 
@@ -144,7 +144,7 @@ defmodule Gringotts.Gateways.Monei do
                     "sex": "M",
                     "birthDate": "1980-07-31",
                     "mobile": "+15252525252",
-                    "email": "masterofdeath@ministryofmagic.go v",
+                    "email": "masterofdeath@ministryofmagic.gov",
                     "ip": "1.1.1",
                     "status": "NEW"}
   iex> merchant = %{"name": "Ollivanders",
@@ -267,6 +267,7 @@ defmodule Gringotts.Gateways.Monei do
         paymentType: "PA",
         amount: value
       ] ++ card_params(card)
+
     commit(:post, "payments", params, [{:currency, currency} | opts])
   end
 
@@ -302,6 +303,7 @@ defmodule Gringotts.Gateways.Monei do
       paymentType: "CP",
       amount: value
     ]
+
     commit(:post, "payments/#{payment_id}", params, [{:currency, currency} | opts])
   end
 
@@ -336,6 +338,7 @@ defmodule Gringotts.Gateways.Monei do
         paymentType: "DB",
         amount: value
       ] ++ card_params(card)
+
     commit(:post, "payments", params, [{:currency, currency} | opts])
   end
 
@@ -407,6 +410,7 @@ defmodule Gringotts.Gateways.Monei do
       paymentType: "RF",
       amount: value
     ]
+
     commit(:post, "payments/#{payment_id}", params, [{:currency, currency} | opts])
   end
 
@@ -448,6 +452,7 @@ defmodule Gringotts.Gateways.Monei do
   """
   @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
   def unstore(registration_id, opts)
+
   def unstore(<<registration_id::bytes-size(32)>>, opts) do
     commit(:delete, "registrations/#{registration_id}", [], opts)
   end
@@ -586,16 +591,17 @@ defmodule Gringotts.Gateways.Monei do
 
   defp parse_response(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
-    results =
-      [
-        code: result["code"],
-        description: result["description"],
-        risk: data["risk"]["score"],
-        cvc_result: @cvc_code_translator[result["cvvResponse"]],
-        avs_result: [address: address, zip_code: zip_code],
-        raw: data,
-        token: data["registrationId"]
-      ]
+
+    results = [
+      code: result["code"],
+      description: result["description"],
+      risk: data["risk"]["score"],
+      cvc_result: @cvc_code_translator[result["cvvResponse"]],
+      avs_result: [address: address, zip_code: zip_code],
+      raw: data,
+      token: data["registrationId"]
+    ]
+
     filtered = Enum.filter(results, fn {_, v} -> v != nil end)
     verify(filtered)
   end
