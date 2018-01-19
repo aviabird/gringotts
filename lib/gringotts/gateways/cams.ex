@@ -48,7 +48,6 @@ defmodule Gringotts.Gateways.Cams do
       username: "your_secret_user_name",
       password: "your_secret_password",
   
-
   ## Scope of this module, and _quirks_
 
   * Cams does not process money in cents.
@@ -72,7 +71,6 @@ defmodule Gringotts.Gateways.Cams do
                             first_name: "Longbob", last_name: "Longsen",
                             verification_code: "123", brand: "visa"}
   ```
-
   We'll be using these in the examples below.
 
   ## TODO
@@ -135,7 +133,6 @@ defmodule Gringotts.Gateways.Cams do
     Cams returns an `authorization` which can be used later to:
     * `capture/3` an amount.
     * `void/2` a authorized transaction.
-
 
   ## Examples
       iex> payment = %CreditCard{
