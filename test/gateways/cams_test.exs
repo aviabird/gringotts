@@ -50,8 +50,10 @@ defmodule Gringotts.Gateways.CamsTest do
     description: "Store Purchase"
   ]
 
-  @money 100
-  @bad_money "G"
+  @money Money.new(:USD, 100)
+  @money_more Money.new(:USD,101)
+  @money_less Money.new(:USD ,99)
+  @bad_money Money.new!(:INR, 100)
   @authorization "3921111362"
   @bad_authorization "300000000"
 
@@ -125,7 +127,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with partial amount" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.successful_capture end] do
-        {:ok, %Response{success: result}} = Gateway.capture(@money - 1, @authorization, @options)
+        {:ok, %Response{success: result}} = Gateway.capture(@money_less, @authorization, @options)
         assert result
       end
     end
@@ -141,7 +143,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with more than authorization amount" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.more_than_authorization_amount end] do
-        {:ok, %Response{message: result}} = Gateway.capture(@money + 1, @authorization, @options)
+        {:ok, %Response{message: result}} = Gateway.capture(@money_more, @authorization, @options)
         assert String.contains?(result, "exceeds the authorization amount")
       end
     end
@@ -167,7 +169,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with more than purchased amount" do
       with_mock HTTPoison,
       [post: fn(_url, _body, _headers) -> MockResponse.more_than_purchase_amount end] do
-        {:ok, %Response{message: result}} = Gateway.refund(@money + 1, @authorization, @options)
+        {:ok, %Response{message: result}} = Gateway.refund(@money_more, @authorization, @options)
         assert String.contains?(result, "Refund amount may not exceed")
       end
     end
