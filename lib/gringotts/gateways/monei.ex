@@ -178,17 +178,19 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would (pre) authorize a payment of $40 on a sample `card`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
-  @spec authorize(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
+    {currency, value} = Money.to_string(amount)
+
     params =
       [
         paymentType: "PA",
-        amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-        currency: Money.currency(amount)
+        amount: value,
+        currency: currency
       ] ++ card_params(card)
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -215,17 +217,19 @@ defmodule Gringotts.Gateways.Monei do
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
-  @spec capture(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
 
   def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
+    {currency, value} = Money.to_string(amount)
+
     params = [
       paymentType: "CP",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-      currency: Money.currency(amount)
+      amount: value,
+      currency: currency
     ]
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -243,18 +247,20 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
 
-  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
+    {currency, value} = Money.to_string(amount)
+
     params =
       card_params(card) ++
         [
           paymentType: "DB",
-          amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-          currency: Money.currency(amount)
+          amount: value,
+          currency: currency
         ]
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -290,7 +296,7 @@ defmodule Gringotts.Gateways.Monei do
   authorization. Remember that our `capture/3` example only did a partial
   capture.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
@@ -319,15 +325,17 @@ defmodule Gringotts.Gateways.Monei do
   similarily for captures).
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
+    {currency, value} = Money.to_string(amount)
+
     params = [
       paymentType: "RF",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
-      currency: Money.currency(amount)
+      amount: value,
+      currency: currency
     ]
 
     auth_info = Keyword.fetch!(opts, :config)
@@ -354,7 +362,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would store a card (a payment-source) for
   future use.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> store_result = Gringotts.store(Gringotts.Gateways.Monei, card, [])
   """
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}

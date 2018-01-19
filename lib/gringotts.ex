@@ -27,24 +27,45 @@ defmodule Gringotts do
 
   This argument represents the "amount", annotated with the currency unit for
   the transaction. `amount` is polymorphic thanks to the `Gringotts.Money`
-  protocol which can be implemented by your custom Money type.
+  protocol which can even be implemented by your very own custom Money type!
 
   #### Note
-  We support [`ex_money`][ex_money] and [`monetized`][monetized] out of the
-  box, and you can drop their types in this argument and everything will work
-  as expected.
+
+  Gringotts supports [`ex_money`][ex_money] out of the box, just drop `ex_money`
+  types in this argument and everything will work as expected.
+
+  > Support for [`monetized`][monetized] and [`money`][money] is on the
+  > way, track it [here][iss-money-lib-support]!
 
   Otherwise, just wrap your `amount` with the `currency` together in a `Map` like so,
-      money = %{amount: Decimal.new(100.50), currency: "USD"}
-
+      money = %{value: Decimal.new("100.50"), currency: "USD"}
+  
+  > When this highly precise `amount` is serialized into the network request, we
+  > use a potentially lossy `Gringotts.Money.to_string/1` or
+  > `Gringotts.Money.to_integer/1` to perform rounding (if required) using the
+  > [`half-even`][wiki-half-even] strategy.
+  >
+  > **Hence, to ensure transparency, protect sanity and save _real_ money, we
+  > STRONGLY RECOMMEND that merchants perform any required rounding and handle
+  > remainders in their application logic -- before passing the `amount` to
+  > Gringotts's API.**
+  
   #### Example
 
   If you use `ex_money` in your project, and want to make an authorization for
-  $2.99 to MONEI, you'll do the following:
-  
-      amount = Money.new(2.99, :USD)
-      Gringotts.authorize(Gringotts.Gateways.Monei, amount, some_card, extra_options)
+  $2.99 to the `XYZ` Gateway, you'll do the following:
 
+      # the money lib is aliased as "MoneyLib"
+  
+      amount = MoneyLib.new("2.99", :USD)
+      Gringotts.authorize(Gringotts.Gateways.XYZ, amount, some_card, extra_options)
+
+  [ex_money]: https://hexdocs.pm/ex_money/readme.html
+  [monetized]: https://hexdocs.pm/monetized/
+  [money]: https://hexdocs.pm/money/Money.html
+  [iss-money-lib-support]: https://github.com/aviabird/gringotts/projects/3#card-6801146
+  [wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
+  
   ### `card`, a payment source
 
   Gringotts provides a `Gringotts.CreditCard` type to hold card parameters
@@ -52,6 +73,7 @@ defmodule Gringotts do
   card details.
 
   #### Note
+
   Gringotts only supports payment by debit or credit card, even though the
   gateways might support payment via other instruments such as e-wallets,
   vouchers, bitcoins or banks. Support for these instruments is planned in
@@ -71,10 +93,7 @@ defmodule Gringotts do
   `opts` is a `keyword` list of other options/information accepted by the
   gateway. The format, use and structure is gateway specific and documented in
   the Gateway's docs.
-
-  [ex_money]: https://hexdocs.pm/ex_money/readme.html
-  [monetized]: https://hexdocs.pm/monetized/
-
+  
   ## Configuration
   
   Merchants must provide Gateway specific configuration in their application
@@ -140,9 +159,9 @@ defmodule Gringotts do
   To (pre) authorize a payment of $4.20 on a sample `card` with the `XYZ`
   gateway,
 
-      amount = Money.new(4.2, :USD)
-      # IF YOU DON'T USE ex_money OR monetized
-      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      amount = Money.new("4.2", :USD)
+      # IF YOU DON'T USE ex_money
+      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.XYZ, amount, card, opts)
   """
@@ -163,9 +182,9 @@ defmodule Gringotts do
   To capture $4.20 on a previously authorized payment worth $4.20 by referencing
   the obtained authorization `id` with the `XYZ` gateway,
 
-      amount = Money.new(4.2, :USD)
-      # IF YOU DON'T USE ex_money OR monetized
-      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      amount = Money.new("4.2", :USD)
+      # IF YOU DON'T USE ex_money
+      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       Gringotts.capture(Gringotts.Gateways.XYZ, amount, auth_result.id, opts)
   """
@@ -191,9 +210,9 @@ defmodule Gringotts do
 
   To process a purchase worth $4.2, with the `XYZ` gateway,
   
-      amount = Money.new(4.2, :USD)
-      # IF YOU DON'T USE ex_money OR monetized
-      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      amount = Money.new("4.2", :USD)
+      # IF YOU DON'T USE ex_money
+      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, card, opts)
   """
@@ -212,9 +231,9 @@ defmodule Gringotts do
   To refund a previous purchase worth $4.20 referenced by `id`, with the `XYZ`
   gateway,
 
-      amount = Money.new(4.2, :USD)
-      # IF YOU DON'T USE ex_money OR monetized
-      # amount = %{value: Decimal.new(4.2), currency: "EUR"}
+      amount = Money.new("4.2", :USD)
+      # IF YOU DON'T USE ex_money
+      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, id, opts)
   """
   def refund(gateway, amount, id, opts \\ []) do 
@@ -282,9 +301,6 @@ defmodule Gringotts do
     call(:payment_worker, {:void, gateway, id, opts})
   end
 
-
-  # TODO: This is runtime error reporting fix this so that it does compile
-  # time error reporting.
   defp validate_config(gateway) do
     # Keep the key name and adapter the same in the config in application
     config = Application.get_env(:gringotts, gateway)
