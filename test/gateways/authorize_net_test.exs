@@ -23,8 +23,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     verification_code: 123
   }
 
-  @amount 20
-  @bad_amount "a"
+  @amount %{amount: Decimal.new(20.0), currency: 'USD'}
 
   @opts [
     config: @auth,
@@ -35,7 +34,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       name: "vase",
       description: "Cannes logo", 
       quantity: "18", 
-      unit_price: "45.00"
+      unit_price: %{amount: Decimal.new(20.0), currency: 'USD'}
     }
   ]
   @opts_refund [
@@ -43,6 +42,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     ref_id: "123456", 
     payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
   ]
+
   @opts_store [
     config: @auth,
     profile: %{
@@ -53,6 +53,15 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     customer_type: "individual",
     validation_mode: "testMode"
   ]
+  @opts_store_without_validation [
+    config: @auth,
+    profile: %{
+      merchant_customer_id: "123456", 
+      description: "Profile description here", 
+      email: "customer-profile-email@here.com"
+    }
+  ]
+
   @opts_store_no_profile [
     config: @auth,
   ]
@@ -69,7 +78,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   @opts_store [
     config: @auth,
     profile: %{merchant_customer_id: "123456",
-      description: "Profile description here", 
+      description: "Profile description here",
       email: "customer-profile-email@here.com"
     }
   ]
@@ -79,7 +88,12 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   @opts_customer_profile [
     config: @auth,
     customer_profile_id: "1814012002",
-    validation_mode: "testMode"    
+    validation_mode: "testMode",
+    customer_type: "individual"
+  ]
+  @opts_customer_profile_args[
+    config: @auth,
+    customer_profile_id: "1814012002"  
   ]
   
   @refund_id "60036752756"
@@ -102,14 +116,6 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       end
     end
 
-    test "with bad amount" do
-      with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_amount_purchase_response end] do
-        assert {:error, response} = ANet.purchase(@bad_amount, @card, @opts)
-        assert response.params["createTransactionResponse"]["messages"]["resultCode"] == "Error"
-      end
-    end
-
     test "with bad card" do
       with_mock HTTPoison, 
         [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_card_purchase_response end] do
@@ -126,14 +132,6 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         assert {:ok, response} = ANet.authorize(@amount, @card, @opts)
         assert response.params["createTransactionResponse"]["messages"]["resultCode"] == "Ok"
     end
-    end
-
-    test "with bad amount" do
-      with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers) -> MockResponse.bad_amount_purchase_response end] do
-        assert {:error, response} = ANet.authorize(@bad_amount, @card, @opts)
-        assert response.params["createTransactionResponse"]["messages"]["resultCode"] == "Error"
-      end
     end
 
     test "with bad card" do
@@ -216,6 +214,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       end
     end
 
+    test "successful response without validation and customer type" do
+      with_mock HTTPoison,
+        [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_store_response end] do
+          assert {:ok, response} = ANet.store(@card, @opts_store_without_validation)
+          assert response.params["createCustomerProfileResponse"]["messages"]["resultCode"] == "Ok"
+      end
+    end
+
     test "without any profile" do
       with_mock HTTPoison,
         [request: fn(_method, _url, _body, _headers) -> MockResponse.store_without_profile_fields end] do
@@ -229,6 +235,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         [request: fn(_method, _url, _body, _headers) -> MockResponse.customer_payment_profile_success_response end] do
           assert {:ok, response} = ANet.store(@card, @opts_customer_profile)
           assert response.params["createCustomerPaymentProfileResponse"]["messages"]["resultCode"] == "Ok"
+      end
+    end
+
+    test "successful response without valiadtion mode and customer type" do
+      with_mock HTTPoison,
+        [request: fn(_method, _url, _body, _headers) -> MockResponse.successful_store_response end] do
+          assert {:ok, response} = ANet.store(@card, @opts_customer_profile_args)
+          assert response.params["createCustomerProfileResponse"]["messages"]["resultCode"] == "Ok"
       end
     end
   end
