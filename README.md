@@ -63,8 +63,8 @@ alias Gringotts.Gateways.Monei
 alias Gringotts.{CreditCard}
 
 card = %CreditCard{
-  first_name: "Harry Potter",
-  last_name: "Doe",
+  first_name: "Harry",
+  last_name: "Potter",
   number: "4200000000000000",
   year: 2099, month: 12,
   verification_code:  "123",
@@ -88,7 +88,7 @@ end
 | ------                | -----                                                                                                                                                                                                                                                                      |
 | [Authorize.Net][anet] | AD, AT, AU, BE, BG, CA, CH, CY, CZ, DE, DK, ES, FI, FR, GB, GB, GI, GR, HU, IE, IT, LI, LU, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, US, VA                                                                                                                         |
 | [CAMS][cams]          | AU, US                                                                                                                                                                                                                                                                     |
-| [MONEI][anet]         | DE, EE, ES, FR, IT, US                                                                                                                                                                                                                                                     |
+| [MONEI][monei]         | DE, EE, ES, FR, IT, US                                                                                                                                                                                                                                                     |
 | [PAYMILL][paymill]    | AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FO, FR, GB, GI, GR, HU, IE, IL, IS, IT, LI, LT, LU, LV, MT, NL, NO, PL, PT, RO, SE, SI, SK, TR, VA                                                                                                                         |
 | [Stripe][stripe]      | AT, AU, BE, CA, CH, DE, DK, ES, FI, FR, GB, IE, IN, IT, LU, NL, NO, SE, SG, US                                                                                                                                                                                             |
 | [TREXLE][trexle]      | AD, AE, AT, AU, BD, BE, BG, BN, CA, CH, CY, CZ, DE, DK, EE, EG, ES, FI, FR, GB, GI, GR, HK, HU, ID, IE, IL, IM, IN, IS, IT, JO, KW, LB, LI, LK, LT, LU, LV, MC, MT, MU, MV, MX, MY, NL, NO, NZ, OM, PH, PL, PT, QA, RO, SA, SE, SG, SI, SK, SM, TR, TT, UM, US, VA, VN, ZA |
