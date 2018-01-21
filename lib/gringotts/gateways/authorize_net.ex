@@ -26,7 +26,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   | Key                  | Remark | Status          |
   | ----                 | ---    | ----            |
-  | `currency`           |        | not Implemented |
   | `customer`           |        | implemented     |
   | `invoice`            |        | implemented     |
   | `bill_to`            |        | implemented     |
@@ -46,6 +45,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   To know more about these keywords visit [Request](https://developer.authorize.net/api/reference/index.html#payment-transactions)
   and [Response](https://developer.authorize.net/api/reference/index.html#payment-transactions) key sections for each function.
 
+  ## Notes
+  Authorize net supports [multiple currencies](https://community.developer.authorize.net/t5/The-Authorize-Net-Developer-Blog/Authorize-Net-UK-Europe-Update/ba-p/35957)
+  however, multiple currencies in one account are not supported. To support multiple currencies merchant needs
+  multiple Authorize.Net accounts, one for every currency. Currently, `Gringotts` supports single Authorize.Net 
+  account configuration.
+  
   To use this module you need to create an account with the [Authorize.Net 
   gateway](https://www.authorize.net/solutions/merchantsolutions/onlinemerchantaccount/)
   which will provide you with a `name` and a `transactionKey`.
@@ -85,7 +90,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:name, :transaction_key]
-
   alias Gringotts.Gateways.AuthorizeNet.ResponseHandler
 
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
@@ -104,7 +108,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   alias Gringotts.{
     CreditCard,
-    Response
+    Response,
+    Money
   }
 
   # ---------------Interface functions to be used by developer for
@@ -126,11 +131,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: String,
         lineitems: %{
           item_id: String, name: String, description: String,
-          quantity: Integer, unit_price: Float
+          quantity: Integer, unit_price: Gringotts.Money.t()
         },
-        tax: %{amount: Float, name: String, description: String},
-        duty: %{amount: String, name: String, description: String},
-        shipping: %{amount: String, name: String, description: String},
+        tax: %{amount: Gringotts.Money.t(), name: String, description: String},
+        duty: %{amount: Gringotts.Money.t(), name: String, description: String},
+        shipping: %{amount: Gringotts.Money.t(), name: String, description: String},
         po_number: String,
         customer: %{id: String},
         bill_to: %{
@@ -152,10 +157,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
-      iex> amount = 5
+      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
       iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(float, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
+  @spec purchase(Money.t, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
   def purchase(amount, payment, opts) do
     request_data =
       add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
@@ -179,11 +184,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: String,
         lineitems: %{
           item_id: String, name: String, description: String,
-          quantity: Integer, unit_price: Float
+          quantity: Integer, unit_price: Gringotts.Money.t()
         },
-        tax: %{amount: Float, name: String, description: String},
-        duty: %{amount: String, name: String, description: String},
-        shipping: %{amount: String, name: String, description: String},
+        tax: %{amount: Gringotts.Money.t(), name: String, description: String},
+        duty: %{amount: Gringotts.Money.t(), name: String, description: String},
+        shipping: %{amount: Gringotts.Money.t(), name: String, description: String},
         po_number: String,
         customer: %{id: String},
         bill_to: %{ 
@@ -206,12 +211,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
       ]
       iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
-      iex> amount = 5
+      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
       iex> result = Gringotts.authorize(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec authorize(float, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
+  @spec authorize(Money.t, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
   def authorize(amount, payment, opts) do
-    request_data = 
+    request_data =
       add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     response_data = commit(:post, request_data, opts)
     respond(response_data)
@@ -243,11 +248,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> opts = [
         ref_id: "123456"
       ]
-      iex> amount = 5
+      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
       iex> id = "123456"
       iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
-  @spec capture(String.t, float, Keyword.t) :: {:ok | :error, Response.t}
+  @spec capture(String.t, Money.t, Keyword.t) :: {:ok | :error, Response.t}
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     response_data = commit(:post, request_data, opts)
@@ -274,10 +279,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: "123456"
       ]
       iex> id = "123456"
-      iex> amount = 5
+      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
       iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
-  @spec refund(float, String.t, Keyword.t) :: {:ok | :error, Response.t}
+  @spec refund(Money.t, String.t, Keyword.t) :: {:ok | :error, Response.t}
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     response_data = commit(:post, request_data, opts)
@@ -394,7 +399,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    IO.inspect error
     {:error, Response.error(error_code: error.id, message: "HTTPoison says '#{error.reason}'")}
   end
 
@@ -561,10 +565,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   defp add_amount(amount) do
-    cond do
-      is_integer(amount) -> element(:amount, amount)
-      is_float(amount) -> element(:amount, amount)
-      true -> element(:amount, 0)
+    if amount do
+      amount = amount |> Money.value |> Decimal.to_float
+      element(:amount, amount)
     end
   end
 
@@ -596,7 +599,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
           element(:name, opts[:lineitems][:name]),
           element(:description, opts[:lineitems][:description]),
           element(:quantity, opts[:lineitems][:quantity]),
-          element(:unitPrice, opts[:lineitems][:unit_price])
+          element(
+            :unitPrice, 
+            opts[:lineitems][:unit_price] |> Money.value |> Decimal.to_float
+          )
         ])
       ])
     ])
