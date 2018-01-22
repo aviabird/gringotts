@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.Trexle do
-
   @moduledoc """
   [Trexle][home] Payment Gateway implementation.
 
@@ -145,7 +144,7 @@ defmodule Gringotts.Gateways.Trexle do
   iex> Gringotts.authorize(Gringotts.Gateways.Trexle, amount, card, options)
   ```
   """
-  @spec authorize(Money.t, CreditCard.t, keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -177,7 +176,7 @@ defmodule Gringotts.Gateways.Trexle do
   iex> Gringotts.capture(Gringotts.Gateways.Trexle, token, amount)
   ```
   """
-  @spec capture(String.t, Money.t, keyword) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(charge_token, amount, opts \\ []) do
     {_, int_value, _} = Money.to_integer(amount)
     params = [amount: int_value]
@@ -219,7 +218,7 @@ defmodule Gringotts.Gateways.Trexle do
   iex> Gringotts.purchase(Gringotts.Gateways.Trexle, amount, card, options)
   ```
   """
-  @spec purchase(Money.t, CreditCard.t, keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -249,7 +248,7 @@ defmodule Gringotts.Gateways.Trexle do
   iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
   """
-  @spec refund(Money.t, String.t, keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, charge_token, opts \\ []) do
     {_, int_value, _} = Money.to_integer(amount)
     params = [amount: int_value]
@@ -286,16 +285,17 @@ defmodule Gringotts.Gateways.Trexle do
   iex> Gringotts.store(Gringotts.Gateways.Trexle, card, options)
   ```
   """
-  @spec store(CreditCard.t, keyword) :: {:ok | :error, Response}
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(payment, opts \\ []) do
-    params = [email: opts[:email]]
-      ++ card_params(payment)
-      ++ address_params(opts[:billing_address])
+    params =
+      [email: opts[:email]] ++ card_params(payment) ++ address_params(opts[:billing_address])
+
     commit(:post, "customers", params, opts)
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     {currency, int_value, _} = Money.to_integer(amount)
+
     [
       capture: capture,
       amount: int_value,
@@ -303,8 +303,7 @@ defmodule Gringotts.Gateways.Trexle do
       email: opts[:email],
       ip_address: opts[:ip_address],
       description: opts[:description]
-    ] ++ card_params(payment)
-      ++ address_params(opts[:billing_address])
+    ] ++ card_params(payment) ++ address_params(opts[:billing_address])
   end
 
   defp card_params(%CreditCard{} = card) do
@@ -330,7 +329,12 @@ defmodule Gringotts.Gateways.Trexle do
 
   defp commit(method, path, params, opts) do
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
-    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
     options = [basic_auth: {opts[:config][:api_key], "password"}]
     url = "#{@base_url}#{path}"
     response = HTTPoison.request(method, url, {:form, params}, headers, options)
@@ -344,7 +348,11 @@ defmodule Gringotts.Gateways.Trexle do
     {:ok, results} = decode(body)
     token = results["response"]["token"]
     message = results["response"]["status_message"]
-    {:ok, Response.success(authorization: token, message: message, raw: results, status_code: code)}
+
+    {
+      :ok,
+      Response.success(authorization: token, message: message, raw: results, status_code: code)
+    }
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
