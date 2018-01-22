@@ -81,8 +81,13 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   2. Run an `iex` session with `iex -S mix` and add some variable bindings and
   aliases to it (to save some time):
   ```
-    iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
+  iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
+  iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+  iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
   ```
+
+  We'll be using these in the examples below.
+
   """
 
   import XmlBuilder
@@ -151,13 +156,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
 
   ## Example
+      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"}, 
-        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
+        lineitems: %{item_id: "1", name: "vase", description: "Cannes logo", quantity: 1, unit_price: amount},
+        tax: %{name: "VAT", amount: Money.new("0.1", :EUR), description: "Value Added Tax"},
+        shipping: %{name: "SAME-DAY-DELIVERY", amount: Money.new("0.56", :EUR), description: "Zen Logistics"},
+        duty: %{name: "import_duty", amount: Money.new("0.25", :EUR), description: "Upon import of goods"}
       ]
-      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
-      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
+      iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
   @spec purchase(Money.t, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
@@ -205,13 +213,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
 
   ## Example
+      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"}, 
-        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: "18", unit_price: "45.00"}
+        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: 1, unit_price: amount},
+        tax: %{name: "VAT", amount: Money.new("0.1", :EUR), description: "Value Added Tax"},
+        shipping: %{name: "SAME-DAY-DELIVERY", amount: Money.new("0.56", :EUR), description: "Zen Logistics"},
+        duty: %{name: "import_duty", amount: Money.new("0.25", :EUR), description: "Upon import of goods"}
       ]
-      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
-      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
+      iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.authorize(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
   @spec authorize(Money.t, CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
@@ -248,7 +259,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> opts = [
         ref_id: "123456"
       ]
-      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
+      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
       iex> id = "123456"
       iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
@@ -275,11 +286,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   ## Example
       iex> opts = [
-        payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
+        payment: %{card: %{number: "5424000000000015", year: 2099, month: 12}}
         ref_id: "123456"
       ]
       iex> id = "123456"
-      iex> amount = %{amount: Decimal.new(20.0), currency: 'USD'}
+      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
       iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
   @spec refund(Money.t, String.t, Keyword.t) :: {:ok | :error, Response.t}
@@ -314,19 +325,29 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   end
 
   @doc """
-  Store a customer payment profile.
+  Store a customer's profile and optionally associate it with a payment profile.
 
-  Use this function to store the customer card information by creating a [customer profile](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile) which also 
-  creates a `payment profile` if `card` inofrmation is provided, and in case the `customer profile` exists without a payment profile, the merchant 
-  can create customer payment profile by passing the `customer_profile_id` in the `opts`.
-  The gateway also provide a provision for a `validation mode`, there are two modes `liveMode`
-  and `testMode`, to know more about modes [see](https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile).
-  By default `validation mode` is set to `testMode`.
+  Authorize.Net separates a [customer's profile][cust-profile] from their payment
+  profile. Thus a customer can have multiple payment profiles.
+
+  ## Create both profiles
+
+  Add `:customer` details in `opts` and also provide `card` details. The response
+  will contain a `:customer_profile_id`.
+
+  ## Associate payment profile with existing customer profile
   
+  Simply pass the `:customer_profile_id` in the `opts`. This will add the `card`
+  details to the profile referenced by the supplied `:customer_profile_id`.
+
   ## Notes
-  * The current version of this library supports only `credit card` as the payment profile.
-  * If a customer profile is created without the card info, then to create a payment profile
-    `card` info needs to be passed alongwith `cutomer_profile_id` to create it.
+  
+  * Currently only supports `credit card` in the payment profile.
+  * The supplied `card` details can be validated by supplying a
+  [`:validation_mode`][cust-profile], available options are `testMode` and
+  `liveMode`, the deafult is `testMode`.
+
+  [cust-profile]: https://developer.authorize.net/api/reference/index.html#customer-profiles-create-customer-profile
 
   ## Required Fields
       opts = [
@@ -347,7 +368,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         profile: %{merchant_customer_id: 123456, description: "test store", email: "test@gmail.com"},
         validation_mode: "testMode"
       ]
-      iex> card = %CreditCard{number: "5424000000000015", year: 2020, month: 12, verification_code: "999"}
+      iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, card, opts)
   """
   @spec store(CreditCard.t, Keyword.t) :: {:ok | :error, Response.t}
@@ -566,8 +587,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   defp add_amount(amount) do
     if amount do
-      amount = amount |> Money.value |> Decimal.to_float
-      element(:amount, amount)
+      {_, value} = amount |> Money.to_string
+      element(:amount, value)
     end
   end
 
@@ -708,12 +729,14 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
     def parse_gateway_success(raw_response) do
       response_type = check_response_type(raw_response)
+      token = raw_response[response_type]["transactionResponse"]["transId"]
       message = raw_response[response_type]["messages"]["message"]["text"]
       avs_result = raw_response[response_type]["transactionResponse"]["avsResultCode"]
       cvc_result = raw_response[response_type]["transactionResponse"]["cavvResultCode"]
 
       []
         |> status_code(200)
+        |> set_token(token)
         |> set_message(message)
         |> set_avs_result(avs_result)
         |> set_cvc_result(cvc_result)
@@ -752,14 +775,15 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         raw_response[@response_type[:delete_customer_profile]] -> "deleteCustomerProfileResponse"
       end
     end
-    
-    defp set_success(opts, value), do: opts ++ [success: value] 
-    defp status_code(opts, code), do: opts ++ [status_code: code]
-    defp set_message(opts, message), do: opts ++ [message: message]
-    defp set_avs_result(opts, result), do: opts ++ [avs_result: result]
-    defp set_cvc_result(opts, result), do: opts ++ [cvc_result: result]
-    defp set_params(opts, raw_response), do: opts ++ [params: raw_response]
-    defp set_error_code(opts, code), do: opts ++ [error_code: code]
+
+    defp set_token(opts, token), do: [{:authorization, token} | opts]
+    defp set_success(opts, value), do: [{:success, value} | opts]
+    defp status_code(opts, code), do: [{:status, code} | opts]
+    defp set_message(opts, message), do: [{:message, message} | opts]
+    defp set_avs_result(opts, result), do: [{:avs, result} | opts]
+    defp set_cvc_result(opts, result), do: [{:cvc, result} | opts]
+    defp set_params(opts, raw_response), do: [{:params, raw_response} | opts]
+    defp set_error_code(opts, code), do: [{:error, code} | opts]
     
     defp handle_opts(opts) do
       case Keyword.fetch(opts, :success) do

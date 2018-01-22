@@ -12,7 +12,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   @card %CreditCard {
     number: "5424000000000015",
     month: 12,
-    year: 2020,
+    year: 2099,
     verification_code: 999
   }
 
@@ -23,24 +23,27 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     verification_code: 123
   }
 
-  @amount %{amount: Decimal.new(20.0), currency: 'USD'}
+  @amount Money.new("2.99", :USD)
 
   @opts [
-    config: @auth,
+    config: auth,
     ref_id: "123456",
-    order: %{invoice_number: "INV-12345", description: "Product Description"}, 
+    order: %{invoice_number: "INV-12345", description: "Product Description"},
     lineitems: %{
       item_id: "1",
       name: "vase",
-      description: "Cannes logo", 
-      quantity: "18", 
-      unit_price: %{amount: Decimal.new(20.0), currency: 'USD'}
-    }
+      description: "Cannes logo",
+      quantity: 18,
+      unit_price: Money.mult!(amount, 18)
+    },
+    tax: %{name: "VAT", amount: Money.new("0.1", :EUR), description: "Value Added Tax"},
+    shipping: %{name: "SAME-DAY-DELIVERY", amount: Money.new("0.56", :EUR), description: "Zen Logistics"},
+    duty: %{name: "import_duty", amount: Money.new("0.25", :EUR), description: "Upon import of goods"}
   ]
   @opts_refund [
     config: @auth,
     ref_id: "123456", 
-    payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
+    payment: %{card: %{number: "5424000000000015", year: 2099, month: 12}}
   ]
 
   @opts_store [
@@ -68,12 +71,12 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   @opts_refund [
     config: @auth,
     ref_id: "123456",
-    payment: %{card: %{number: "5424000000000015", year: 2020, month: 12}}
+    payment: %{card: %{number: "5424000000000015", year: 2099, month: 12}}
   ]
   @opts_refund_bad_payment [
     config: @auth,
     ref_id: "123456",
-    payment: %{card: %{number: "123", year: 2020, month: 12}}
+    payment: %{card: %{number: "123", year: 2099, month: 12}}
   ]
   @opts_store [
     config: @auth,
