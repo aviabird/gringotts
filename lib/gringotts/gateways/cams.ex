@@ -107,7 +107,7 @@ defmodule Gringotts.Gateways.Cams do
 
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:username, :password]
-  import Poison, only: [decode!: 1]
+
   alias Gringotts.{CreditCard, Response, Money}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
 
@@ -146,11 +146,11 @@ defmodule Gringotts.Gateways.Cams do
   ```
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(money, %CreditCard{} = payment, options) do
+  def authorize(money, %CreditCard{} = card, options) do
     params = []
-      |> add_invoice(money, options)
-      |> add_payment(payment)
-      |> add_address(payment, options)
+      |> add_invoice(money)
+      |> add_payment(card)
+      |> add_address(card, options)
     commit("auth", params, options)
   end
 
@@ -193,7 +193,7 @@ defmodule Gringotts.Gateways.Cams do
   @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(money, transaction_id, options) do
     params = [transactionid: transaction_id]
-    |> add_invoice(money, options)
+    |> add_invoice(money)
     commit("capture", params, options)
   end
 
@@ -225,11 +225,11 @@ defmodule Gringotts.Gateways.Cams do
   ```
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(money, payment, options) do
+  def purchase(money, %CreditCard{} = card, options) do
     params = []
-          |> add_invoice(money, options)
-          |> add_payment(payment)
-          |> add_address(payment, options)
+          |> add_invoice(money)
+          |> add_payment(card)
+          |> add_address(card, options)
     commit("sale", params, options)
   end
 
@@ -257,7 +257,7 @@ defmodule Gringotts.Gateways.Cams do
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(money, transaction_id, options) do
     params = [transactionid: transaction_id]
-    |> add_invoice(money, options)
+    |> add_invoice(money)
     commit("refund", params, options)
   end
 
@@ -305,68 +305,44 @@ defmodule Gringotts.Gateways.Cams do
   @spec validate(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def validate(card, options) do
     params = []
-      |> add_invoice(%{value: Decimal.new(0), currency: "USD"}, options)
+      |> add_invoice(%{value: Decimal.new(0), currency: "USD"})
       |> add_payment(card)
       |> add_address(card, options)
-
-      commit("verify", params, options)
+    commit("verify", params, options)
   end
 
   # private methods
 
-  defp add_invoice(post, money, options) do
+  defp add_invoice(params, money) do
     {currency, value} = Money.to_string(money)
-    post
-      |> Keyword.put(:amount, value)
-      |> Keyword.put(:currency, currency)
+    [amount: value, currency: currency] ++ params
   end
 
-  defp add_payment(post, payment) do
-    exp_month = join_month(payment)
-    exp_year = payment.year
-      |> to_string()
-      |> String.slice(-2..-1)
+  defp add_payment(params, %CreditCard{} = card) do
+    exp_month = card.month |> to_string |> String.pad_leading(2, "0")
+    exp_year = card.year |> to_string |> String.slice(-2..-1)
 
-    post
-      |> Keyword.put(:ccnumber, payment.number)
-      |> Keyword.put(:ccexp, "#{exp_month}#{exp_year}")
-      |> Keyword.put(:cvv, payment.verification_code)
+    [ccnumber: card.number,
+     ccexp: "#{exp_month}#{exp_year}",
+     cvv: card.verification_code] ++ params
   end
 
-  defp add_address(post, payment, options) do
-    post = post
-      |> Keyword.put(:firstname, payment.first_name)
-      |> Keyword.put(:lastname, payment.last_name)
-
-    if options[:billing_address] do
-      address = options[:billing_address]
-      post = post
-      |> Keyword.put(:address1 , address[:address1])
-      |> Keyword.put(:address2, address[:address2])
-      |> Keyword.put(:city, address[:city])
-      |> Keyword.put(:state, address[:state])
-      |> Keyword.put(:zip, address[:zip])
-      |> Keyword.put(:country, address[:country])
-      |> Keyword.put(:phone, address[:phone])
-    end
-  end
-
-  defp join_month(payment) do
-     payment.month
-     |> to_string
-     |> String.pad_leading(2, "0")
+  defp add_address(params, card, options) do
+    params ++ [firstname: card.first_name,
+             lastname: card.last_name] ++
+    if options[:billing_address] != nil, do: Enum.into(options[:billing_address], []), else: []
   end
 
   defp commit(action, params, options) do
     url = @live_url
-    params = params
-      |> Keyword.put(:type, action)
-      |> Keyword.put(:password, options[:config][:password])
-      |> Keyword.put(:username, options[:config][:username])
-      |> params_to_string
+    auth = [
+      type: action,
+      password: options[:config][:password],
+      username: options[:config][:username]
+    ]
 
     url
-      |> HTTPoison.post(params, @headers)
+      |> HTTPoison.post({:form, auth ++ params}, @headers)
       |> ResponseParser.parse
   end
 
@@ -435,7 +411,7 @@ defmodule Gringotts.Gateways.Cams do
 
     defp parse_html(body) do
       error_message = List.to_string(Map.keys(body))
-      [html_body | parse_message] = (Regex.run(~r|<title>(.*)</title>|, error_message))
+      [_ | parse_message] = (Regex.run(~r|<title>(.*)</title>|, error_message))
       List.to_string(parse_message)
     end
 
