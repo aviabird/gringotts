@@ -26,33 +26,7 @@ defmodule Gringotts.Gateways.CamsMock do
     request_url: "https://secure.centralams.com/gw/api/transact.php",
     status_code: 200}}			 
   end
-  def failed_purchase_with_bad_money do
-    {:ok,
-    %HTTPoison.Response{
-      body: "response=3&responsetext=Invalid amount REFID:3502949755&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=sale&response_code=300",
-      headers: [
-        {"Date", "Thu, 21 Dec 2017 13:50:20 GMT"}, 
-        {"Server", "Apache"},
-        {"Content-Length", "143"},
-        {"Content-Type", "text/html; charset=UTF-8"}
-      ],
-    request_url: "https://secure.centralams.com/gw/api/transact.php",
-    status_code: 200}}
-  end
   
-  def failed_purchase_with_bad_credit_card do
-    {:ok,
-    %HTTPoison.Response{
-      body: "response=3&responsetext=Invalid Credit Card Number REFID:3502947912&authcode=&transactionid=&avsresponse=&cvvresponse=&orderid=&type=sale&response_code=300",
-      headers: [
-        {"Date", "Thu, 21 Dec 2017 13:20:08 GMT"},
-        {"Server", "Apache"},
-        {"Content-Length", "155"}, 
-        {"Content-Type", "text/html; charset=UTF-8"}
-      ],
-    request_url: "https://secure.centralams.com/gw/api/transact.php",
-    status_code: 200}}			 
-  end  
   def with_invalid_currency do
     {:ok,
     %HTTPoison.Response{

@@ -111,8 +111,8 @@ defmodule Gringotts.Gateways.Cams do
   alias Gringotts.{CreditCard, Response, Money}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
 
-  @live_url  "https://secure.centralams.com/gw/api/transact.php"
-  @headers  [{"Content-Type", "application/x-www-form-urlencoded"}]
+  @live_url "https://secure.centralams.com/gw/api/transact.php"
+  @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -147,10 +147,12 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(money, %CreditCard{} = card, options) do
-    params = []
+    params =
+      []
       |> add_invoice(money)
       |> add_payment(card)
       |> add_address(card, options)
+
     commit("auth", params, options)
   end
 
@@ -192,8 +194,10 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(money, transaction_id, options) do
-    params = [transactionid: transaction_id]
-    |> add_invoice(money)
+    params =
+      [transactionid: transaction_id]
+      |> add_invoice(money)
+
     commit("capture", params, options)
   end
 
@@ -226,10 +230,12 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(money, %CreditCard{} = card, options) do
-    params = []
-          |> add_invoice(money)
-          |> add_payment(card)
-          |> add_address(card, options)
+    params =
+      []
+      |> add_invoice(money)
+      |> add_payment(card)
+      |> add_address(card, options)
+
     commit("sale", params, options)
   end
 
@@ -256,8 +262,10 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(money, transaction_id, options) do
-    params = [transactionid: transaction_id]
-    |> add_invoice(money)
+    params =
+      [transactionid: transaction_id]
+      |> add_invoice(money)
+
     commit("refund", params, options)
   end
 
@@ -304,10 +312,12 @@ defmodule Gringotts.Gateways.Cams do
   """
   @spec validate(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def validate(card, options) do
-    params = []
+    params =
+      []
       |> add_invoice(%{value: Decimal.new(0), currency: "USD"})
       |> add_payment(card)
       |> add_address(card, options)
+
     commit("verify", params, options)
   end
 
@@ -322,19 +332,19 @@ defmodule Gringotts.Gateways.Cams do
     exp_month = card.month |> to_string |> String.pad_leading(2, "0")
     exp_year = card.year |> to_string |> String.slice(-2..-1)
 
-    [ccnumber: card.number,
-     ccexp: "#{exp_month}#{exp_year}",
-     cvv: card.verification_code] ++ params
+    [ccnumber: card.number, ccexp: "#{exp_month}#{exp_year}", cvv: card.verification_code] ++
+      params
   end
 
   defp add_address(params, card, options) do
-    params ++ [firstname: card.first_name,
-             lastname: card.last_name] ++
-    if options[:billing_address] != nil, do: Enum.into(options[:billing_address], []), else: []
+    params ++
+      [firstname: card.first_name, lastname: card.last_name] ++
+      if options[:billing_address] != nil, do: Enum.into(options[:billing_address], []), else: []
   end
 
   defp commit(action, params, options) do
     url = @live_url
+
     auth = [
       type: action,
       password: options[:config][:password],
@@ -342,8 +352,8 @@ defmodule Gringotts.Gateways.Cams do
     ]
 
     url
-      |> HTTPoison.post({:form, auth ++ params}, @headers)
-      |> ResponseParser.parse
+    |> HTTPoison.post({:form, auth ++ params}, @headers)
+    |> ResponseParser.parse()
   end
 
   defmodule ResponseHandler do
@@ -411,7 +421,7 @@ defmodule Gringotts.Gateways.Cams do
 
     defp parse_html(body) do
       error_message = List.to_string(Map.keys(body))
-      [_ | parse_message] = (Regex.run(~r|<title>(.*)</title>|, error_message))
+      [_ | parse_message] = Regex.run(~r|<title>(.*)</title>|, error_message)
       List.to_string(parse_message)
     end
 
