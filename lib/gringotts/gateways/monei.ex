@@ -131,7 +131,7 @@ defmodule Gringotts.Gateways.Monei do
   aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
-  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+  iex> amount = %{value: Decimal.new(42), currency: "USD"}
   iex> card = %CreditCard{first_name: "Harry",
                           last_name: "Potter",
                           number: "4200000000000000",
@@ -145,7 +145,7 @@ defmodule Gringotts.Gateways.Monei do
                     "birthDate": "1980-07-31",
                     "mobile": "+15252525252",
                     "email": "masterofdeath@ministryofmagic.gov",
-                    "ip": "1.1.1",
+                    "ip": "127.0.0.1",
                     "status": "NEW"}
   iex> merchant = %{"name": "Ollivanders",
                     "city": "South Side",
@@ -249,17 +249,17 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would (pre) authorize a payment of $40 on
+  The following example shows how one would (pre) authorize a payment of $42 on
   a sample `card`.
 
-      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "USD"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the registration ID/token
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount, card = %CreditCard{}, opts) do
+  def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value} = Money.to_string(amount)
 
     params =
@@ -287,16 +287,16 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would (partially) capture a previously
+  The following example shows how one would (partially) capture a previously
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
-      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VIS      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
+      iex> amount = %{value: Decimal.new(35), currency: "USD"}
+      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, amount, auth_result.id, opts)
   """
-  @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
-  def capture(amount, payment_id, opts)
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, opts)
 
-  def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
+  def capture(<<payment_id::bytes-size(32)>>, amount, opts) do
     {currency, value} = Money.to_string(amount)
 
     params = [
@@ -321,16 +321,16 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would process a payment in one-shot,
-  without (pre) authorization.
+  The following example shows how one would process a payment worth $42 in
+  one-shot, without (pre) authorization.
 
-      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+      iex> amount = %{value: Decimal.new(42), currency: "USD"}
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
       iex> purchase_result.token # This is the registration ID/token
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card = %CreditCard{}, opts) do
+  def purchase(amount, %CreditCard{} = card, opts) do
     {currency, value} = Money.to_string(amount)
 
     params =
@@ -340,46 +340,6 @@ defmodule Gringotts.Gateways.Monei do
       ] ++ card_params(card)
 
     commit(:post, "payments", params, [{:currency, currency} | opts])
-  end
-
-  @doc """
-  Voids the referenced payment.
-
-  This method attempts a reversal of the either a previous `purchase/3` or
-  `authorize/3` referenced by `payment_id`.
-
-  As a consequence, the customer will never see any booking on his
-  statement. Refer MONEI's [Backoffice
-  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
-  guide.
-
-  ## Voiding a previous authorization
-
-  MONEI will reverse the authorization by sending a "reversal request" to the
-  payment source (card issuer) to clear the funds held against the
-  authorization. If some of the authorized amount was captured, only the
-  remaining amount is cleared. **[citation-needed]**
-
-  ## Voiding a previous purchase
-
-  MONEI will reverse the payment, by sending all the amount back to the
-  customer. Note that this is not the same as `refund/3`.
-
-  ## Example
-
-  The following session shows how one would void a previous (pre)
-  authorization. Remember that our `capture/3` example only did a partial
-  capture.
-
-      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
-  """
-  @spec void(String.t(), keyword) :: {:ok | :error, Response}
-  def void(payment_id, opts)
-
-  def void(<<payment_id::bytes-size(32)>>, opts) do
-    params = [paymentType: "RV"]
-    commit(:post, "payments/#{payment_id}", params, opts)
   end
 
   @doc """
@@ -395,11 +355,10 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would refund a previous purchase (and
-  similarily for captures).
+  The following example shows how one would (completely) refund a previous
+  purchase (and similarily for captures).
 
-      iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> amount = %{value: Decimal.new(42), currency: "USD"}
       iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
@@ -431,7 +390,7 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Example
 
-  The following session shows how one would store a card (a payment-source) for
+  The following example shows how one would store a card (a payment-source) for
   future use.
 
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
@@ -455,6 +414,45 @@ defmodule Gringotts.Gateways.Monei do
 
   def unstore(<<registration_id::bytes-size(32)>>, opts) do
     commit(:delete, "registrations/#{registration_id}", [], opts)
+  end
+
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal of the either a previous `purchase/3`,
+  `capture/3` or `authorize/3` referenced by `payment_id`.
+
+  As a consequence, the customer will never see any booking on his
+  statement. Refer MONEI's [Backoffice
+  Operations](https://docs.monei.net/tutorials/manage-payments/backoffice)
+  guide.
+
+  ## Voiding a previous authorization
+
+  MONEI will reverse the authorization by sending a "reversal request" to the
+  payment source (card issuer) to clear the funds held against the
+  authorization. If some of the authorized amount was captured, only the
+  remaining amount is cleared. **[citation-needed]**
+
+  ## Voiding a previous purchase
+
+  MONEI will reverse the payment, by sending all the amount back to the
+  customer. Note that this is not the same as `refund/3`.
+
+  ## Example
+
+  The following example shows how one would void a previous (pre)
+  authorization. Remember that our `capture/3` example only did a partial
+  capture.
+
+      iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
+  """
+  @spec void(String.t(), keyword) :: {:ok | :error, Response}
+  def void(payment_id, opts)
+
+  def void(<<payment_id::bytes-size(32)>>, opts) do
+    params = [paymentType: "RV"]
+    commit(:post, "payments/#{payment_id}", params, opts)
   end
 
   defp card_params(card) do

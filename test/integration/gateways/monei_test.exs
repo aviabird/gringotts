@@ -99,7 +99,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @tag :skip
   test "capture", %{opts: _opts} do
-    case Gringotts.capture(Gateway, @amount, "s") do
+    case Gringotts.capture(Gateway, "s", @amount) do
       {:ok, response} ->
         assert response.code == "000.100.110"
 
