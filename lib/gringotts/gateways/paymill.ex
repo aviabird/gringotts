@@ -121,7 +121,7 @@ defmodule Gringotts.Gateways.Paymill do
   iex> auth_result.authorization # This is the auth-token
   ```
   """
-  @spec authorize(Money.t, String.t | CreditCard.t, keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), String.t() | CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card_or_token, options) do
     action_with_token(:authorize, amount, card_or_token, options)
   end
@@ -151,9 +151,9 @@ defmodule Gringotts.Gateways.Paymill do
   iex> Gringotts.capture(Gringotts.Gateways.Paymill, token, amount)
   ```
   """
-  @spec capture(String.t, Money.t, keyword) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, options) do
-    post = amount_params(amount) ++ [{"preauthorization", payment_id}]
+    post = amount_params(amount) ++ [preauthorization: payment_id]
 
     commit(:post, "transactions", post, options)
   end
@@ -181,7 +181,7 @@ defmodule Gringotts.Gateways.Paymill do
   iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Paymill, amount, card)
   ```
   """
-  @spec purchase(Money.t, CreditCard.t, keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card, options) do
     action_with_token(:purchase, amount, card, options)
   end
@@ -193,7 +193,7 @@ defmodule Gringotts.Gateways.Paymill do
   references a previous `purchase/3` or `capture/3`. Multiple partial refunds
   are allowed on the same `payment_id` till all the captured/purchased amount
   has been refunded.
-  
+
   ## Example
 
   The following example shows how one would refund a previous purchase (and
@@ -204,13 +204,12 @@ defmodule Gringotts.Gateways.Paymill do
   iex> Gringotts.refund(Gringotts.Gateways.Paymill, amount, purchase_token)
   ```
   """
-  @spec capture(String.t(), number, Keyword) :: {:ok | :error, Response}
-  def capture(authorization, amount, options) do
-    post = add_amount([], amount, options) ++ [{"preauthorization", authorization}]
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
+  def refund(amount, payment_id, options) do
+    {_, int_value, _} = Money.to_integer(amount)
 
     commit(:post, "refunds/#{payment_id}", [amount: int_value], options)
   end
-
 
   @doc """
   Voids the referenced authorization.
@@ -229,31 +228,30 @@ defmodule Gringotts.Gateways.Paymill do
   iex> Gringotts.void(Gringotts.Gateways.Paymill, auth_token)
   ```
   """
-  @spec void(String.t, keyword) :: {:ok | :error, Response}
+  @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(authorization_id, options) do
     commit(:delete, "preauthorizations/#{authorization_id}", [], options)
   end
 
-
-  @doc false
-  @spec authorize_with_token(Money.t, String.t, keyword) :: term
+  @spec authorize_with_token(Money.t(), String.t(), keyword) :: term
   def authorize_with_token(money, card_token, options) do
-    post = amount_params(money) ++ [{"token", card_token}]
+    post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "preauthorizations", post, options)
   end
 
   @doc false
-  @spec purchase_with_token(Money.t, String.t, keyword) :: term
+  @spec purchase_with_token(Money.t(), String.t(), keyword) :: term
   def purchase_with_token(money, card_token, options) do
-    post = amount_params(money) ++ [{"token", card_token}]
+    post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "transactions", post, options)
   end
 
-  @spec save_card(CreditCard.t, keyword) :: Response
-  defp save_card(card, options) do
-    {:ok, %HTTPoison.Response{body: response}} = HTTPoison.get(
+  @spec save_card(CreditCard.t(), keyword) :: Response
+  def save_card(card, options) do
+    {:ok, %HTTPoison.Response{body: response}} =
+      HTTPoison.get(
         @save_card_url,
         get_headers(options),
         params: get_save_card_params(card, options)
@@ -262,7 +260,7 @@ defmodule Gringotts.Gateways.Paymill do
     parse_card_response(response)
   end
 
-  @spec save(CreditCard.t, keyword) :: Response
+  @spec save(CreditCard.t(), keyword) :: Response
   defp save(card, options) do
     save_card(card, options)
   end
@@ -281,17 +279,18 @@ defmodule Gringotts.Gateways.Paymill do
   defp get_save_card_params(card, options) do
     {:ok, money} = Keyword.fetch(options, :money)
     {currency, int_value, _} = Money.to_integer(money)
+
     [
-      {"transaction.mode" , "CONNECTOR_TEST"},
-      {"channel.id" , get_config(:public_key, options)},
-      {"jsonPFunction" , "jsonPFunction"},
-      {"account.number" , card.number},
-      {"account.expiry.month" , card.month},
-      {"account.expiry.year" , card.year},
-      {"account.verification" , card.verification_code},
-      {"account.holder" , "#{card.first_name} #{card.last_name}"},
-      {"presentation.amount3D" , int_value},
-      {"presentation.currency3D" , currency}
+      {"transaction.mode", "CONNECTOR_TEST"},
+      {"channel.id", get_config(:public_key, options)},
+      {"jsonPFunction", "jsonPFunction"},
+      {"account.number", card.number},
+      {"account.expiry.month", card.month},
+      {"account.expiry.year", card.year},
+      {"account.verification", card.verification_code},
+      {"account.holder", "#{card.first_name} #{card.last_name}"},
+      {"presentation.amount3D", int_value},
+      {"presentation.currency3D", currency}
     ]
   end
 
@@ -322,7 +321,7 @@ defmodule Gringotts.Gateways.Paymill do
   defp commit(method, action, parameters, options) do
     method
     |> HTTPoison.request(@live_url <> action, {:form, parameters}, get_headers(options))
-    |> ResponseParser.parse
+    |> ResponseParser.parse()
   end
 
   defp get_config(key, options) do
@@ -436,9 +435,11 @@ defmodule Gringotts.Gateways.Paymill do
       body = Poison.decode!(body)
       parse_body([status_code: 200], body)
     end
-    
-    def parse({:ok, %HTTPoison.Response{body: body, status_code: status_code}}) when status_code in [400, 404, 409] do
+
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: status_code}})
+        when status_code in [400, 404, 409] do
       body = Poison.decode!(body)
+
       [status_code: status_code, success: false]
       |> set_params(body)
       |> handle_error(body)
@@ -454,6 +455,7 @@ defmodule Gringotts.Gateways.Paymill do
     end
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 403}}) do
       body = Poison.decode!(body)
+
       [status_code: 403, success: false]
       |> parse_body(body)
     end
@@ -461,7 +463,7 @@ defmodule Gringotts.Gateways.Paymill do
     def parse({:error, %HTTPoison.Error{} = error}) do
       {:error, Response.error(error_code: error.id, message: "HTTPoison says '#{error.reason}'.")}
     end
-      
+
     defp set_success(opts, %{"error" => error}) do
       opts ++ [message: error, success: false]
     end
@@ -469,6 +471,7 @@ defmodule Gringotts.Gateways.Paymill do
     defp set_success(opts, %{"transaction" => %{"response_code" => 20_000}}) do
       opts ++ [success: true]
     end
+
     defp set_success(opts, %{"response_code" => 20_000}) do
       opts ++ [success: true]
     end
@@ -477,6 +480,7 @@ defmodule Gringotts.Gateways.Paymill do
       [{_, msg} | _] = Map.to_list(messages)
       opts ++ [message: msg]
     end
+
     defp handle_error(opts, %{"error" => msg}) do
       opts ++ [message: msg]
     end
@@ -498,6 +502,12 @@ defmodule Gringotts.Gateways.Paymill do
     end
 
     # Status code
+    defp parse_status_code(opts, %{"status" => "failed", "response_code" => code}) do
+      response_msg = Map.get(@response_code, code, -1)
+
+      opts ++ [error_code: code, message: response_msg]
+    end
+
     defp parse_status_code(opts, %{"status" => "failed"} = body) do
       response_code = get_in(body, ["transaction", "response_code"])
       response_msg = Map.get(@response_code, response_code, -1)
@@ -519,6 +529,7 @@ defmodule Gringotts.Gateways.Paymill do
     defp parse_authorization(opts, %{"status" => "failed"}) do
       opts ++ [success: false]
     end
+
     defp parse_authorization(opts, %{"id" => id}) do
       opts ++ [authorization: id]
     end
