@@ -28,12 +28,12 @@ defmodule Gringotts.Gateways.Cams do
   optional arguments for transactions with the CAMS gateway. The following keys
   are supported:
 
-  | Key                 | Remark | Status          |
-  | ----                | ---    | ----            |
-  | `billing_address`   |        | Not implemented |
-  | `address`           |        | Not implemented |
-  | `order_id`          |        | Not implemented |
-  | `description`       |        | Not implemented |
+  | Key                 | Remark | Status      |
+  | ----                | ---    | ----        |
+  | `billing_address`   |        | implemented |
+  | `address`           |        | implemented |
+  | `order_id`          |        | implemented |
+  | `description`       |        | implemented |
 
   ## Registering your CAMS account at `Gringotts`
 
@@ -66,8 +66,9 @@ defmodule Gringotts.Gateways.Cams do
 
   1. First, set up a sample application and configure it to work with CAMS.
     - You could do that from scratch by following our [Getting Started][gs] guide.
-    - To save you time, we recommend [cloning our example repo][example-repo]
-      that gives you a pre-configured sample app ready-to-go.
+    - To save you time, we recommend [cloning our examplerepo
+    ](https://github.com/aviabird/gringotts_example) that gives you a
+    pre-configured sample app ready-to-go.
       + You could use the same config or update it the with your "secrets" that
         you get after [registering with
         CAMS](#module-registering-your-cams-account-at-gringotts).
@@ -86,6 +87,10 @@ defmodule Gringotts.Gateways.Cams do
   iex> money = %{value: Decimal.new(20), currency: "USD"}
   ```
   We'll be using these in the examples below.
+
+  ## Inegration with phoenix
+  You can refer [gringotts integration with phoenix](https://github.com/aviabird/gringotts_payment)
+  for integrating Cams with phoenix. 
 
   ## TODO
 
@@ -128,6 +133,17 @@ defmodule Gringotts.Gateways.Cams do
   field) which can be used later to:
   * `capture/3` an amount.
   * `void/2` an authorized transaction.
+
+  ## Optional Fields
+      options[
+       billing_address: address = %{
+          name: String, address1: String, address2: String,
+          company: String, city: String, state: String,
+          zip: String, country: String, phone: String
+        },
+        order_id: String,
+        description: String     
+      ]
 
   ## Examples
 
