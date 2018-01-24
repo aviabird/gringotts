@@ -1,8 +1,8 @@
 defmodule Gringotts.Gateways.Paymill do
   @moduledoc """
-  An Api Client for the [PAYMILL][home] gateway.
+  [PAYMILL][home] gateway implementation.
 
-  For refernce see [PAYMILL's API (v2.1) documentation](https://developers.paymill.com/API/index)
+  For refernce see [PAYMILL's API (v2.1) documentation][docs].
 
   The following features of PAYMILL are implemented:
 
@@ -11,138 +11,245 @@ defmodule Gringotts.Gateways.Paymill do
   | Authorize                    | `authorize/3` |
   | Capture                      | `capture/3`   |
   | Purchase                     | `purchase/3`  |
+  | Refund                       | `refund/3`    |
   | Void                         | `void/2`      |
 
-  Following fields are required for config
+  ## The `opts` argument
 
-  | Config Parameter | PAYMILL secret       |
-  | private_key      | **your_private_key** |
-  | public_key       | **your_public_key**  |
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  optional arguments for transactions with the PAYMILL gateway. **Currently, no
+  optional params are supported.**
 
-  Your application config must include 'private_key', 'public_key'
+  > These are being implemented, track progress in [issue #50][iss50]!
+
+  [iss50]: https://github.com/aviabird/gringotts/issues/50
+
+  ## Registering your PAYMILL account at `Gringotts`
+
+  After [making an account on PAYMILL][dashboard], head to the dashboard and find
+  your account "secrets".
+
+  Here's how the secrets map to the required configuration parameters for PAYMILL:
+
+  | Config parameter | PAYMILL secret  |
+  | -------          | ----            |
+  | `:private_key`   | **Private Key** |
+  | `:public_key`    | **Public Key**  |
+
+  Your Application config **must include the `:private_key`, `:public_key`
+  fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Paymill,
-        private_key: "your_privat_key",
-        public_key: "your_public_key"
+        private_key: "your_secret_private_key",
+        public_key: "your_secret_public_key"
+
+  ## Scope of this module
+
+  * PAYMILL does processes money in cents.
+
+  ## Supported countries
+  **citation-needed**
+
+  ## Supported currencies
+  **citation-needed**
+
+  ## Following the examples
+
+  1. First, set up a sample application and configure it to work with PAYMILL.
+  - You could do that from scratch by following our [Getting Started][gs] guide.
+      - To save you time, we recommend [cloning our example repo][example-repo]
+        that gives you a pre-configured sample app ready-to-go.
+        + You could use the same config or update it the with your "secrets" as
+          described
+          [above](#module-registering-your-paymill-account-at-gringotts).
+
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
+     aliases to it (to save some time):
+  ```
+  iex> alias Gringotts.{Response, CreditCard, Gateways.Paymill}
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099, month: 12,
+                          verification_code: "123",
+                          brand: "VISA"}
+  ```
+
+  We'll be using these in the examples below.
 
   [home]: https://paymill.com
+  [docs]: https://developers.paymill.com/API/index
+  [dashboard]: https://app.paymill.com/user/register
+  [all-card-list]: #
+  [gs]: https://github.com/aviabird/gringotts/wiki
+  [example-repo]: https://github.com/aviabird/gringotts_example
   """
   use Gringotts.Gateways.Base
-  alias Gringotts.{CreditCard, Response}
-  alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
-
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
 
-  @default_currency "EUR"
+  alias Gringotts.{CreditCard, Response, Money}
+  alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
+
   @live_url "https://api.paymill.com/v2.1/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
 
   @doc """
-  Authorize a card with particular amount and return a token in response
+  Performs a (pre) Authorize operation.
 
-  ### Example
-      amount = 100
+  The authorization validates the `card` details with the banking network,
+  places a hold on the transaction `amount` in the customer’s issuing bank and
+  also triggers risk management. Funds are not transferred.
 
-      card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
-        number: "4111111111111111",
-        month: 12,
-        year: 2018,
-        verification_code: 123
-      }
+  The authorization token is available in the `Response.authorization` field.
 
-      options = []
+  ## Example
 
-      iex> Gringotts.authorize(Gringotts.Gateways.Paymill, amount, card, options)
+  The following example shows how one would (pre) authorize a payment of €42 on
+  a sample `card`.
+  ```
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4111111111111111",
+                          year: 2099, month: 12,
+                          verification_code: "123",
+                          brand: "VISA"}
+
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Paymill, amount, card)
+  iex> auth_result.authorization # This is the auth-token
+  ```
   """
-  @spec authorize(number, String.t() | CreditCard.t(), Keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t, String.t | CreditCard.t, keyword) :: {:ok | :error, Response}
   def authorize(amount, card_or_token, options) do
     action_with_token(:authorize, amount, card_or_token, options)
   end
 
   @doc """
-  Purchase with a card
+  Captures a pre-authorized `amount`.
 
-  ### Example
-      amount = 100
+  `amount` is transferred to the merchant account by PAYMILL when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `payment_id`.
 
-      card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
-        number: "4111111111111111",
-        month: 12,
-        year: 2018,
-        verification_code: 123
-      }
+  ## Note
 
-      options = []
+  PAYMILL allows partial captures and unlike many other gateways, and releases
+  any remaining amount back to the payment source.
+  > Thus, the same pre-authorisation ID cannot be used to perform multiple captures.
 
-      iex> Gringotts.purchase(Gringotts.Gateways.Paymill, amount, card, options)
+  ## Example
+
+  The following example shows how one would (partially) capture a previously
+  authorized a payment worth €35 by referencing the obtained authorization `id`.
+
+  ```
+  iex> amount = %{value: Decimal.new(35), currency: "EUR"}
+  iex> token = auth_result.authorization
+  # token = "some_authorization_token"
+  iex> Gringotts.capture(Gringotts.Gateways.Paymill, token, amount)
+  ```
   """
-  @spec purchase(number, CreditCard.t(), Keyword) :: {:ok | :error, Response}
+  @spec capture(String.t, Money.t, keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, options) do
+    post = amount_params(amount) ++ [{"preauthorization", payment_id}]
+
+    commit(:post, "transactions", post, options)
+  end
+
+  @doc """
+  Transfers `amount` from the customer to the merchant.
+
+  PAYMILL attempts to process a purchase on behalf of the customer, by debiting
+  `amount` from the customer's account by charging the customer's `card`.
+
+  ## Example
+
+  The following example shows how one would process a payment worth €42 in one-shot,
+  without (pre) authorization.
+
+  ```
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4111111111111111",
+                          year: 2099, month: 12,
+                          verification_code: "123",
+                          brand: "VISA"}
+
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Paymill, amount, card)
+  ```
+  """
+  @spec purchase(Money.t, CreditCard.t, keyword) :: {:ok | :error, Response}
   def purchase(amount, card, options) do
     action_with_token(:purchase, amount, card, options)
   end
 
   @doc """
-  Capture a particular amount with authorization token
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-  ### Example
-      amount = 100
+  PAYMILL processes a full or partial refund worth `amount`, where `payment_id`
+  references a previous `purchase/3` or `capture/3`. Multiple partial refunds
+  are allowed on the same `payment_id` till all the captured/purchased amount
+  has been refunded.
+  
+  ## Example
 
-      token = "preauth_14c7c5268eb155a599f0"
-
-      options = []
-
-      iex> Gringotts.capture(Gringotts.Gateways.Paymill, token, amount, options)
+  The following example shows how one would refund a previous purchase (and
+  similarily for captures).
+  ```
+  iex> purchase_token = purchase_result.authorization
+  iex> amount = %{value: Decimal.new(42), currency: "EUR"}
+  iex> Gringotts.refund(Gringotts.Gateways.Paymill, amount, purchase_token)
+  ```
   """
   @spec capture(String.t(), number, Keyword) :: {:ok | :error, Response}
   def capture(authorization, amount, options) do
     post = add_amount([], amount, options) ++ [{"preauthorization", authorization}]
 
-    commit(:post, "transactions", post, options)
+    commit(:post, "refunds/#{payment_id}", [amount: int_value], options)
   end
+
 
   @doc """
-  Voids a particular authorized amount
+  Voids the referenced authorization.
 
-  ### Example
-      token = "preauth_14c7c5268eb155a599f0"
+  This method attempts a reversal of the a previous `authorize/3` referenced by
+  `authorization_id`.
 
-      options = []
+  PAYMILL supports voiding captures and purchases as well, but that's not
+  implemented yet. **citation-needed**
 
-      iex> Gringotts.void(Gringotts.Gateways.Paymill, token, options)
+  ## Example
+
+  The following example shows how one would void a previous capture.
+  ```
+  iex> auth_token = auth_result.authorization
+  iex> Gringotts.void(Gringotts.Gateways.Paymill, auth_token)
+  ```
   """
-  @spec void(String.t(), Keyword) :: {:ok | :error, Response}
-  def void(authorization, options) do
-    commit(:delete, "preauthorizations/#{authorization}", [], options)
+  @spec void(String.t, keyword) :: {:ok | :error, Response}
+  def void(authorization_id, options) do
+    commit(:delete, "preauthorizations/#{authorization_id}", [], options)
   end
 
-  @spec refund(number, String.t, Keyword) :: {:ok | :error, Response}
-  def refund(amount, authorization, options) do
-    post = [amount: amount]
-
-    commit(:post, "refunds/#{authorization}", post, options)
-  end
 
   @doc false
-  @spec authorize_with_token(number, String.t(), Keyword) :: term
+  @spec authorize_with_token(Money.t, String.t, keyword) :: term
   def authorize_with_token(money, card_token, options) do
-    post = add_amount([], money, options) ++ [{"token", card_token}]
+    post = amount_params(money) ++ [{"token", card_token}]
 
     commit(:post, "preauthorizations", post, options)
   end
 
   @doc false
-  @spec purchase_with_token(number, String.t(), Keyword) :: term
+  @spec purchase_with_token(Money.t, String.t, keyword) :: term
   def purchase_with_token(money, card_token, options) do
-    post = add_amount([], money, options) ++ [{"token", card_token}]
+    post = amount_params(money) ++ [{"token", card_token}]
 
     commit(:post, "transactions", post, options)
   end
 
-  @spec save_card(CreditCard.t(), Keyword) :: Response
+  @spec save_card(CreditCard.t, keyword) :: Response
   defp save_card(card, options) do
     {:ok, %HTTPoison.Response{body: response}} =
       HTTPoison.get(
@@ -154,7 +261,7 @@ defmodule Gringotts.Gateways.Paymill do
     parse_card_response(response)
   end
 
-  @spec save(CreditCard.t(), Keyword) :: Response
+  @spec save(CreditCard.t, keyword) :: Response
   defp save(card, options) do
     save_card(card, options)
   end
@@ -171,17 +278,19 @@ defmodule Gringotts.Gateways.Paymill do
   end
 
   defp get_save_card_params(card, options) do
+    {:ok, money} = Keyword.fetch(options, :money)
+    {currency, int_value, _} = Money.to_integer(money)
     [
-      {"transaction.mode", "CONNECTOR_TEST"},
-      {"channel.id", get_config(:public_key, options)},
-      {"jsonPFunction", "jsonPFunction"},
-      {"account.number", card.number},
-      {"account.expiry.month", card.month},
-      {"account.expiry.year", card.year},
-      {"account.verification", card.verification_code},
-      {"account.holder", CreditCard.full_name(card)},
-      {"presentation.amount3D", get_amount(options)},
-      {"presentation.currency3D", get_currency(options)}
+      {"transaction.mode" , "CONNECTOR_TEST"},
+      {"channel.id" , get_config(:public_key, options)},
+      {"jsonPFunction" , "jsonPFunction"},
+      {"account.number" , card.number},
+      {"account.expiry.month" , card.month},
+      {"account.expiry.year" , card.year},
+      {"account.verification" , card.verification_code},
+      {"account.holder" , "#{card.first_name} #{card.last_name}"},
+      {"presentation.amount3D" , int_value},
+      {"presentation.currency3D" , currency}
     ]
   end
 
@@ -189,8 +298,9 @@ defmodule Gringotts.Gateways.Paymill do
     @headers ++ set_username(options)
   end
 
-  defp add_amount(post, money, options) do
-    post ++ [{"amount", money}, {"currency", get_currency(options)}]
+  defp amount_params(money) do
+    {currency, int_value, _} = Money.to_integer(money)
+    [amount: int_value, currency: currency]
   end
 
   defp set_username(options) do
@@ -206,15 +316,11 @@ defmodule Gringotts.Gateways.Paymill do
     |> Poison.decode()
   end
 
-  defp get_currency(options), do: options[:currency] || @default_currency
-
-  defp get_amount(options), do: options[:money]
-
   defp get_token(response) do
     get_in(response, ["transaction", "identification", "uniqueId"])
   end
 
-  defp commit(method, action, parameters \\ nil, options) do
+  defp commit(method, action, parameters, options) do
     method
     |> HTTPoison.request(@live_url <> action, {:form, parameters}, get_headers(options), [])
     |> ResponseParser.parse()
@@ -226,7 +332,7 @@ defmodule Gringotts.Gateways.Paymill do
 
   defmodule ResponseHandler do
     @moduledoc false
-    
+
     alias Gringotts.Response
 
     @response_code %{
