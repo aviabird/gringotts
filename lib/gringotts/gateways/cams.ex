@@ -28,13 +28,23 @@ defmodule Gringotts.Gateways.Cams do
   optional arguments for transactions with the CAMS gateway. The following keys
   are supported:
 
-  | Key                 | Remark | Status      |
-  | ----                | ---    | ----        |
-  | `billing_address`   |        | implemented |
-  | `address`           |        | implemented |
-  | `order_id`          |        | implemented |
-  | `description`       |        | implemented |
+  | Key               | Type       | Remark                                           |
+  | ----              | ----       | ---                                              |
+  | `billing_address` | `map`      | The address of the customer                      |
+  | `order_id`        | `String.t` | Merchant provided identifier                     |
+  | `description`     | `String.t` | Merchant provided description of the transaction |
 
+  > CAMS supports more optional keys and you can raise an [issue][issues] if
+    this is important to you.
+
+  [issues]: https://github.com/aviabird/gringotts/issues/new
+  
+  ### Schema
+
+  * `billing_address` is a `map` from `atoms` to `String.t`, and can include any
+    of the keys from:
+    `:name, :address1, :address2, :company, :city, :state, :zip, :country, :phone, :fax]`
+  
   ## Registering your CAMS account at `Gringotts`
 
   | Config parameter | CAMS secret   |
@@ -66,9 +76,8 @@ defmodule Gringotts.Gateways.Cams do
 
   1. First, set up a sample application and configure it to work with CAMS.
     - You could do that from scratch by following our [Getting Started][gs] guide.
-    - To save you time, we recommend [cloning our examplerepo
-    ](https://github.com/aviabird/gringotts_example) that gives you a
-    pre-configured sample app ready-to-go.
+    - To save you time, we recommend [cloning our example][example-repo] that
+      gives you a pre-configured sample app ready-to-go.
       + You could use the same config or update it the with your "secrets" that
         you get after [registering with
         CAMS](#module-registering-your-cams-account-at-gringotts).
@@ -88,9 +97,13 @@ defmodule Gringotts.Gateways.Cams do
   ```
   We'll be using these in the examples below.
 
-  ## Inegration with phoenix
-  You can refer [gringotts integration with phoenix](https://github.com/aviabird/gringotts_payment)
-  for integrating Cams with phoenix. 
+  ## Integrating with phoenix
+
+  Refer the [GringottsPay][gpay-heroku-cams] website for an example of how to
+  integrate CAMS with phoenix. The source is available [here][gpay-repo].
+  
+  [gpay-repo]: https://github.com/aviabird/gringotts_payment
+  [gpay-heroku-cams]: http://gringottspay.herokuapp.com/cams
 
   ## TODO
 
@@ -136,11 +149,6 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Optional Fields
       options[
-       billing_address: address = %{
-          name: String, address1: String, address2: String,
-          company: String, city: String, state: String,
-          zip: String, country: String, phone: String
-        },
         order_id: String,
         description: String     
       ]
