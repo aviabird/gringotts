@@ -8,6 +8,8 @@ defmodule Gringotts.Gateways.PaymillTest do
 
   import Mock
 
+  @amount Money.new(10, :USD)
+  @big_amount Money.new(100, :USD)
   @valid_card %CreditCard{
     first_name: "Sagar",
     last_name: "Karwande",
@@ -18,20 +20,20 @@ defmodule Gringotts.Gateways.PaymillTest do
   }
 
   @options [
-    config: [
+    config: %{
       private_key: "8f16b021d4fb1f8d9263cbe346f32688",
       public_key: "72294854039fcf7fd55eaeeb594577e7"
-    ]
+    }
   ]
 
   describe "authorize/3" do
 
     test "with valid card token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.successful_authorize end] do
 
-        {:ok, response} = Paymill.authorize(100, "tok_6864ab6cce1444833ede76077ed0", @options)
+        {:ok, response} = Paymill.authorize(@amount, "tok_6864ab6cce1444833ede76077ed0", @options)
 
         assert response.success
         assert response.status_code == 200
@@ -41,10 +43,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid cvv" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.authorize_invalid_cvv end] do
 
-        {:error, response} = Paymill.authorize(100, "tok_40101_23f20b1cebf9f4eb50d5e0", @options)
+        {:error, response} = Paymill.authorize(@amount, "tok_40101_23f20b1cebf9f4eb50d5e0", @options)
 
         refute response.success
         assert response.status_code == 200
@@ -55,10 +57,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid card token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.authorize_invalid_card_token end] do
 
-        {:error, response} = Paymill.authorize(100, "tok_123", @options)
+        {:error, response} = Paymill.authorize(@amount, "tok_123", @options)
 
         refute response.success
         assert response.status_code == 400
@@ -68,11 +70,11 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with currency or amount mismatch" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.authorize_invalid_currency end] do
 
         invalid_opts = @options ++ [currency: "ABC"]
-        {:error, response} = Paymill.authorize(100, "tok_123", invalid_opts)
+        {:error, response} = Paymill.authorize(@amount, "tok_123", invalid_opts)
 
         refute response.success
         assert response.status_code == 400
@@ -86,10 +88,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with valid preauth token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.successful_capture end] do
 
-        {:ok, response} = Paymill.capture("preauth_7dc9457660b33759b70b", 100, @options)
+        {:ok, response} = Paymill.capture("preauth_7dc9457660b33759b70b", @amount, @options)
 
         assert response.success
         assert response.status_code == 200
@@ -99,10 +101,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with already used preauth token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.capture_with_used_auth end] do
 
-        {:error, response} = Paymill.capture("preauth_7dc9457660b33759b70b", 100, @options)
+        {:error, response} = Paymill.capture("preauth_7dc9457660b33759b70b", @amount, @options)
 
         refute response.success
         assert response.status_code == 409
@@ -112,10 +114,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid preauth token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.capture_with_invalid_auth_token end] do
 
-        {:error, response} = Paymill.capture("preauth_123", 100, @options)
+        {:error, response} = Paymill.capture("preauth_123", @amount, @options)
 
         refute response.success
         assert response.status_code == 404
@@ -129,10 +131,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with valid token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.successful_purchase end] do
 
-        {:ok, response} = Paymill.purchase(100, "tok_59f35a89e96dee1ceb6b437317be", @options)
+        {:ok, response} = Paymill.purchase(@amount, "tok_59f35a89e96dee1ceb6b437317be", @options)
 
         assert response.success
         assert response.status_code == 200
@@ -143,10 +145,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.purchase_with_invalid_card_token end] do
 
-        {:error, response} = Paymill.purchase(100, "tok_59f35a89e96dee1ceb6b437317be", @options)
+        {:error, response} = Paymill.purchase(@amount, "tok_59f35a89e96dee1ceb6b437317be", @options)
 
         refute response.success
         assert response.status_code == 403
@@ -161,7 +163,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with valid preauth token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.successful_void end] do
 
         {:ok, response} = Paymill.void("preauth_028b0d40a6465099a774", @options)
@@ -175,7 +177,7 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid preauth token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.void_with_invalid_auth_token end] do
 
         {:error, response} = Paymill.void("preauth_028b0d40a6465099a123", @options)
@@ -191,10 +193,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with valid transaction token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.successful_refund end] do
 
-        {:ok, response} = Paymill.refund(100, "tran_8e3c8746b274c89930cd2a38ed43", @options)
+        {:ok, response} = Paymill.refund(@amount, "tran_8e3c8746b274c89930cd2a38ed43", @options)
 
         assert response.success
         assert response.status_code == 200
@@ -205,10 +207,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with invalid transaction token" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.refund_with_invalid_trans_token end] do
 
-        {:error, response} = Paymill.refund(100, "tran_8e3c8746b274c89930cd2a38e123", @options)
+        {:error, response} = Paymill.refund(@amount, "tran_8e3c8746b274c89930cd2a38e123", @options)
 
         refute response.success
         assert response.status_code == 404
@@ -218,10 +220,10 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "with high amount than the transaction amount" do
       with_mock HTTPoison,
-      [request: fn(_method, _url, _body, _headers, _opts) ->
+      [request: fn(_method, _url, _body, _headers) ->
       MockResponse.refund_with_high_amount end] do
 
-        {:error, response} = Paymill.refund(400, "tran_d9df8ae460354befe6aee6916fbf", @options)
+        {:error, response} = Paymill.refund(@big_amount, "tran_d9df8ae460354befe6aee6916fbf", @options)
 
         refute response.success
         assert response.status_code == 400
