@@ -1,9 +1,8 @@
 defmodule Gringotts.Gateways.Trexle do
-
   @moduledoc """
-  Trexle Payment Gateway Implementation:
+  [Trexle][home] Payment Gateway implementation.
 
-  For further details, please refer [Trexle API documentation](https://docs.trexle.com/).
+  > For further details, please refer [Trexle API documentation][docs].
 
   Following are the features that have been implemented for the Trexle Gateway:
 
@@ -16,146 +15,213 @@ defmodule Gringotts.Gateways.Trexle do
   | Store                        | `store/2`     |
 
   ## The `opts` argument
-  A `Keyword` list `opts` passed as an optional argument for transactions with the gateway. Following are the keys
+
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  optional arguments for transactions with Trexle. The following keys are
   supported:
 
-  * email
-  * ip_address
-  * description
+  * `email`
+  * `ip_address`
+  * `description`
 
-  ## Trexle account registeration with `Gringotts`
-  After creating your account successfully on [Trexle](https://docs.trexle.com/) follow the [dashboard link](https://trexle.com/dashboard/api-keys) to fetch the secret api_key.
+  [docs]: https://docs.trexle.com/
+  [home]: https://trexle.com/
+
+  ## Registering your Trexle account at `Gringotts`
+
+  After [creating your account][dashboard] successfully on Trexle, head to the dashboard and find
+  your account "secrets" in the [`API keys`][keys] section.
+
+  Here's how the secrets map to the required configuration parameters for MONEI:
+
+  | Config parameter | Trexle secret   |
+  | -------          | ----            |
+  | `:api_key`       | **API key**     |
 
   Your Application config must look something like this:
 
       config :gringotts, Gringotts.Gateways.Trexle,
           adapter: Gringotts.Gateways.Trexle,
-          api_key: "Secret API key",
-          default_currency: "USD"
+          api_key: "your-secret-API-key"
+
+  [dashboard]: https://trexle.com/dashboard/
+  [keys]: https://trexle.com/dashboard/api-keys
+
+  ## Scope of this module
+
+  * Trexle processes money in cents.**citation-needed**.
+
+  ## Supported Gateways
+
+  Find the official [list here][gateways].
+
+  [gateways]: https://trexle.com/payment-gateway
+
+  ## Following the examples
+
+  1. First, set up a sample application and configure it to work with Trexle.
+  - You could do that from scratch by following our [Getting Started][gs] guide.
+      - To save you time, we recommend [cloning our example repo][example-repo]
+        that gives you a pre-configured sample app ready-to-go.
+        + You could use the same config or update it the with your "secrets"
+          that as described
+          [above](#module-registering-your-trexle-account-at-gringotts).
+
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
+  aliases to it (to save some time):
+  ```
+  iex> alias Gringotts.{Response, CreditCard, Gateways.Trexle}
+  iex> card = %CreditCard{
+               first_name: "Harry",
+               last_name: "Potter",
+               number: "4200000000000000",
+               year: 2099, month: 12,
+               verification_code: "123",
+               brand: "VISA"}
+  iex> address = %Address{
+                  street1: "301, Gryffindor",
+                  street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                  city: "Highlands",
+                  region: "SL",
+                  country: "GB",
+                  postal_code: "11111",
+                  phone: "(555)555-5555"}
+  iex> options = [email: "masterofdeath@ministryofmagic.gov",
+                  ip_address: "127.0.0.1",
+                  billing_address: address,
+                  description: "For our valued customer, Mr. Potter"]
+  ```
+
+  We'll be using these in the examples below.
+
+  [example-repo]: https://github.com/aviabird/gringotts_example
+  [gs]: #
   """
 
   @base_url "https://core.trexle.com/api/v1/"
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:api_key, :default_currency]
+  use Gringotts.Adapter, required_config: [:api_key]
   import Poison, only: [decode: 1]
-  alias Gringotts.{Response, CreditCard, Address}
+  alias Gringotts.{Response, CreditCard, Address, Money}
 
   @doc """
-  Performs the authorization of the card to be used for payment.
+  Performs a (pre) Authorize operation.
 
-  Authorizes your card with the given amount and returns a charge token and captured status as false in response.
+  The authorization validates the `card` details with the banking network,
+  places a hold on the transaction `amount` in the customer’s issuing bank and
+  also triggers risk management. Funds are not transferred.
+
+  Trexle returns a "charge token", avaliable in the `Response.authorization`
+  field, which can be used in future to perform a `capture/3`.
 
   ### Example
+
+  The following session shows how one would (pre) authorize a payment of $100 on
+  a sample `card`.
+
   ```
-  iex> amount = 100
-
+  iex> amount = %{value: Decimal.new(100),currency: "USD")
   iex> card = %CreditCard{
-    number: "5200828282828210",
-    month: 12,
-    year: 2018,
-    first_name: "John",
-    last_name: "Doe",
-    verification_code: "123",
-    brand: "visa"
-  }
-
+               first_name: "Harry",
+               last_name: "Potter",
+               number: "5200828282828210",
+               year: 2099, month: 12,
+               verification_code: "123",
+               brand: "VISA"}
   iex> address = %Address{
-    street1: "123 Main",
-    street2: "Suite 100",
-    city: "New York",
-    region: "NY",
-    country: "US",
-    postal_code: "11111",
-    phone: "(555)555-5555"
-  }
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: address, description: "Store Purchase 1437598192"]
-
-  iex> Gringotts.authorize(:payment_worker, Gringotts.Gateways.Trexle, amount, card, options)
+                  street1: "301, Gryffindor",
+                  street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                  city: "Highlands",
+                  region: "SL",
+                  country: "GB",
+                  postal_code: "11111",
+                  phone: "(555)555-5555"}
+  iex> options = [email: "masterofdeath@ministryofmagic.gov",
+                  ip_address: "127.0.0.1",
+                  billing_address: address,
+                  description: "For our valued customer, Mr. Potter"]
+  iex> Gringotts.authorize(Gringotts.Gateways.Trexle, amount, card, options)
   ```
   """
-
-  @spec authorize(float, CreditCard.t, list) :: map
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
   end
 
   @doc """
-  Performs the amount transfer from the customer to the merchant.
+  Captures a pre-authorized `amount`.
 
-  The actual amount deduction performed by Trexle using the customer's card info.
+  `amount` is transferred to the merchant account by MONEI when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `charge_token`.
+
+  Trexle returns a "charge token", avaliable in the `Response.authorization`
+  field, which can be used in future to perform a `refund/2`.
+
+  ## Note
+
+  Multiple captures cannot be performed on the same "charge token". If the
+  captured amount is smaller than the (pre) authorized amount, the "un-captured"
+  amount is released.**citation-needed**
 
   ## Example
+
+  The following example shows how one would (partially) capture a previously
+  authorized a payment worth $10 by referencing the obtained `charge_token`.
+
   ```
-  iex> card = %CreditCard{
-    number: "5200828282828210",
-    month: 12,
-    year: 2018,
-    first_name: "John",
-    last_name: "Doe",
-    verification_code: "123",
-    brand: "visa"
-  }
-
-  iex> address = %Address{
-    street1: "123 Main",
-    street2: "Suite 100",
-    city: "New York",
-    region: "NY",
-    country: "US",
-    postal_code: "11111",
-    phone: "(555)555-5555"
-  }
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: address, description: "Store Purchase 1437598192"]
-
-  iex> @address %Address{
-    street1: "123 Main",
-    street2: "Suite 100",
-    city: "New York",
-    region: "NY",
-    country: "US",
-    postal_code: "11111",
-    phone: "(555)555-5555"
-  }
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: @address, description: "Store Purchase 1437598192"]
-
-  iex> amount = 50
-
-  iex> Gringotts.purchase(:payment_worker, Gringotts.Gateways.Trexle, amount, card, options)
+  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> token = "some-real-token"
+  iex> Gringotts.capture(Gringotts.Gateways.Trexle, token, amount)
   ```
   """
-
-  @spec purchase(float, CreditCard.t, list) :: map
-  def purchase(amount, payment, opts \\ []) do
-    params = create_params_for_auth_or_purchase(amount, payment, opts)
-    commit(:post, "charges", params, opts)
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(charge_token, amount, opts \\ []) do
+    {_, int_value, _} = Money.to_integer(amount)
+    params = [amount: int_value]
+    commit(:put, "charges/#{charge_token}/capture", params, opts)
   end
 
   @doc """
-  Captures a particular amount using the charge token of a pre authorized card.
+  Transfers `amount` from the customer to the merchant.
 
-  The amount specified should be less than or equal to the amount given prior to capture while authorizing the card.
-  If the amount mentioned is less than the amount given in authorization process, the mentioned amount is debited.
-  Please note that multiple captures can't be performed for a given charge token from the authorization process.
+  Trexle attempts to process a purchase on behalf of the customer, by debiting
+  `amount` from the customer's account by charging the customer's `card`.
 
-  ### Example
+  ## Example
+
+  The following session shows how one would process a payment worth $100 in
+  one-shot, without (pre) authorization.
+
   ```
-  iex> amount = 100
-
-  iex> token = "charge_6a5fcdc6cdbf611ee3448a9abad4348b2afab3ec"
-
-  iex> Gringotts.capture(:payment_worker, Gringotts.Gateways.Trexle, token, amount)
+  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> card = %CreditCard{
+               first_name: "Harry",
+               last_name: "Potter",
+               number: "5200828282828210",
+               year: 2099, month: 12,
+               verification_code: "123",
+               brand: "VISA"}
+  iex> address = %Address{
+                  street1: "301, Gryffindor",
+                  street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                  city: "Highlands",
+                  region: "SL",
+                  country: "GB",
+                  postal_code: "11111",
+                  phone: "(555)555-5555"}
+  iex> options = [email: "masterofdeath@ministryofmagic.gov",
+                  ip_address: "127.0.0.1",
+                  billing_address: address,
+                  description: "For our valued customer, Mr. Potter"]
+  iex> Gringotts.purchase(Gringotts.Gateways.Trexle, amount, card, options)
   ```
   """
-
-  @spec capture(String.t, float, list) :: map
-  def capture(charge_token, amount, opts \\ []) do
-    params = [amount: amount]
-    commit(:put, "charges/#{charge_token}/capture", params, opts)
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, payment, opts \\ []) do
+    params = create_params_for_auth_or_purchase(amount, payment, opts)
+    commit(:post, "charges", params, opts)
   end
 
   @doc """
@@ -164,24 +230,28 @@ defmodule Gringotts.Gateways.Trexle do
   Trexle processes a full or partial refund worth `amount`, referencing a
   previous `purchase/3` or `capture/3`.
 
-  Multiple refund can be performed for the same charge token from purchase or capture done before performing refund action unless the cumulative amount is less than the amount given while authorizing.
+  Trexle returns a "refund token", avaliable in the `Response.authorization`
+  field.
+
+  Multiple, partial refunds can be performed on the same "charge token"
+  referencing a previous `purchase/3` or `capture/3` till the cumulative refunds
+  equals the `capture/3`d or `purchase/3`d amount.
 
   ## Example
-  The following session shows how one would refund a previous purchase (and similarily for captures).
+
+  The following session shows how one would refund $100 of a previous
+  `purchase/3` (and similarily for `capture/3`s).
+
   ```
-  iex> amount = 5
-
-  iex> token = "charge_668d3e169b27d4938b39246cb8c0890b0bd84c3c"
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", description: "Store Purchase 1437598192"]
-
-  iex> Gringotts.refund(:payment_worker, Gringotts.Gateways.Trexle, amount, token, options)
+  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> token = "some-real-token"
+  iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
   """
-
-  @spec refund(float, String.t, list) :: map
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, charge_token, opts \\ []) do
-    params = [amount: amount]
+    {_, int_value, _} = Money.to_integer(amount)
+    params = [amount: int_value]
     commit(:post, "charges/#{charge_token}/refunds", params, opts)
   end
 
@@ -189,52 +259,51 @@ defmodule Gringotts.Gateways.Trexle do
   Stores the card information for future use.
 
   ## Example
-  The following session shows how one would store a card (a payment-source) for future use.
+
+  The following session shows how one would store a card (a payment-source) for
+  future use.
   ```
   iex> card = %CreditCard{
-    number: "5200828282828210",
-    month: 12,
-    year: 2018,
-    first_name: "John",
-    last_name: "Doe",
-    verification_code: "123",
-    brand: "visa"
-  }
-
+               first_name: "Harry",
+               last_name: "Potter",
+               number: "5200828282828210",
+               year: 2099, month: 12,
+               verification_code: "123",
+               brand: "VISA"}
   iex> address = %Address{
-    street1: "123 Main",
-    street2: "Suite 100",
-    city: "New York",
-    region: "NY",
-    country: "US",
-    postal_code: "11111",
-    phone: "(555)555-5555"
-  }
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118", billing_address: address, description: "Store Purchase 1437598192"]
-
-  iex> Gringotts.store(:payment_worker, Gringotts.Gateways.Trexle, card, options)
+                  street1: "301, Gryffindor",
+                  street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
+                  city: "Highlands",
+                  region: "SL",
+                  country: "GB",
+                  postal_code: "11111",
+                  phone: "(555)555-5555"}
+  iex> options = [email: "masterofdeath@ministryofmagic.gov",
+                  ip_address: "127.0.0.1",
+                  billing_address: address,
+                  description: "For our valued customer, Mr. Potter"]
+  iex> Gringotts.store(Gringotts.Gateways.Trexle, card, options)
   ```
   """
-
-  @spec store(CreditCard.t, list) :: map
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(payment, opts \\ []) do
-    params = [email: opts[:email]]
-            ++ card_params(payment)
-            ++ address_params(opts[:billing_address])
+    params =
+      [email: opts[:email]] ++ card_params(payment) ++ address_params(opts[:billing_address])
+
     commit(:post, "customers", params, opts)
   end
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
+    {currency, int_value, _} = Money.to_integer(amount)
+
     [
       capture: capture,
-      amount: amount,
-      currency: opts[:config][:default_currency],
+      amount: int_value,
+      currency: currency,
       email: opts[:email],
       ip_address: opts[:ip_address],
       description: opts[:description]
-    ] ++ card_params(payment)
-      ++ address_params(opts[:billing_address])
+    ] ++ card_params(payment) ++ address_params(opts[:billing_address])
   end
 
   defp card_params(%CreditCard{} = card) do
@@ -260,30 +329,39 @@ defmodule Gringotts.Gateways.Trexle do
 
   defp commit(method, path, params, opts) do
     auth_token = "Basic #{Base.encode64(opts[:config][:api_key])}"
-    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
-    data = params_to_string(params)
-    options = [hackney: [:insecure, basic_auth: {opts[:config][:api_key], "password"}]]
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    options = [basic_auth: {opts[:config][:api_key], "password"}]
     url = "#{@base_url}#{path}"
-    response = HTTPoison.request(method, url, data, headers, options)
+    response = HTTPoison.request(method, url, {:form, params}, headers, options)
     response |> respond
   end
 
-  @spec respond(term) ::
-  {:ok, Response} |
-  {:error, Response}
+  @spec respond(term) :: {:ok | :error, Response}
   defp respond(response)
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
-    case decode(body) do
-      {:ok, results} -> {:ok, Response.success(raw: results, status_code: code)}
-    end
+    {:ok, results} = decode(body)
+    token = results["response"]["token"]
+    message = results["response"]["status_message"]
+
+    {
+      :ok,
+      Response.success(authorization: token, message: message, raw: results, status_code: code)
+    }
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
-    {:error, Response.error(status_code: status_code, raw: body)}
+    {:ok, results} = decode(body)
+    detail = results["detail"]
+    {:error, Response.error(status_code: status_code, message: detail, raw: results)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
+    {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
   end
 end
