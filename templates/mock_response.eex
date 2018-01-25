@@ -1,6 +1,6 @@
 defmodule Gringotts.Gateways.<%= gateway_module <> "Mock"%> do
 
-  # The module should include mock responses for test cases in <%= gateway_mock_test <> ".exs"%>.
+  # The module should include mock responses for test cases in <%= mock_test_filename <> ".exs"%>.
   # e.g. 
   # def successful_purchase do 
   #  {:ok, %HTTPoison.Response{body: ~s[{data: "successful_purchase"}]}

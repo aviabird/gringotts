@@ -148,8 +148,8 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
-  @spec capture(Money.t, String.t(), keyword) :: {:ok | :error, Response}
-  def capture(amount, payment_id, opts) do
+  @spec capture(String.t(), Money.t, keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, opts) do
     # commit(args, ...)
   end
 
@@ -211,7 +211,7 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
   @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
-  def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
+  def refund(amount, payment_id, opts) do
     # commit(args, ...)
   end
 
@@ -247,7 +247,7 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
   @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
-  def unstore(<<registrationId::bytes-size(32)>>, opts) do
+  def unstore(registration_id, opts) do
     # commit(args, ...)
   end
 
