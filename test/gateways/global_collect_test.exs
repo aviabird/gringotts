@@ -14,7 +14,7 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
 
   @bad_amount Money.new("50.3", :USD)
 
-  @shippingAddress %{
+  @shipping_address %{
     street: "Desertroad",
     houseNumber: "1",
     additionalInfo: "Suite II",
@@ -31,7 +31,7 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     first_name: "John",
     last_name: "Doe",
     verification_code: "123",
-    brand: "visa"
+    brand: "VISA"
   }
 
   @invalid_card %CreditCard{
@@ -41,10 +41,10 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     first_name: "John",
     last_name: "Doe",
     verification_code: "123",
-    brand: "visa"
+    brand: "VISA"
   }
 
-  @billingAddress %{
+  @billing_address %{
     street: "Desertroad",
     houseNumber: "13",
     additionalInfo: "b",
@@ -91,10 +91,9 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     phone: "7468474533",
     order_id: "2323",
     invoice: @invoice,
-    billingAddress: @billingAddress,
-    shippingAddress: @shippingAddress,
-    name: @name,
-    skipAuthentication: "true"
+    billingAddress: @billing_address,
+    shippingAddress: @shipping_address,
+    name: @name, skipAuthentication: "true"
   ]
 
   describe "validation arguments check" do

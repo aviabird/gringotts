@@ -19,25 +19,25 @@ defmodule Gringotts.Gateways.GlobalCollect do
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the gateway.
 
-  | Key                      | Status          |
+  | Key                      | Remark          |
   | ----                     | ---             |
-  | `merchantCustomerId`     |  implemented    |
-  | `description`            |  implemented    |
-  | `customer_name`          |  implemented    |
-  | `dob`                    |  implemented    |
-  | `company`                |  implemented    |
-  | `email`                  |  implemented    |
-  | `phone`                  |  implemented    |
-  | `order_id`               |  implemented    |
-  | `invoice`                |  implemented    |
-  | `billingAddress`         |  implemented    |
-  | `shippingAddress`        |  implemented    |
-  | `name`                   |  implemented    |
-  | `skipAuthentication`     |  implemented    |
+  | `merchantCustomerId`     |  identifier for the consumer that can be used as a search criteria in the Global Collect Payment Console |
+  | `description`            |  Descriptive text that is used towards to consumer, either during an online checkout at a third party and/or on the statement of the consumer |
+  | `dob`                    |  The date of birth of the consumer Format: YYYYMMDD   |
+  | `company`                |  Name of company, as a consumer                       |
+  | `email`                  |  Email address of the consumer                        |
+  | `phone`                  |  Phone number of the consumer                         |
+  | `invoice`                |  Object containing additional invoice data            |
+  | `billingAddress`         |  Object containing billing address details            |
+  | `shippingAddress`        |  Object containing shipping address details           |
+  | `name`                   |  Object containing the name details of the consumer   |
+  | `skipAuthentication`     |  3D Secure Authentication will be skipped for this transaction if set to true |
 
   ## Registering your GlobalCollect account at `Gringotts`
 
-  After creating your account successfully on [GlobalCollect](http://www.globalcollect.com/) follow the [dashboard link](https://sandbox.account.ingenico.com/#/account/apikey) to fetch the secret_api_key, api_key_id and [here](https://sandbox.account.ingenico.com/#/account/merchantid) for merchant_id.
+  After creating your account successfully on [GlobalCollect](http://www.globalcollect.com/)
+  follow the [dashboard link](https://sandbox.account.ingenico.com/#/account/apikey) to
+  fetch the secret_api_key, api_key_id and [here](https://sandbox.account.ingenico.com/#/account/merchantid) for merchant_id.
 
   Here's how the secrets map to the required configuration parameters for GlobalCollect:
 
@@ -63,7 +63,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ## Following the examples
 
   1. First, set up a sample application and configure it to work with GlobalCollect.
-      - You could do that from scratch by following our [Getting Started][gs] guide.
+      - You could do that from scratch by following our [Getting Started](#) guide.
       - To save you time, we recommend [cloning our example
       repo][example] that gives you a pre-configured sample app ready-to-go.
           + You could use the same config or update it the with your "secrets"
@@ -105,12 +105,13 @@ defmodule Gringotts.Gateways.GlobalCollect do
       surname: "Runner"
     }
 
-  iex> opts = [ description: "Store Purchase 1437598192", merchantCustomerId: "234", customer_name: "John Doe", dob: "19490917", company: "asma", email: "johndoe@gmail.com", phone: "7765746563", order_id: "2323", invoice: invoice, billingAddress: billingAddress, shippingAddress: shippingAddress, name: name, skipAuthentication: "true" ]
+  iex> opts = [ description: "Store Purchase 1437598192", merchantCustomerId: "234", dob: "19490917", company: "asma", email: "johndoe@gmail.com", phone: "7765746563", invoice: invoice, billingAddress: billingAddress, shippingAddress: shippingAddress, name: name, skipAuthentication: "true" ]
 
   ```
 
   We'll be using these in the examples below.
 
+  [home]: http://www.globalcollect.com/
   [example]: https://github.com/aviabird/gringotts_example
   """
   @base_url "https://api-sandbox.globalcollect.com/v1/"
@@ -124,15 +125,17 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money, CreditCard, Response}
+  alias Gringotts.{Money,
+                   CreditCard,
+                   Response}
 
-  @brand_map %{
-    visa: "1",
-    american_express: "2",
-    master: "3",
-    discover: "128",
-    jcb: "125",
-    diners_club: "132"
+  @brand_map  %{
+    "VISA": "1",
+    "AMERICAN_EXPRESS": "2",
+    "MASTER": "3",
+    "DISCOVER": "128",
+    "JCB": "125",
+    "DINERS_CLUB": "132"
   }
 
   @doc """
@@ -143,13 +146,13 @@ defmodule Gringotts.Gateways.GlobalCollect do
   also triggers risk management. Funds are not transferred.
 
   GlobalCollect returns a payment id which can be further used to:
-  * `capture/3` _an_ amount.
-  * `refund/3` _an_amount
+  * `capture/3` an amount.
+  * `refund/3` an amount
   * `void/2` a pre_authorization
 
   ## Example
 
-  > The following session shows how one would (pre) authorize a payment of $100 on
+  The following session shows how one would (pre) authorize a payment of $100 on
   a sample `card`.
   ```
   iex> card = %CreditCard{
@@ -159,7 +162,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
       first_name: "John",
       last_name: "Doe",
       verification_code: "123",
-      brand: "visa"
+      brand: "VISA"
   }
 
   iex> amount = %{value: Decimal.new(100), currency: "USD"}
@@ -168,7 +171,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ```
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount, card = %CreditCard{}, opts) do
+  def authorize(amount, %CreditCard{} = card, opts) do
     params = create_params_for_auth_or_purchase(amount, card, opts)
     commit(:post, "payments", params, opts)
   end
@@ -176,13 +179,14 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @doc """
   Captures a pre-authorized `amount`.
 
-  `amount` is transferred to the merchant account by GlobalCollect used in the
-  pre-authorization referenced by `payment_id`.
+ `amount` used in the pre-authorization is transferred to the merchant account by
+  GlobalCollect referenced by `payment_id`.
 
   ## Note
 
-  > Authorized payment with PENDING_APPROVAL status only allow a single capture whereas the one with PENDING_CAPTURE status is used for payments that allow multiple captures.
-  > PENDING_APPROVAL is a common status only with card and direct debit transactions.
+  Authorized payment with PENDING_APPROVAL status only allow a single capture whereas
+  the one with PENDING_CAPTURE status is used for payments that allow multiple captures.
+  PENDING_APPROVAL is a common status only with card and direct debit transactions.
 
   ## Example
 
@@ -190,19 +194,9 @@ defmodule Gringotts.Gateways.GlobalCollect do
   authorized a payment worth $100 by referencing the obtained authorization `id`.
 
   ```
-  iex> card = %CreditCard{
-      number: "4567350000427977",
-      month: 12,
-      year: 18,
-      first_name: "John",
-      last_name: "Doe",
-      verification_code: "123",
-      brand: "visa"
-    }
-
   iex> amount = %{value: Decimal.new(100), currency: "USD"}
 
-  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.GlobalCollect, amount, card, opts)
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.GlobalCollect, auth_result.authorization, amount, opts)
 
   ```
 
@@ -233,7 +227,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
       first_name: "John",
       last_name: "Doe",
       verification_code: "123",
-      brand: "visa"
+      brand: "VISA"
     }
 
   iex> amount = %{value: Decimal.new(100), currency: "USD"}
@@ -242,8 +236,8 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ```
   """
-  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card = %CreditCard{}, opts) do
+  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, %CreditCard{} = card, opts) do
     case authorize(amount, card, opts) do
       {:ok, results} ->
         payment_id = results.raw["payment"]["id"]
@@ -257,9 +251,12 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @doc """
   Voids the referenced payment.
 
-  This makes it impossible to process the payment any further and will also try to reverse an authorization on a card.
-  Reversing an authorization that you will not be utilizing will prevent you from having to pay a fee/penalty for unused authorization requests.
+  This makes it impossible to process the payment any further and will also try
+  to reverse an authorization on a card.
+  Reversing an authorization that you will not be utilizing will prevent you
+  from having to [pay a fee/penalty][void] for unused authorization requests.
 
+  [void]: https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/java/payments/cancel.html#payments-cancel-request
   ## Example
 
   > The following session shows how one would void a previous (pre)
@@ -267,7 +264,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   capture.
 
   ```
-  iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.GlobalCollect, auth_result.payment.id, opts)
+  iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.GlobalCollect, auth_result.authorization, opts)
 
   ```
   """
@@ -285,7 +282,8 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ## Note
 
   You always have the option to refund just a portion of the payment amount.
-  It is also possible to submit multiple refund requests on one payment as long as the total amount to be refunded does not exceed the total amount that was paid.
+  It is also possible to submit multiple refund requests on one payment as long
+  as the total amount to be refunded does not exceed the total amount that was paid.
 
   ## Example
 
@@ -295,7 +293,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ```
   iex> amount = %{value: Decimal.new(100), currency: "USD"}
 
-  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.GlobalCollect, auth_result.payment.id, amount)
+  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.GlobalCollect, auth_result.authorization, amount)
   ```
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
@@ -307,11 +305,6 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
-
-  # Makes the request to GlobalCollect's network.
-  # For consistency with other gateway implementations, make your (final)
-  # network request in here, and parse it using another private method called
-  # `respond`.
 
   defp create_params_for_refund(amount, opts) do
     %{
@@ -388,7 +381,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
     }
   end
 
-  def add_card(%CreditCard{} = payment) do
+  defp add_card(%CreditCard{} = payment) do
     %{
       cvv: payment.verification_code,
       cardNumber: payment.number,
@@ -421,18 +414,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
   end
 
   defp create_headers(path, opts) do
-    time = date
-
-    sha_signature =
-      auth_digest(path, opts[:config][:secret_api_key], time, opts) |> Base.encode64()
-
-    auth_token = "GCS v1HMAC:#{opts[:config][:api_key_id]}:#{sha_signature}"
-
-    headers = [
-      {"Content-Type", "application/json"},
-      {"Authorization", auth_token},
-      {"Date", time}
-    ]
+    time = date()
+    sha_signature = auth_digest(path, opts[:config][:secret_api_key], time, opts)
+    auth_token = "GCS v1HMAC:#{opts[:config][:api_key_id]}:#{Base.encode64(sha_signature)}"
+    [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", time}]
   end
 
   defp date() do
@@ -440,7 +425,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
     datetime = Timex.now() |> Timex.local()
     strftime_str = Timex.format!(datetime, "%a, %d %b %Y %H:%M:%S ", :strftime)
     time_zone = Timex.timezone(:local, datetime)
-    time = strftime_str <> "#{time_zone.abbreviation}"
+    strftime_str <> "#{time_zone.abbreviation}"
   end
 
   # Parses GlobalCollect's response and returns a `Gringotts.Response` struct
@@ -450,13 +435,13 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
     case decode(body) do
-      {:ok, results} -> {:ok, Response.success(raw: results, status_code: code)}
+      {:ok, results} -> {:ok, Response.success(authorization: results["payment"]["id"], raw: results, status_code: code)}
     end
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:ok, results} = decode(body)
-    message = Enum.map(results["errors"], fn x -> x["message"] end)
+    message = Enum.map(results["errors"], fn (x) -> x["message"] end)
     detail = List.to_string(message)
     {:error, Response.error(status_code: status_code, message: detail, raw: results)}
   end
