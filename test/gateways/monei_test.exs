@@ -1,11 +1,15 @@
 defmodule Gringotts.Gateways.MoneiTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Gringotts.{
     CreditCard
   }
 
   alias Gringotts.Gateways.Monei, as: Gateway
+
+  @amount42 Money.new(42, :USD)
+  @amount3 Money.new(3, :USD)
+  @bad_currency Money.new(42, :INR)
 
   @card %CreditCard{
     first_name: "Harry",
@@ -26,37 +30,6 @@ defmodule Gringotts.Gateways.MoneiTest do
     verification_code: "123",
     brand: "VISA"
   }
-
-  @bad_currency Money.new(42, :INR)
-
-  @auth_success ~s[
-    {"id": "8a82944a603b12d001603c1a1c2d5d90",
-     "result": {
-       "code": "000.100.110",
-       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
-    }]
-
-  @register_success ~s[
-    {"id": "8a82944960e073640160e92da2204743",
-     "registrationId": "8a82944a60e09c550160e92da144491e",
-     "result": {
-       "code": "000.100.110",
-       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
-    }]
-
-  @store_success ~s[
-    {"result":{
-        "code":"000.100.110",
-        "description":"Request successfully processed in 'Merchant in Integrator Test Mode'"
-     },
-     "card":{
-       "bin":"420000",
-       "last4Digits":"0000",
-       "holder":"Jo Doe",
-       "expiryMonth":"12",
-       "expiryYear":"2099"
-     }
-    }]
 
   @customer %{
     givenName: "Harry",
@@ -100,14 +73,43 @@ defmodule Gringotts.Gateways.MoneiTest do
     custom: %{"voldemort" => "he who must not be named"}
   ]
 
+  @auth_success ~s[
+    {"id": "8a82944a603b12d001603c1a1c2d5d90",
+     "result": {
+       "code": "000.100.110",
+       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
+    }]
+
+  @register_success ~s[
+    {"id": "8a82944960e073640160e92da2204743",
+     "registrationId": "8a82944a60e09c550160e92da144491e",
+     "result": {
+       "code": "000.100.110",
+       "description": "Request successfully processed in 'Merchant in Integrator Test Mode'"}
+    }]
+
+  @store_success ~s[
+    {"result":{
+        "code":"000.100.110",
+        "description":"Request successfully processed in 'Merchant in Integrator Test Mode'"
+     },
+     "card":{
+       "bin":"420000",
+       "last4Digits":"0000",
+       "holder":"Jo Doe",
+       "expiryMonth":"12",
+       "expiryYear":"2099"
+     }
+    }]
+
   # A new Bypass instance is needed per test, so that we can do parallel tests
   setup do
     bypass = Bypass.open()
 
     auth = %{
-      userId: "8a829417539edb400153c1eae83932ac",
-      password: "6XqRtMGS2N",
-      entityId: "8a829417539edb400153c1eae6de325e",
+      userId: "some_secret_user_id",
+      password: "some_secret_password",
+      entityId: "some_secret_entity_id",
       test_url: "http://localhost:#{bypass.port}"
     }
 
@@ -126,11 +128,11 @@ defmodule Gringotts.Gateways.MoneiTest do
       end)
 
       Bypass.down(bypass)
-      {:error, response} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
+      {:error, response} = Gateway.authorize(@amount42, @card, config: auth)
       assert response.reason == "network related failure"
 
       Bypass.up(bypass)
-      {:ok, _} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
+      {:ok, _} = Gateway.authorize(@amount42, @card, config: auth)
     end
 
     test "with all extra_params.", %{bypass: bypass, auth: auth} do
@@ -147,15 +149,18 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert conn_.body_params["merchantTransactionId"] == randoms[:transaction_id]
         assert conn_.body_params["transactionCategory"] == @extra_opts[:category]
         assert conn_.body_params["customer.merchantCustomerId"] == @customer[:merchantCustomerId]
-        assert conn_.body_params["shipping.customer.merchantCustomerId"] == @customer[:merchantCustomerId]
+
+        assert conn_.body_params["shipping.customer.merchantCustomerId"] ==
+                 @customer[:merchantCustomerId]
+
         assert conn_.body_params["merchant.submerchantId"] == @merchant[:submerchantId]
         assert conn_.body_params["billing.city"] == @billing[:city]
         assert conn_.body_params["shipping.method"] == @shipping[:method]
         Plug.Conn.resp(conn, 200, @register_success)
       end)
 
-      opts = [{:config, auth} | randoms] ++ @extra_opts
-      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, opts)
+      opts = randoms ++ @extra_opts ++ [config: auth]
+      {:ok, response} = Gateway.purchase(@amount42, @card, opts)
       assert response.code == "000.100.110"
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
@@ -165,7 +170,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         Plug.Conn.resp(conn, 400, "<html></html>")
       end)
 
-      {:error, _} = Gateway.authorize(Money.new(42, :USD), @bad_card, config: auth)
+      {:error, _} = Gateway.authorize(@amount42, @bad_card, config: auth)
     end
   end
 
@@ -175,7 +180,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         Plug.Conn.resp(conn, 200, @auth_success)
       end)
 
-      {:ok, response} = Gateway.authorize(Money.new(42, :USD), @card, config: auth)
+      {:ok, response} = Gateway.authorize(@amount42, @card, config: auth)
       assert response.code == "000.100.110"
     end
   end
@@ -186,7 +191,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         Plug.Conn.resp(conn, 200, @auth_success)
       end)
 
-      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, config: auth)
+      {:ok, response} = Gateway.purchase(@amount42, @card, config: auth)
       assert response.code == "000.100.110"
     end
 
@@ -197,7 +202,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         Plug.Conn.resp(conn, 200, @register_success)
       end)
 
-      {:ok, response} = Gateway.purchase(Money.new(42, :USD), @card, config: auth, register: true)
+      {:ok, response} = Gateway.purchase(@amount42, @card, register: true, config: auth)
       assert response.code == "000.100.110"
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
@@ -227,7 +232,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       )
 
       {:ok, response} =
-        Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth)
+        Gateway.capture("7214344242e11af79c0b9e7b4f3f6234", @amount42, config: auth)
 
       assert response.code == "000.100.110"
     end
@@ -244,7 +249,13 @@ defmodule Gringotts.Gateways.MoneiTest do
         end
       )
 
-      {:ok, response} = Gateway.capture(Money.new(42, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth, register: true)
+      {:ok, response} =
+        Gateway.capture(
+          "7214344242e11af79c0b9e7b4f3f6234",
+          @amount42,
+          register: true,
+          config: auth
+        )
 
       assert response.code == "000.100.110"
     end
@@ -261,8 +272,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         end
       )
 
-      {:ok, response} =
-        Gateway.refund(Money.new(3, :USD), "7214344242e11af79c0b9e7b4f3f6234", config: auth)
+      {:ok, response} = Gateway.refund(@amount3, "7214344242e11af79c0b9e7b4f3f6234", config: auth)
 
       assert response.code == "000.100.110"
     end
