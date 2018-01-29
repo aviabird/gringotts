@@ -4,9 +4,12 @@ defmodule Gringotts.Gateways.BogusTest do
   alias Gringotts.Response
   alias Gringotts.Gateways.Bogus, as: Gateway
 
+  @some_id "some_arbitrary_id"
+  @amount Money.new(5, :USD)
+  
   test "authorize" do
     {:ok, %Response{id: id, success: success}} =
-        Gateway.authorize(10.95, :card, [])
+        Gateway.authorize(@amount, :card, [])
 
     assert success
     assert id != nil
@@ -14,7 +17,7 @@ defmodule Gringotts.Gateways.BogusTest do
 
   test "purchase" do
     {:ok, %Response{id: id, success: success}} =
-        Gateway.purchase(10.95, :card, [])
+        Gateway.purchase(@amount, :card, [])
 
     assert success
     assert id != nil
@@ -22,7 +25,7 @@ defmodule Gringotts.Gateways.BogusTest do
 
   test "capture" do
     {:ok, %Response{id: id, success: success}} =
-        Gateway.capture(1234, 5, [])
+        Gateway.capture(@some_id, @amount, [])
 
     assert success
     assert id != nil
@@ -30,7 +33,7 @@ defmodule Gringotts.Gateways.BogusTest do
 
   test "void" do
     {:ok, %Response{id: id, success: success}} =
-        Gateway.void(1234, [])
+        Gateway.void(@some_id, [])
 
     assert success
     assert id != nil
@@ -45,7 +48,7 @@ defmodule Gringotts.Gateways.BogusTest do
 
   test "unstore with customer" do
     {:ok, %Response{success: success}} =
-        Gateway.unstore(1234, [])
+        Gateway.unstore(@some_id, [])
 
     assert success
   end

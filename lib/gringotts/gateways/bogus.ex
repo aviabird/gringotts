@@ -1,4 +1,6 @@
 defmodule Gringotts.Gateways.Bogus do
+  @moduledoc false
+  
   use Gringotts.Gateways.Base
 
   alias Gringotts.{
@@ -6,36 +8,29 @@ defmodule Gringotts.Gateways.Bogus do
     Response
   }
 
+  @some_authorization_id "14a62fff80f24a25f775eeb33624bbb3"
+  
   def authorize(_amount, _card_or_id, _opts),
     do: success()
 
   def purchase(_amount, _card_or_id, _opts),
     do: success()
 
-  def capture(id, amount, _opts),
-    do: success(id)
-
-  def void(id, _opts),
-    do: success(id)
-
-  def refund(_amount, id, _opts),
-    do: success(id)
-
-  def store(_card = %CreditCard{}, _opts),
+  def capture(_id, _amount, _opts),
     do: success()
 
-  def unstore(customer_id, _opts),
-    do: success(customer_id)
+  def void(_id, _opts),
+    do: success()
+
+  def refund(_amount, _id, _opts),
+    do: success()
+
+  def store(%CreditCard{} = _card, _opts),
+    do: success()
+
+  def unstore(_customer_id, _opts),
+    do: success()
 
   defp success,
-    do: {:ok, Response.success(id: random_string())}
-
-  defp success(id),
-    do: {:ok, Response.success(id: id)}
-
-  defp random_string(length \\ 10),
-    do: 1..length |> Enum.map(&random_char/1) |> Enum.join
-
-  defp random_char(_),
-    do: to_string(:rand.uniform(9))
+    do: {:ok, Response.success(id: @some_authorization_id)}
 end
