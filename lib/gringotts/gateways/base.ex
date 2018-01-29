@@ -1,4 +1,18 @@
 defmodule Gringotts.Gateways.Base do
+  @moduledoc """
+  Dummy implementation of the Gringotts API
+
+  All gateway implementations must `use` this module as it provides (pseudo)
+  implementations for the all methods of the Gringotts API.
+
+  In case `GatewayXYZ` does not implement `unstore`, the following call would
+  not raise an error:
+  ```
+  Gringotts.unstore(GatewayXYZ, "some_registration_id")
+  ```
+  because this module provides an implementation.
+  """
+  
   alias Gringotts.Response
 
   defmacro __using__(_) do
@@ -36,27 +50,6 @@ defmodule Gringotts.Gateways.Base do
       @doc false
       def unstore(_customer_id, _opts) do
         not_implemented()
-      end
-
-      defp http(method, path, params \\ [], opts \\ []) do
-        credentials = Keyword.get(opts, :credentials)
-        headers     = [{"Content-Type", "application/x-www-form-urlencoded"}]
-        data        = params_to_string(params)
-
-        HTTPoison.request(method, path, data, headers, [hackney: [basic_auth: credentials]])
-      end
-
-      defp money_to_cents(amount) when is_float(amount) do
-        trunc(amount * 100)
-      end
-
-      defp money_to_cents(amount) do
-        amount * 100
-      end
-
-      defp params_to_string(params) do
-        params |> Enum.filter(fn {_k, v} -> v != nil end)
-               |> URI.encode_query
       end
 
       @doc false

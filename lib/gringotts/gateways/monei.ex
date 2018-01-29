@@ -153,15 +153,11 @@ defmodule Gringotts.Gateways.Monei do
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
 
-  @supported_currencies [
-    "AED", "AFN", "ANG", "AOA", "AWG", "AZN", "BAM", "BGN", "BRL", "BYN", "CDF",
-    "CHF", "CUC", "EGP", "EUR", "GBP", "GEL", "GHS", "MDL", "MGA", "MKD", "MWK",
-    "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "PAB", "PEN", "PGK", "PHP",
-    "PKR", "PLN", "PYG", "QAR", "RSD", "RUB", "RWF", "SAR", "SCR", "SDG", "SEK",
-    "SGD", "SHP", "SLL", "SOS", "SRD", "STD", "SYP", "SZL", "THB", "TJS", "TOP",
-    "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "UYU", "UZS", "VND", "VUV",
-    "WST", "XAF", "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL"
-  ]
+  @supported_currencies ~w(AED AFN ANG AOA AWG AZN BAM BGN BRL BYN CDF CHF CUC
+    EGP EUR GBP GEL GHS MDL MGA MKD MWK MZN NAD NGN NIO NOK NPR NZD PAB PEN PGK
+    PHP PKR PLN PYG QAR RSD RUB RWF SAR SCR SDG SEK SGD SHP SLL SOS SRD STD SYP
+    SZL THB TJS TOP TRY TTD TWD TZS UAH UGX USD UYU UZS VND VUV WST XAF XCD XOF
+    XPF YER ZAR ZMW ZWL)
 
   @version "v1"
 
@@ -435,7 +431,6 @@ defmodule Gringotts.Gateways.Monei do
     ]
   end
 
-
   # Makes the request to MONEI's network.
   @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response.t()}
   defp commit(:post, endpoint, params, opts) do
@@ -447,7 +442,10 @@ defmodule Gringotts.Gateways.Monei do
 
       validated_params ->
         url
-        |> HTTPoison.post({:form, params ++ validated_params ++ auth_params(opts)}, @default_headers)
+        |> HTTPoison.post(
+          {:form, params ++ validated_params ++ auth_params(opts)},
+          @default_headers
+        )
         |> respond
     end
   end
@@ -458,7 +456,7 @@ defmodule Gringotts.Gateways.Monei do
     auth_params = auth_params(opts)
     query_string = auth_params |> URI.encode_query()
 
-    base_url <> "?" <> query_string
+    (base_url <> "?" <> query_string)
     |> HTTPoison.delete()
     |> respond
   end
@@ -472,7 +470,7 @@ defmodule Gringotts.Gateways.Monei do
     common = [raw: body, status_code: 200]
 
     with {:ok, decoded_json} <- decode(body),
-         {:ok, results}      <- parse_response(decoded_json) do
+         {:ok, results} <- parse_response(decoded_json) do
       {:ok, Response.success(common ++ results)}
     else
       {:not_ok, errors} ->
@@ -570,38 +568,15 @@ defmodule Gringotts.Gateways.Monei do
     currency in @supported_currencies
   end
 
-  defp parse_response(%{"result" => result} = data) do
-    {address, zip_code} = @avs_code_translator[result["avsResponse"]]
-
-    results = [
-      code: result["code"],
-      description: result["description"],
-      risk: data["risk"]["score"],
-      cvc_result: @cvc_code_translator[result["cvvResponse"]],
-      avs_result: [address: address, zip_code: zip_code],
-      raw: data,
-      token: data["registrationId"]
-    ]
-
-    filtered = Enum.filter(results, fn {_, v} -> v != nil end)
-    verify(filtered)
-  end
-
-  defp verify(results) do
-    if String.match?(results[:code], ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
-      {:ok, results}
-    else
-      {:error, [{:reason, results[:description]} | results]}
-    end
-  end
-
   defp make(action_type, _prefix, _param) when action_type in ["CP", "RF", "RV"], do: []
+
   defp make(action_type, prefix, param) do
     case prefix do
       :register ->
         if action_type in ["PA", "DB"], do: [createRegistration: true], else: []
 
-      _ -> Enum.into(param, [], fn {k, v} -> {"#{prefix}.#{k}", v} end)
+      _ ->
+        Enum.into(param, [], fn {k, v} -> {"#{prefix}.#{k}", v} end)
     end
   end
 
