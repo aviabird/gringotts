@@ -26,7 +26,7 @@ defmodule Gringotts.Integration.Gateways.MoneyTest do
 
     test "to_integer" do
       assert match? {"EUR", 4200, -2}, MoneyProtocol.to_integer(@ex_money)
-      assert match? {"BHD", 42000, -3}, MoneyProtocol.to_integer(@ex_money_bhd)
+      assert match? {"BHD", 42_000, -3}, MoneyProtocol.to_integer(@ex_money_bhd)
     end
 
     test "to_string" do

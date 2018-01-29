@@ -233,12 +233,12 @@ defmodule Gringotts.Gateways.MoneiTest do
       Bypass.expect_once(bypass, "POST", "/v1/registrations", fn conn ->
         p_conn = parse(conn)
         params = p_conn.body_params
-        params["card.cvv"] == "123"
-        params["card.expiryMonth"] == "12"
-        params["card.expiryYear"] == "2099"
-        params["card.holder"] == "Harry Potter"
-        params["card.number"] == "4200000000000000"
-        params["paymentBrand"] == "VISA"
+        assert params["card.cvv"] == "123"
+        assert params["card.expiryMonth"] == "12"
+        assert params["card.expiryYear"] == "2099"
+        assert params["card.holder"] == "Harry Potter"
+        assert params["card.number"] == "4200000000000000"
+        assert params["paymentBrand"] == "VISA"
         Plug.Conn.resp(conn, 200, @store_success)
       end)
 

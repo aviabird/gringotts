@@ -1,9 +1,8 @@
 defmodule Gringotts.Gateways.Stripe do
-  
   @moduledoc """
   Stripe gateway implementation. For reference see [Stripe's API documentation](https://stripe.com/docs/api).
   The following features of Stripe are implemented:
-  
+
   | Action                       | Method        |
   | ------                       | ------        |
   | Pre-authorize                | `authorize/3` |
@@ -18,7 +17,7 @@ defmodule Gringotts.Gateways.Stripe do
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the Stripe gateway. The following keys
   are supported:
-  
+
   | Key                    | Remark | Status           |
   | ----                   | ---    | ----             |
   | `currency`             |        | **Implemented**  |  
@@ -38,18 +37,18 @@ defmodule Gringotts.Gateways.Stripe do
   | `default_source`       |        | Not implemented  |
   | `email`                |        | Not implemented  |
   | `shipping`             |        | Not implemented  |
-  
+
   ## Registering your Stripe account at `Gringotts`
   After [making an account on Stripe](https://stripe.com/), head
   to the dashboard and find your account `secrets` in the `API` section.
-  
+
   ## Here's how the secrets map to the required configuration parameters for Stripe:
   | Config parameter | Stripe secret  |
   | -------          | ----           |
   | `:secret_key`    | **Secret key** |
-  
+
   Your Application config must look something like this:
-  
+
       config :gringotts, Gringotts.Gateways.Stripe,
           secret_key: "your_secret_key",
           default_currency: "usd"
@@ -58,11 +57,12 @@ defmodule Gringotts.Gateways.Stripe do
   @base_url "https://api.stripe.com/v1"
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:secret_key, :default_currency]
+  use Gringotts.Adapter, required_config: [:secret_key]
 
   alias Gringotts.{
     CreditCard,
-    Address
+    Address,
+    Money
   }
 
   @doc """
@@ -71,17 +71,17 @@ defmodule Gringotts.Gateways.Stripe do
   The authorization validates the card details with the banking network,
   places a hold on the transaction amount in the customer’s issuing bank and
   also triggers risk management. Funds are not transferred.
-  
+
   Stripe returns an `charge_id` which should be stored at your side and can be used later to:
   * `capture/3` an amount.
   * `void/2` a pre-authorization.
-  
+
   ## Note
   Uncaptured charges expire in 7 days. For more information, [see authorizing charges and settling later](https://support.stripe.com/questions/can-i-authorize-a-charge-and-then-wait-to-settle-it-later).
 
   ## Example
   The following session shows how one would (pre) authorize a payment of $10 on a sample `card`.
-  
+
       iex> card = %CreditCard{
             first_name: "John",
             last_name: "Smith",
@@ -104,7 +104,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec authorize(number, CreditCard.t() | String.t(), keyword) :: map
+  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: map
   def authorize(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
@@ -112,10 +112,10 @@ defmodule Gringotts.Gateways.Stripe do
 
   @doc """
   Transfers amount from the customer to the merchant.
-  
+
   Stripe attempts to process a purchase on behalf of the customer, by debiting
   amount from the customer's account by charging the customer's card.
-  
+
   ## Example
   The following session shows how one would process a payment in one-shot,
   without (pre) authorization.
@@ -142,7 +142,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec purchase(number, CreditCard.t() | String.t(), keyword) :: map
+  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: map
   def purchase(amount, payment, opts \\ []) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
@@ -168,7 +168,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
-  @spec capture(String.t(), number, keyword) :: map
+  @spec capture(String.t(), Money.t(), keyword) :: map
   def capture(id, amount, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
@@ -176,7 +176,7 @@ defmodule Gringotts.Gateways.Stripe do
 
   @doc """
   Voids the referenced payment.
-  
+
   This method attempts a reversal of the either a previous `purchase/3` or
   `authorize/3` referenced by `charge_id`.
   As a consequence, the customer will never see any booking on his
@@ -190,7 +190,7 @@ defmodule Gringotts.Gateways.Stripe do
   ## Voiding a previous purchase
   Stripe will reverse the payment, by sending all the amount back to the
   customer. Note that this is not the same as `refund/3`.
-  
+
   ## Example
   The following session shows how one would void a previous (pre)
   authorization. Remember that our `capture/3` example only did a partial
@@ -223,7 +223,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
-  @spec refund(number, String.t(), keyword) :: map
+  @spec refund(Money.t(), String.t(), keyword) :: map
   def refund(amount, id, opts \\ []) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/refund", params, opts)
@@ -231,7 +231,7 @@ defmodule Gringotts.Gateways.Stripe do
 
   @doc """
   Stores the payment-source data for later use.
-  
+
   Stripe can store the payment-source details, for example card which can be used to effectively 
   to process One-Click and Recurring_ payments, and return a `customer_id` for reference.
 
@@ -285,27 +285,22 @@ defmodule Gringotts.Gateways.Stripe do
   # Private methods
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-    params = optional_params(opts)
-      ++ [capture: capture]
-      ++ amount_params(amount)
-      ++ source_params(payment, opts)
-
-    params
-    |> Keyword.has_key?(:currency)
-    |> with_currency(params, opts[:config])
+    [capture: capture] ++
+      optional_params(opts) ++ amount_params(amount) ++ source_params(payment, opts)
   end
-
-  def with_currency(true, params, _), do: params
-  def with_currency(false, params, config), do: [{:currency, config[:default_currency]} | params]
 
   defp create_card_token(params, opts) do
     commit(:post, "tokens", params, opts)
   end
 
-  defp amount_params(amount), do: [amount: money_to_cents(amount)]
+  defp amount_params(amount) do
+    {currency, int_value, _} = Money.to_integer(amount)
+    [amount: int_value, currency: currency]
+  end
 
   defp source_params(token_or_customer, _) when is_binary(token_or_customer) do
     [head, _] = String.split(token_or_customer, "_")
+
     case head do
       "tok" -> [source: token_or_customer]
       "cus" -> [customer: token_or_customer]
@@ -313,64 +308,68 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   defp source_params(%CreditCard{} = card, opts) do
-    params = 
-      card_params(card) ++ 
-      address_params(opts[:address])
+    params = card_params(card) ++ address_params(opts[:address])
 
     response = create_card_token(params, opts)
 
-    case Map.has_key?(response, "error") do
-      true -> []
-      false -> response
-        |> Map.get("id")
-        |> source_params(opts)
+    if Map.has_key?(response, "error") do
+      []
+    else
+      response
+      |> Map.get("id")
+      |> source_params(opts)
     end
   end
 
   defp source_params(_, _), do: []
 
   defp card_params(%CreditCard{} = card) do
-    [ "card[name]": CreditCard.full_name(card),
+    [
+      "card[name]": CreditCard.full_name(card),
       "card[number]": card.number,
       "card[exp_year]": card.year,
       "card[exp_month]": card.month,
       "card[cvc]": card.verification_code
-    ]   
+    ]
   end
 
   defp card_params(_), do: []
 
   defp address_params(%Address{} = address) do
-    [ "card[address_line1]": address.street1,
+    [
+      "card[address_line1]": address.street1,
       "card[address_line2]": address.street2,
-      "card[address_city]":  address.city,
+      "card[address_city]": address.city,
       "card[address_state]": address.region,
-      "card[address_zip]":   address.postal_code,
+      "card[address_zip]": address.postal_code,
       "card[address_country]": address.country
     ]
   end
 
   defp address_params(_), do: []
 
-  defp commit(method, path, params \\ [], opts \\ []) do
+  defp commit(method, path, params, opts) do
     auth_token = "Bearer " <> opts[:config][:secret_key]
-    headers = [{"Content-Type", "application/x-www-form-urlencoded"}, {"Authorization", auth_token}]
-    data = params_to_string(params)
-    response = HTTPoison.request(method, "#{@base_url}/#{path}", data, headers)
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    response = HTTPoison.request(method, "#{@base_url}/#{path}", {:form, params}, headers)
     format_response(response)
   end
 
   defp optional_params(opts) do
     opts
-      |> Keyword.delete(:config)
-      |> Keyword.delete(:address)
+    |> Keyword.delete(:config)
+    |> Keyword.delete(:address)
   end
 
   defp format_response(response) do
     case response do
-      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!
+      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!()
       _ -> %{"error" => "something went wrong, please try again later"}
     end
   end
-
 end
