@@ -162,7 +162,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ## Example
 
-  The following session shows how one would (pre) authorize a payment of $100 on
+  The following example shows how one would (pre) authorize a payment of $100 on
   a sample `card`.
   ```
   iex> card = %CreditCard{
@@ -175,7 +175,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
       brand: "VISA"
   }
 
-  iex> amount = %{value: Decimal.new(100), currency: "USD"}
+  iex> amount = Money.new(100, :USD)
 
   iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.GlobalCollect, amount, card, opts)
   ```
@@ -189,22 +189,21 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @doc """
   Captures a pre-authorized `amount`.
 
- `amount` used in the pre-authorization is transferred to the merchant account by
-  GlobalCollect referenced by `payment_id`.
+ `amount` used in the pre-authorization referenced by `payment_id` is
+  transferred to the merchant account by GlobalCollect.
 
   ## Note
 
   Authorized payment with PENDING_APPROVAL status only allow a single capture whereas
   the one with PENDING_CAPTURE status is used for payments that allow multiple captures.
-  PENDING_APPROVAL is a common status only with card and direct debit transactions.
 
   ## Example
 
-  The following session shows how one would (partially) capture a previously
+  The following example shows how one would (partially) capture a previously
   authorized a payment worth $100 by referencing the obtained authorization `id`.
 
   ```
-  iex> amount = %{value: Decimal.new(100), currency: "USD"}
+  iex> amount = Money.new(100, :USD)
 
   iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.GlobalCollect, auth_result.authorization, amount, opts)
 
@@ -226,7 +225,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ## Example
 
-  >  The following session shows how one would process a payment in one-shot,
+  The following example shows how one would process a payment in one-shot,
   without (pre) authorization.
 
   ```
@@ -240,7 +239,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
       brand: "VISA"
     }
 
-  iex> amount = %{value: Decimal.new(100), currency: "USD"}
+  iex> amount = Money.new(100, :USD)
 
   iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.GlobalCollect, amount, card, opts)
 
@@ -269,7 +268,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   [void]: https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/java/payments/cancel.html#payments-cancel-request
   ## Example
 
-  > The following session shows how one would void a previous (pre)
+  The following example shows how one would void a previous (pre)
   authorization. Remember that our `capture/3` example only did a complete
   capture.
 
@@ -287,21 +286,17 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @doc """
   Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-  > You can refund any transaction by just calling this API
-
-  ## Note
-
   You always have the option to refund just a portion of the payment amount.
   It is also possible to submit multiple refund requests on one payment as long
   as the total amount to be refunded does not exceed the total amount that was paid.
 
   ## Example
 
-  > The following session shows how one would refund a previous purchase (and
+  The following example shows how one would refund a previous purchase (and
   similarily for captures).
 
   ```
-  iex> amount = %{value: Decimal.new(100), currency: "USD"}
+  iex> amount = Money.new(100, :USD)
 
   iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.GlobalCollect, auth_result.authorization, amount)
   ```
