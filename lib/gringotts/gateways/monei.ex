@@ -130,7 +130,7 @@ defmodule Gringotts.Gateways.Monei do
   aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
-  iex> amount = %{value: Decimal.new(42), currency: "USD"}
+  iex> amount = Money.new(42, :USD)
   iex> card = %CreditCard{first_name: "Harry",
                           last_name: "Potter",
                           number: "4200000000000000",
@@ -251,7 +251,7 @@ defmodule Gringotts.Gateways.Monei do
   The following example shows how one would (pre) authorize a payment of $42 on
   a sample `card`.
 
-      iex> amount = %{value: Decimal.new(42), currency: "USD"}
+      iex> amount = Money.new(42, :USD)
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
@@ -289,7 +289,7 @@ defmodule Gringotts.Gateways.Monei do
   The following example shows how one would (partially) capture a previously
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
-      iex> amount = %{value: Decimal.new(35), currency: "USD"}
+      iex> amount = Money.new(35, :USD)
       iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, amount, auth_result.id, opts)
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
@@ -323,7 +323,7 @@ defmodule Gringotts.Gateways.Monei do
   The following example shows how one would process a payment worth $42 in
   one-shot, without (pre) authorization.
 
-      iex> amount = %{value: Decimal.new(42), currency: "USD"}
+      iex> amount = Money.new(42, :USD)
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
       iex> purchase_result.token # This is the registration ID/token
@@ -357,7 +357,7 @@ defmodule Gringotts.Gateways.Monei do
   The following example shows how one would (completely) refund a previous
   purchase (and similarily for captures).
 
-      iex> amount = %{value: Decimal.new(42), currency: "USD"}
+      iex> amount = Money.new(42, :USD)
       iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}

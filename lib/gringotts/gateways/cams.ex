@@ -92,7 +92,7 @@ defmodule Gringotts.Gateways.Cams do
                           month: 12,
                           verification_code: "999",
                           brand: "VISA"}
-  iex> money = %{value: Decimal.new(20), currency: "USD"}
+  iex> money = Money.new(20, :USD)
   ```
   We'll be using these in the examples below.
 
@@ -164,7 +164,7 @@ defmodule Gringotts.Gateways.Cams do
                           month: 12,
                           verification_code: "999",
                           brand: "VISA"}
-  iex> money = %{value: Decimal.new(20), currency: "USD"}
+  iex> money = Money.new(20, :USD)
   iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Cams, money, card)
   ```
   """
@@ -209,7 +209,7 @@ defmodule Gringotts.Gateways.Cams do
                           month: 12,
                           verification_code: "999",
                           brand: "VISA"}
-  iex> money = %{value: Decimal.new(10), currency: "USD"}
+  iex> money = Money.new(10, :USD)
   iex> authorization = auth_result.authorization
   # authorization = "some_authorization_transaction_id"
   iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Cams, money, authorization)
@@ -247,7 +247,7 @@ defmodule Gringotts.Gateways.Cams do
                           month: 12,
                           verification_code: "999",
                           brand: "VISA"}
-  iex> money = %{value: Decimal.new(20), currency: "USD"}
+  iex> money = Money.new(20, :USD)
   iex> Gringotts.purchase(Gringotts.Gateways.Cams, money, card)
   ```
   """
@@ -279,7 +279,7 @@ defmodule Gringotts.Gateways.Cams do
   ```
   iex> capture_id = capture_result.authorization
   # capture_id = "some_capture_transaction_id"
-  iex> money = %{value: Decimal.new(20), currency: "USD"}
+  iex> money = Money.new(20, :USD)
   iex> Gringotts.refund(Gringotts.Gateways.Cams, money, capture_id)
   ```
   """

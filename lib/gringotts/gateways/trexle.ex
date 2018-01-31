@@ -120,7 +120,7 @@ defmodule Gringotts.Gateways.Trexle do
   a sample `card`.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -170,7 +170,7 @@ defmodule Gringotts.Gateways.Trexle do
   authorized a payment worth $10 by referencing the obtained `charge_token`.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.capture(Gringotts.Gateways.Trexle, token, amount)
   ```
@@ -194,7 +194,7 @@ defmodule Gringotts.Gateways.Trexle do
   one-shot, without (pre) authorization.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -242,7 +242,7 @@ defmodule Gringotts.Gateways.Trexle do
   `purchase/3` (and similarily for `capture/3`s).
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
