@@ -2,9 +2,9 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @moduledoc """
   [GlobalCollect][home] gateway implementation.
 
-  For further details, please refer [GlobalCollect API documentation](https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/index.html).
+  For further details, please refer [GlobalCollect API documentation][docs].
 
-  Following are the features that have been implemented for the GlobalCollect Gateway:
+  Following are the features that have been implemented for GlobalCollect:
 
   | Action                       | Method        |
   | ------                       | ------        |
@@ -14,14 +14,14 @@ defmodule Gringotts.Gateways.GlobalCollect do
   | Refund                       | `refund/3`    |
   | Void                         | `void/2`      |
 
-  ## Optional or extra parameters
+  ## Optional parameters
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the gateway.
 
   | Key                      | Remark          |
   | ----                     | ---             |
-  | `merchantCustomerId`     |  identifier for the consumer that can be used as a search criteria in the Global Collect Payment Console |
+  | `merchantCustomerId`     |  Identifier for the consumer that can be used as a search criteria in the Global Collect Payment Console |
   | `description`            |  Descriptive text that is used towards to consumer, either during an online checkout at a third party and/or on the statement of the consumer |
   | `dob`                    |  The date of birth of the consumer Format: YYYYMMDD   |
   | `company`                |  Name of company, as a consumer                       |
@@ -35,11 +35,12 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ## Registering your GlobalCollect account at `Gringotts`
 
-  After creating your account successfully on [GlobalCollect](http://www.globalcollect.com/)
-  follow the [dashboard link](https://sandbox.account.ingenico.com/#/account/apikey) to
-  fetch the secret_api_key, api_key_id and [here](https://sandbox.account.ingenico.com/#/account/merchantid) for merchant_id.
+  After creating your account successfully on [GlobalCollect][home] open the
+  [dashboard][dashboard] to fetch the `secret_api_key`, `api_key_id` and
+  `merchant_id` from the menu.
 
-  Here's how the secrets map to the required configuration parameters for GlobalCollect:
+  Here's how the secrets map to the required configuration parameters for
+  GlobalCollect:
 
   | Config parameter | GlobalCollect secret |
   | -------          | ----                 |
@@ -47,8 +48,8 @@ defmodule Gringotts.Gateways.GlobalCollect do
   | `:api_key_id`    | **ApiKeyId**         |
   | `:merchant_id`   | **MerchantId**       |
 
-   Your Application config **must include the `[:secret_api_key, :api_key_id, :merchant_id]` field(s)** and would look
-   something like this:
+  Your Application config **must include the `:secret_api_key`, `:api_key_id`,
+  `:merchant_id` field(s)** and would look something like this:
 
        config :gringotts, Gringotts.Gateways.GlobalCollect,
            secret_api_key: "your_secret_secret_api_key"
@@ -57,61 +58,70 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ## Supported currencies and countries
 
-  The GlobalCollect platform is able to support payments in [over 150 currencies][currencies]
+  The GlobalCollect platform supports payments in [over 150 currencies][currencies].
 
-  [currencies]: https://epayments.developer-ingenico.com/best-practices/services/currency-conversion
   ## Following the examples
 
   1. First, set up a sample application and configure it to work with GlobalCollect.
-      - You could do that from scratch by following our [Getting Started](#) guide.
+      - You could do that from scratch by following our [Getting Started][gs] guide.
       - To save you time, we recommend [cloning our example
       repo][example] that gives you a pre-configured sample app ready-to-go.
           + You could use the same config or update it the with your "secrets"
-          as described [above](#module-registering-your-globalcollect-account-at-GlobalCollect).
+          as described [above](#module-registering-your-globalcollect-account-at-gringotts).
 
   2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
+     aliases to it (to save some time):
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.GlobalCollect}
-
   iex> shippingAddress = %{
-      street: "Desertroad",
-      houseNumber: "1",
-      additionalInfo: "Suite II",
-      zip: "84536",
-      city: "Monument Valley",
-      state: "Utah",
-      countryCode: "US"
-    }
+  street: "Desertroad",
+  houseNumber: "1",
+  additionalInfo: "Suite II",
+  zip: "84536",
+  city: "Monument Valley",
+  state: "Utah",
+  countryCode: "US"
+  }
 
   iex> billingAddress = %{
-      street: "Desertroad",
-      houseNumber: "13",
-      additionalInfo: "b",
-      zip: "84536",
-      city: "Monument Valley",
-      state: "Utah",
-      countryCode: "US"
-    }
+  street: "Desertroad",
+  houseNumber: "13",
+  additionalInfo: "b",
+  zip: "84536",
+  city: "Monument Valley",
+  state: "Utah",
+  countryCode: "US"
+  }
 
   iex> invoice = %{
-      invoiceNumber: "000000123",
-      invoiceDate: "20140306191500"
-    }
+  invoiceNumber: "000000123",
+  invoiceDate: "20140306191500"
+  }
 
   iex> name = %{
-      title: "Miss",
-      firstName: "Road",
-      surname: "Runner"
-    }
+  title: "Miss",
+  firstName: "Road",
+  surname: "Runner"
+  }
 
-  iex> opts = [ description: "Store Purchase 1437598192", merchantCustomerId: "234", dob: "19490917", company: "asma", email: "johndoe@gmail.com", phone: "7765746563", invoice: invoice, billingAddress: billingAddress, shippingAddress: shippingAddress, name: name, skipAuthentication: "true" ]
-
+  iex> opts = [
+  description: "Store Purchase 1437598192",
+  merchantCustomerId: "234", dob: "19490917",
+  company: "asma", email: "johndoe@gmail.com",
+  phone: "7765746563", invoice: invoice,
+  billingAddress: billingAddress,
+  shippingAddress: shippingAddress,
+  name: name, skipAuthentication: "true"
+  ]
   ```
 
   We'll be using these in the examples below.
 
   [home]: http://www.globalcollect.com/
+  [docs]: https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/index.html
+  [dashboard]: https://sandbox.account.ingenico.com/#/dashboard
+  [gs]: #
+  [currencies]: https://epayments.developer-ingenico.com/best-practices/services/currency-conversion
   [example]: https://github.com/aviabird/gringotts_example
   """
   @base_url "https://api-sandbox.globalcollect.com/v1/"
