@@ -93,7 +93,8 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     invoice: @invoice,
     billingAddress: @billing_address,
     shippingAddress: @shipping_address,
-    name: @name, skipAuthentication: "true"
+    name: @name,
+    skipAuthentication: "true"
   ]
 
   describe "validation arguments check" do

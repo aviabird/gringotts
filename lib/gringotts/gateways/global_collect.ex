@@ -135,17 +135,15 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money,
-                   CreditCard,
-                   Response}
+  alias Gringotts.{Money, CreditCard, Response}
 
-  @brand_map  %{
-    "VISA": "1",
-    "AMERICAN_EXPRESS": "2",
-    "MASTER": "3",
-    "DISCOVER": "128",
-    "JCB": "125",
-    "DINERS_CLUB": "132"
+  @brand_map %{
+    VISA: "1",
+    AMERICAN_EXPRESS: "2",
+    MASTER: "3",
+    DISCOVER: "128",
+    JCB: "125",
+    DINERS_CLUB: "132"
   }
 
   @doc """
@@ -189,7 +187,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @doc """
   Captures a pre-authorized `amount`.
 
- `amount` used in the pre-authorization referenced by `payment_id` is
+  `amount` used in the pre-authorization referenced by `payment_id` is
   transferred to the merchant account by GlobalCollect.
 
   ## Note
@@ -245,7 +243,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ```
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, %CreditCard{} = card, opts) do
     case authorize(amount, card, opts) do
       {:ok, results} ->
@@ -440,23 +438,33 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
     case decode(body) do
-      {:ok, results} -> {:ok, Response.success(authorization: results["payment"]["id"], raw: results, status_code: code)}
+      {:ok, results} ->
+        {
+          :ok,
+          Response.success(
+            authorization: results["payment"]["id"],
+            raw: results,
+            status_code: code
+          )
+        }
     end
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:ok, results} = decode(body)
-    message = Enum.map(results["errors"], fn (x) -> x["message"] end)
+    message = Enum.map(results["errors"], fn x -> x["message"] end)
     detail = List.to_string(message)
     {:error, Response.error(status_code: status_code, message: detail, raw: results)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {:error,
-     Response.error(
-       code: error.id,
-       reason: :network_fail?,
-       description: "HTTPoison says '#{error.reason}'"
-     )}
+    {
+      :error,
+      Response.error(
+        code: error.id,
+        reason: :network_fail?,
+        description: "HTTPoison says '#{error.reason}'"
+      )
+    }
   end
 end
