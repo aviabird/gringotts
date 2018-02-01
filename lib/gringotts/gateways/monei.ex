@@ -126,56 +126,15 @@ defmodule Gringotts.Gateways.Monei do
           that you see in `Dashboard > Sub-accounts` as described
           [above](#module-registering-your-monei-account-at-gringotts).
 
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
-  ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.Monei}
-  iex> amount = Money.new(42, :USD)
-  iex> card = %CreditCard{first_name: "Harry",
-                          last_name: "Potter",
-                          number: "4200000000000000",
-                          year: 2099, month: 12,
-                          verification_code: "123",
-                          brand: "VISA"}
-  iex> customer = %{"givenName": "Harry",
-                    "surname": "Potter",
-                    "merchantCustomerId": "the_boy_who_lived",
-                    "sex": "M",
-                    "birthDate": "1980-07-31",
-                    "mobile": "+15252525252",
-                    "email": "masterofdeath@ministryofmagic.gov",
-                    "ip": "127.0.0.1",
-                    "status": "NEW"}
-  iex> merchant = %{"name": "Ollivanders",
-                    "city": "South Side",
-                    "street": "Diagon Alley",
-                    "state": "London",
-                    "country": "GB",
-                    "submerchantId": "Makers of Fine Wands since 382 B.C."}
-  iex> billing = %{"street1": "301, Gryffindor",
-                   "street2": "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
-                   "city": "Highlands",
-                   "state": "Scotland",
-                   "country": "GB"}
-  iex> shipping = %{"street1": "301, Gryffindor",
-                    "street2": "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
-                    "city": "Highlands",
-                    "state": "Scotland",
-                    "country": "GB",
-                    "method": "SAME_DAY_SERVICE",
-                    "comment": "For our valued customer, Mr. Potter"}
-  iex> opts = [customer: customer,
-               merchant: merchant,
-               billing: billing,
-               shipping: shipping,
-               category: "EC",
-               custom: %{"voldemort": "he who must not be named"},
-               register: true]
-  ```
+  2. To save a lot of time, create a [`.iex.exs`][iex-docs] file as shown in
+     [this gist][monei.iex.exs] to introduce a set of handy bindings and
+     aliases.
 
-  We'll be using these in the examples below.
+  We'll be using these bindings in the examples below.
 
   [example-repo]: https://github.com/aviabird/gringotts_example
+  [iex-docs]: https://hexdocs.pm/iex/IEx.html#module-the-iex-exs-file
+  [monei.iex.exs]: https://gist.github.com/oyeb/a2e2ac5986cc90a12a6136f6bf1357e5
 
   ## TODO
 

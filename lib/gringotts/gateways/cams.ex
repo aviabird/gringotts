@@ -38,13 +38,13 @@ defmodule Gringotts.Gateways.Cams do
     this is important to you.
 
   [issues]: https://github.com/aviabird/gringotts/issues/new
-  
+
   ### Schema
 
   * `billing_address` is a `map` from `atoms` to `String.t`, and can include any
     of the keys from:
     `:name, :address1, :address2, :company, :city, :state, :zip, :country, :phone, :fax]`
-  
+
   ## Registering your CAMS account at `Gringotts`
 
   | Config parameter | CAMS secret   |
@@ -81,26 +81,21 @@ defmodule Gringotts.Gateways.Cams do
         you get after [registering with
         CAMS](#module-registering-your-cams-account-at-gringotts).
 
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
-  ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.Cams}
-  iex> card = %CreditCard{first_name: "Harry",
-                          last_name: "Potter",
-                          number: "4111111111111111",
-                          year: 2099,
-                          month: 12,
-                          verification_code: "999",
-                          brand: "VISA"}
-  iex> money = Money.new(20, :USD)
-  ```
-  We'll be using these in the examples below.
+  2. To save a lot of time, create a [`.iex.exs`][iex-docs] file as shown in
+     [this gist][cams.iex.exs] to introduce a set of handy bindings and
+     aliases.
+
+  We'll be using these bindings in the examples below.
+
+  [example-repo]: https://github.com/aviabird/gringotts_example
+  [iex-docs]: https://hexdocs.pm/iex/IEx.html#module-the-iex-exs-file
+  [cams.iex.exs]: https://gist.github.com/oyeb/9a299df95cc13a87324e321faca5c9b8
 
   ## Integrating with phoenix
 
   Refer the [GringottsPay][gpay-heroku-cams] website for an example of how to
   integrate CAMS with phoenix. The source is available [here][gpay-repo].
-  
+
   [gpay-repo]: https://github.com/aviabird/gringotts_payment
   [gpay-heroku-cams]: http://gringottspay.herokuapp.com/cams
 
