@@ -69,18 +69,11 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
 
   @invalid_token 30
 
-  @invalid_config [
-    config: %{
-      secret_api_key: "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU=",
-      api_key_id: "e5743abfc360ed12"
-    }
-  ]
-
   @options [
     config: %{
-      secret_api_key: "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU=",
-      api_key_id: "e5743abfc360ed12",
-      merchant_id: "1226"
+      secret_api_key: "some_secret_api_key",
+      api_key_id: "some_api_key_id",
+      merchant_id: "some_merchant_id"
     },
     description: "Store Purchase 1437598192",
     merchantCustomerId: "234",
@@ -96,14 +89,6 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     name: @name,
     skipAuthentication: "true"
   ]
-
-  describe "validation arguments check" do
-    test "with no merchant id passed in config" do
-      assert_raise ArgumentError, fn ->
-        GlobalCollect.validate_config(@invalid_config)
-      end
-    end
-  end
 
   describe "purchase" do
     test "with valid card" do

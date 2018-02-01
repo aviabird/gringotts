@@ -104,6 +104,16 @@ defmodule Gringotts.Gateways.GlobalCollect do
   surname: "Runner"
   }
 
+  iex> card = %CreditCard{
+  number: "4567350000427977",
+  month: 12,
+  year: 43,
+  first_name: "John",
+  last_name: "Doe",
+  verification_code: "123",
+  brand: "VISA"
+  }
+
   iex> opts = [
   description: "Store Purchase 1437598192",
   merchantCustomerId: "234", dob: "19490917",
@@ -166,7 +176,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   iex> card = %CreditCard{
       number: "4567350000427977",
       month: 12,
-      year: 18,
+      year: 43,
       first_name: "John",
       last_name: "Doe",
       verification_code: "123",
@@ -180,7 +190,11 @@ defmodule Gringotts.Gateways.GlobalCollect do
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
-    params = create_params_for_auth_or_purchase(amount, card, opts)
+    params = %{
+      order: add_order(amount, opts),
+      cardPaymentMethodSpecificInput: add_card(card, opts)
+    }
+
     commit(:post, "payments", params, opts)
   end
 
@@ -210,7 +224,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
-    params = create_params_for_capture(amount, opts)
+    params = %{
+      order: add_order(amount, opts)
+    }
+
     commit(:post, "payments/#{payment_id}/approve", params, opts)
   end
 
@@ -230,7 +247,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   iex> card = %CreditCard{
       number: "4567350000427977",
       month: 12,
-      year: 18,
+      year: 43,
       first_name: "John",
       last_name: "Doe",
       verification_code: "123",
@@ -277,8 +294,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(payment_id, opts) do
-    params = nil
-    commit(:post, "payments/#{payment_id}/cancel", params, opts)
+    commit(:post, "payments/#{payment_id}/cancel", [], opts)
   end
 
   @doc """
@@ -301,7 +317,11 @@ defmodule Gringotts.Gateways.GlobalCollect do
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
-    params = create_params_for_refund(amount, opts)
+    params = %{
+      amountOfMoney: add_money(amount),
+      customer: add_customer(opts)
+    }
+
     commit(:post, "payments/#{payment_id}/refund", params, opts)
   end
 
@@ -309,35 +329,18 @@ defmodule Gringotts.Gateways.GlobalCollect do
   #                                PRIVATE METHODS                              #
   ###############################################################################
 
-  defp create_params_for_refund(amount, opts) do
-    %{
-      amountOfMoney: add_money(amount, opts),
-      customer: add_customer(opts)
-    }
-  end
-
-  defp create_params_for_auth_or_purchase(amount, payment, opts) do
-    %{
-      order: add_order(amount, opts),
-      cardPaymentMethodSpecificInput: add_payment(payment, @brand_map, opts)
-    }
-  end
-
-  defp create_params_for_capture(amount, opts) do
-    %{
-      order: add_order(amount, opts)
-    }
-  end
-
   defp add_order(money, options) do
     %{
-      amountOfMoney: add_money(money, options),
+      amountOfMoney: add_money(money),
       customer: add_customer(options),
-      references: add_references(options)
+      references: %{
+        descriptor: options[:description],
+        invoiceData: options[:invoice]
+      }
     }
   end
 
-  defp add_money(amount, options) do
+  defp add_money(amount) do
     {currency, amount, _} = Money.to_integer(amount)
 
     %{
@@ -349,86 +352,65 @@ defmodule Gringotts.Gateways.GlobalCollect do
   defp add_customer(options) do
     %{
       merchantCustomerId: options[:merchantCustomerId],
-      personalInformation: personal_info(options),
+      personalInformation: %{
+        name: options[:name]
+      },
       dateOfBirth: options[:dob],
-      companyInformation: company_info(options),
+      companyInformation: %{
+        name: options[:company]
+      },
       billingAddress: options[:billingAddress],
       shippingAddress: options[:shippingAddress],
-      contactDetails: contact(options)
+      contactDetails: %{
+        emailAddress: options[:email],
+        phoneNumber: options[:phone]
+      }
     }
   end
 
-  defp add_references(options) do
+  defp add_card(card, opts) do
     %{
-      descriptor: options[:description],
-      invoiceData: options[:invoice]
-    }
-  end
-
-  defp personal_info(options) do
-    %{
-      name: options[:name]
-    }
-  end
-
-  defp company_info(options) do
-    %{
-      name: options[:company]
-    }
-  end
-
-  defp contact(options) do
-    %{
-      emailAddress: options[:email],
-      phoneNumber: options[:phone]
-    }
-  end
-
-  defp add_card(%CreditCard{} = payment) do
-    %{
-      cvv: payment.verification_code,
-      cardNumber: payment.number,
-      expiryDate: "#{payment.month}" <> "#{payment.year}",
-      cardholderName: CreditCard.full_name(payment)
-    }
-  end
-
-  defp add_payment(payment, brand_map, opts) do
-    brand = payment.brand
-
-    %{
-      paymentProductId: Map.fetch!(brand_map, String.to_atom(brand)),
+      paymentProductId: Map.fetch!(@brand_map, String.to_atom(card.brand)),
       skipAuthentication: opts[:skipAuthentication],
-      card: add_card(payment)
+      card: %{
+        cvv: card.verification_code,
+        cardNumber: card.number,
+        expiryDate: "#{card.month}#{card.year}",
+        cardholderName: CreditCard.full_name(card)
+      }
     }
-  end
-
-  defp auth_digest(path, secret_api_key, time, opts) do
-    data = "POST\napplication/json\n#{time}\n/v1/#{opts[:config][:merchant_id]}/#{path}\n"
-    :crypto.hmac(:sha256, secret_api_key, data)
   end
 
   defp commit(method, path, params, opts) do
     headers = create_headers(path, opts)
     data = Poison.encode!(params)
-    url = "#{@base_url}#{opts[:config][:merchant_id]}/#{path}"
-    response = HTTPoison.request(method, url, data, headers)
-    response |> respond
+    merchant_id = opts[:config][:merchant_id]
+    url = "#{@base_url}#{merchant_id}/#{path}"
+
+    gateway_response = HTTPoison.request(method, url, data, headers)
+    gateway_response |> respond
   end
 
   defp create_headers(path, opts) do
-    time = date()
-    sha_signature = auth_digest(path, opts[:config][:secret_api_key], time, opts)
-    auth_token = "GCS v1HMAC:#{opts[:config][:api_key_id]}:#{Base.encode64(sha_signature)}"
-    [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", time}]
+    datetime = Timex.now() |> Timex.local()
+
+    date_string =
+      "#{Timex.format!(datetime, "%a, %d %b %Y %H:%M:%S", :strftime)} #{datetime.zone_abbr}"
+
+    api_key_id = opts[:config][:api_key_id]
+
+    sha_signature = auth_digest(path, date_string, opts)
+
+    auth_token = "GCS v1HMAC:#{api_key_id}:#{Base.encode64(sha_signature)}"
+    [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", date_string}]
   end
 
-  defp date() do
-    use Timex
-    datetime = Timex.now() |> Timex.local()
-    strftime_str = Timex.format!(datetime, "%a, %d %b %Y %H:%M:%S ", :strftime)
-    time_zone = Timex.timezone(:local, datetime)
-    strftime_str <> "#{time_zone.abbreviation}"
+  defp auth_digest(path, date_string, opts) do
+    secret_api_key = opts[:config][:secret_api_key]
+    merchant_id = opts[:config][:merchant_id]
+
+    data = "POST\napplication/json\n#{date_string}\n/v1/#{merchant_id}/#{path}\n"
+    :crypto.hmac(:sha256, secret_api_key, data)
   end
 
   # Parses GlobalCollect's response and returns a `Gringotts.Response` struct
@@ -447,6 +429,9 @@ defmodule Gringotts.Gateways.GlobalCollect do
             status_code: code
           )
         }
+
+      {:error, _} ->
+        {:error, Response.error(raw: body, message: "undefined response from GlobalCollect")}
     end
   end
 
