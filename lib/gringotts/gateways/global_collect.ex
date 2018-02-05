@@ -51,7 +51,6 @@ defmodule Gringotts.Gateways.GlobalCollect do
    something like this:
 
        config :gringotts, Gringotts.Gateways.GlobalCollect,
-           adapter: Gringotts.Gateways.GlobalCollect,
            secret_api_key: "your_secret_secret_api_key"
            api_key_id: "your_secret_api_key_id"
            merchant_id: "your_secret_merchant_id"

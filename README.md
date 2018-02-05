@@ -33,15 +33,6 @@ def deps do
 end
 ```
 
-Add gringotts to the list of applications to be started.
-```elixir
-def application do
-  [
-    extra_applications: [:gringotts]
-  ]
-end
-```
-
 ## Usage
 
 This simple example demonstrates how a purchase can be made using a person's credit card details.
@@ -50,7 +41,6 @@ Add configs in `config/config.exs` file.
 
 ```elixir
 config :gringotts, Gringotts.Gateways.Monei,
-    adapter: Gringotts.Gateways.Monei,
     userId: "your_secret_user_id",
     password: "your_secret_password",
     entityId: "your_secret_channel_id"

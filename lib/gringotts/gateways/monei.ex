@@ -73,7 +73,6 @@ defmodule Gringotts.Gateways.Monei do
   fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Monei,
-        adapter: Gringotts.Gateways.Monei,
         userId: "your_secret_user_id",
         password: "your_secret_password",
         entityId: "your_secret_channel_id"

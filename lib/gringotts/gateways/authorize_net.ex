@@ -65,7 +65,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.AuthorizeNet,
-        adapter: Gringotts.Gateways.AuthorizeNet,
         name: "name_provided_by_authorize_net",
         transaction_key: "transactionKey_provided_by_authorize_net"
 

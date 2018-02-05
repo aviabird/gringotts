@@ -133,13 +133,8 @@ defmodule Gringotts do
   following format:
 
       config :gringotts, Gringotts.Gateways.XYZ,
-          adapter: Gringotts.Gateways.XYZ,
         # some_documented_key: associated_value
         # some_other_key: another_value
-
-  > ***Note!***
-  > The config key matches the `:adapter`! Both ***must*** be the Gateway module
-  > name!
   """
   
   import GenServer, only: [call: 2]
@@ -166,8 +161,8 @@ defmodule Gringotts do
       {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.XYZ, amount, card, opts)
   """
   def authorize(gateway, amount, card, opts \\ []) do
-    validate_config(gateway)
-    call(:payment_worker, {:authorize, gateway, amount, card, opts})
+    config = get_and_validate_config(gateway)
+    gateway.authorize(amount, card, [{:config, config} | opts])
   end
 
   @doc """
@@ -189,8 +184,8 @@ defmodule Gringotts do
       Gringotts.capture(Gringotts.Gateways.XYZ, amount, auth_result.id, opts)
   """
   def capture(gateway, id, amount, opts \\ []) do 
-    validate_config(gateway)
-    call(:payment_worker, {:capture, gateway, id, amount, opts})
+    config = get_and_validate_config(gateway)
+    gateway.capture(id, amount, [{:config, config} | opts])
   end
 
   @doc """
@@ -217,8 +212,8 @@ defmodule Gringotts do
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, card, opts)
   """
   def purchase(gateway, amount, card, opts \\ []) do
-    validate_config(gateway)
-    call(:payment_worker, {:purchase, gateway, amount, card, opts})
+    config = get_and_validate_config(gateway)
+    gateway.purchase(amount, card, [{:config, config} | opts])
   end
 
   @doc """
@@ -237,8 +232,8 @@ defmodule Gringotts do
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, id, opts)
   """
   def refund(gateway, amount, id, opts \\ []) do 
-    validate_config(gateway)
-    call(:payment_worker, {:refund, gateway, amount, id, opts})
+    config = get_and_validate_config(gateway)
+    gateway.refund(amount, id, [{:config, config} | opts])
   end
 
   @doc """
@@ -258,8 +253,8 @@ defmodule Gringotts do
       Gringotts.store(Gringotts.Gateways.XYZ, card, opts)
   """
   def store(gateway, card, opts \\ []) do 
-    validate_config(gateway)
-    call(:payment_worker, {:store, gateway, card, opts})
+    config = get_and_validate_config(gateway)
+    gateway.store(card, [{:config, config} | opts])
   end
 
   @doc """
@@ -276,8 +271,8 @@ defmodule Gringotts do
       Gringotts.unstore(Gringotts.Gateways.XYZ, token)
   """
   def unstore(gateway, token, opts \\ []) do 
-    validate_config(gateway)
-    call(:payment_worker, {:unstore, gateway, token, opts})
+    config = get_and_validate_config(gateway)
+    gateway.unstore(token, [{:config, config} | opts])
   end
 
   @doc """
@@ -297,13 +292,16 @@ defmodule Gringotts do
       Gringotts.void(Gringotts.Gateways.XYZ, id, opts)
   """
   def void(gateway, id, opts \\ []) do 
-    validate_config(gateway)
-    call(:payment_worker, {:void, gateway, id, opts})
+    config = get_and_validate_config(gateway)
+    gateway.void(id, [{:config, config} | opts])
   end
 
-  defp validate_config(gateway) do
+  defp get_and_validate_config(gateway) do
     # Keep the key name and adapter the same in the config in application
     config = Application.get_env(:gringotts, gateway)
+    # The following call to validate_config might raise an error
     gateway.validate_config(config)
+    global_config = Application.get_env(:gringotts, :global_config) || [mode: :test]
+    Keyword.merge(global_config, config)
   end
 end
