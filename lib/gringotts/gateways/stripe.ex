@@ -51,7 +51,6 @@ defmodule Gringotts.Gateways.Stripe do
   Your Application config must look something like this:
   
       config :gringotts, Gringotts.Gateways.Stripe,
-          adapter: Gringotts.Gateways.Stripe,
           secret_key: "your_secret_key",
           default_currency: "usd"
   """

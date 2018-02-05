@@ -4,12 +4,11 @@ defmodule GringottsTest do
   import Gringotts
 
   @test_config [
-    adapter: GringottsTest.FakeGateway,
     some_auth_info: :merchant_secret_key,
     other_secret: :sun_rises_in_the_east
   ]
 
-  @bad_config [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]
+  @bad_config [some_auth_info: :merchant_secret_key]
 
   defmodule FakeGateway do
     use Gringotts.Adapter, required_config: [:some_auth_info, :other_secret]
@@ -83,7 +82,7 @@ defmodule GringottsTest do
 
     assert_raise(
       ArgumentError,
-      "expected [:other_secret] to be set, got: [adapter: GringottsTest.FakeGateway, some_auth_info: :merchant_secret_key]\n",
+      "expected [:other_secret] to be set, got: [some_auth_info: :merchant_secret_key]\n",
       fn -> authorize(GringottsTest.FakeGateway, 100, :card, []) end
     )
   end

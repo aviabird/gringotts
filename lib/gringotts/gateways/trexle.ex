@@ -41,7 +41,6 @@ defmodule Gringotts.Gateways.Trexle do
   Your Application config must look something like this:
 
       config :gringotts, Gringotts.Gateways.Trexle,
-          adapter: Gringotts.Gateways.Trexle,
           api_key: "your-secret-API-key"
 
   [dashboard]: https://trexle.com/dashboard/

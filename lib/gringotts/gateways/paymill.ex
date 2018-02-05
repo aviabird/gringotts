@@ -22,7 +22,6 @@ defmodule Gringotts.Gateways.Paymill do
   Your application config must include 'private_key', 'public_key'
 
       config :gringotts, Gringotts.Gateways.Paymill,
-        adapter: Gringotts.Gateways.Paymill,
         private_key: "your_privat_key",
         public_key: "your_public_key"
   """

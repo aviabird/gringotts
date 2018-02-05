@@ -50,7 +50,6 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
   > something like this:
   > 
   >     config :gringotts, Gringotts.Gateways.<%= gateway_module %>,
-  >         adapter: Gringotts.Gateways.<%= gateway_module %><%= if required_config_keys != [] do %>,<% end %>
   <%= for key <- required_config_keys do %>>         <%= "#{key}" %>: "your_secret_<%= "#{key}" %>"
   <% end %>
   

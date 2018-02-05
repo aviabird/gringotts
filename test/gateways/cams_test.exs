@@ -57,10 +57,7 @@ defmodule Gringotts.Gateways.CamsTest do
   @bad_authorization "some_fake_transaction_id"
 
   setup_all do
-    Application.put_env(
-      :gringotts,
-      Gateway,
-      adapter: Gateway,
+    Application.put_env(:gringotts, Gateway,
       username: "some_secret_user_name",
       password: "some_secret_password"
     )
