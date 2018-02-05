@@ -126,9 +126,4 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
         flunk()
     end
   end
-
-  test "Environment setup" do
-    config = Application.get_env(:gringotts, Gringotts.Gateways.Monei)
-    assert config[:adapter] == Gringotts.Gateways.Monei
-  end
 end
