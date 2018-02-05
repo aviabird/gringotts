@@ -5,35 +5,35 @@ defmodule Gringotts.Gateways.BogusTest do
   alias Gringotts.Gateways.Bogus, as: Gateway
 
   test "authorize" do
-    {:ok, %Response{authorization: authorization, success: success}} =
+    {:ok, %Response{id: id, success: success}} =
         Gateway.authorize(10.95, :card, [])
 
     assert success
-    assert authorization != nil
+    assert id != nil
   end
 
   test "purchase" do
-    {:ok, %Response{authorization: authorization, success: success}} =
+    {:ok, %Response{id: id, success: success}} =
         Gateway.purchase(10.95, :card, [])
 
     assert success
-    assert authorization != nil
+    assert id != nil
   end
 
   test "capture" do
-    {:ok, %Response{authorization: authorization, success: success}} =
+    {:ok, %Response{id: id, success: success}} =
         Gateway.capture(1234, 5, [])
 
     assert success
-    assert authorization != nil
+    assert id != nil
   end
 
   test "void" do
-    {:ok, %Response{authorization: authorization, success: success}} =
+    {:ok, %Response{id: id, success: success}} =
         Gateway.void(1234, [])
 
     assert success
-    assert authorization != nil
+    assert id != nil
   end
 
   test "store" do

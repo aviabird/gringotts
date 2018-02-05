@@ -28,10 +28,10 @@ defmodule Gringotts.Gateways.Bogus do
     do: success(customer_id)
 
   defp success,
-    do: {:ok, Response.success(authorization: random_string())}
+    do: {:ok, Response.success(id: random_string())}
 
   defp success(id),
-    do: {:ok, Response.success(authorization: id)}
+    do: {:ok, Response.success(id: id)}
 
   defp random_string(length \\ 10),
     do: 1..length |> Enum.map(&random_char/1) |> Enum.join
