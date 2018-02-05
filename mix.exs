@@ -33,7 +33,6 @@ defmodule Gringotts.Mixfile do
   def application do
     [
       applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex],
-      mod: {Gringotts.Application, []}
     ]
   end
 

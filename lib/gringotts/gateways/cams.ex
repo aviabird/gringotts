@@ -56,7 +56,6 @@ defmodule Gringotts.Gateways.Cams do
   > fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Cams,
-          adapter: Gringotts.Gateways.Cams,
           username: "your_secret_user_name",
           password: "your_secret_password",
 

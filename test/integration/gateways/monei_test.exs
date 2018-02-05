@@ -66,7 +66,6 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     Application.put_env(
       :gringotts,
       Gringotts.Gateways.Monei,
-      adapter: Gringotts.Gateways.Monei,
       userId: "8a8294186003c900016010a285582e0a",
       password: "hMkqf2qbWf",
       entityId: "8a82941760036820016010a28a8337f6"
