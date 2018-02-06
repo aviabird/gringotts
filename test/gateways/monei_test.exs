@@ -119,7 +119,7 @@ defmodule Gringotts.Gateways.MoneiTest do
   describe "core" do
     test "with unsupported currency.", %{auth: auth} do
       {:error, response} = Gateway.authorize(@bad_currency, @card, config: auth)
-      assert response.description == "Invalid currency"
+      assert response.reason == "Invalid currency"
     end
 
     test "when MONEI is down or unreachable.", %{bypass: bypass, auth: auth} do
@@ -161,7 +161,7 @@ defmodule Gringotts.Gateways.MoneiTest do
 
       opts = randoms ++ @extra_opts ++ [config: auth]
       {:ok, response} = Gateway.purchase(@amount42, @card, opts)
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
 
@@ -181,7 +181,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       end)
 
       {:ok, response} = Gateway.authorize(@amount42, @card, config: auth)
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
   end
 
@@ -192,7 +192,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       end)
 
       {:ok, response} = Gateway.purchase(@amount42, @card, config: auth)
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
 
     test "with createRegistration.", %{bypass: bypass, auth: auth} do
@@ -203,7 +203,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       end)
 
       {:ok, response} = Gateway.purchase(@amount42, @card, register: true, config: auth)
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
   end
@@ -215,8 +215,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       end)
 
       {:ok, response} = Gateway.store(@card, config: auth)
-      assert response.code == "000.100.110"
-      assert response.raw["card"]["holder"] == "Jo Doe"
+      assert response.gateway_code == "000.100.110"
     end
   end
 
@@ -234,7 +233,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       {:ok, response} =
         Gateway.capture("7214344242e11af79c0b9e7b4f3f6234", @amount42, config: auth)
 
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
 
     test "with createRegistration that is ignored", %{bypass: bypass, auth: auth} do
@@ -257,7 +256,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           config: auth
         )
 
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
   end
 
@@ -274,7 +273,7 @@ defmodule Gringotts.Gateways.MoneiTest do
 
       {:ok, response} = Gateway.refund(@amount3, "7214344242e11af79c0b9e7b4f3f6234", config: auth)
 
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
   end
 
@@ -290,7 +289,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       )
 
       {:error, response} = Gateway.unstore("7214344242e11af79c0b9e7b4f3f6234", config: auth)
-      assert response.code == :undefined_response_from_monei
+      assert response.reason == "undefined response from monei"
     end
   end
 
@@ -306,7 +305,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       )
 
       {:ok, response} = Gateway.void("7214344242e11af79c0b9e7b4f3f6234", config: auth)
-      assert response.code == "000.100.110"
+      assert response.gateway_code == "000.100.110"
     end
   end
 

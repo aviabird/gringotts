@@ -85,9 +85,9 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   test "authorize", %{opts: opts} do
     case Gringotts.authorize(Gateway, @amount, @card, opts) do
       {:ok, response} ->
-        assert response.code == "000.100.110"
+        assert response.gateway_code == "000.100.110"
 
-        assert response.description ==
+        assert response.message ==
                  "Request successfully processed in 'Merchant in Integrator Test Mode'"
 
         assert String.length(response.id) == 32
@@ -101,9 +101,9 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   test "capture", %{opts: _opts} do
     case Gringotts.capture(Gateway, "s", @amount) do
       {:ok, response} ->
-        assert response.code == "000.100.110"
+        assert response.gateway_code == "000.100.110"
 
-        assert response.description ==
+        assert response.message ==
                  "Request successfully processed in 'Merchant in Integrator Test Mode'"
 
         assert String.length(response.id) == 32
@@ -116,9 +116,9 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   test "purchase", %{opts: opts} do
     case Gringotts.purchase(Gateway, @amount, @card, opts) do
       {:ok, response} ->
-        assert response.code == "000.100.110"
+        assert response.gateway_code == "000.100.110"
 
-        assert response.description ==
+        assert response.message ==
                  "Request successfully processed in 'Merchant in Integrator Test Mode'"
 
         assert String.length(response.id) == 32
