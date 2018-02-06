@@ -258,7 +258,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the registration ID/token
   """
-  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value} = Money.to_string(amount)
 
@@ -293,7 +293,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> amount = %{value: Decimal.new(35), currency: "USD"}
       iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, amount, auth_result.id, opts)
   """
-  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
   def capture(payment_id, amount, opts)
 
   def capture(<<payment_id::bytes-size(32)>>, amount, opts) do
@@ -329,7 +329,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
       iex> purchase_result.token # This is the registration ID/token
   """
-  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, %CreditCard{} = card, opts) do
     {currency, value} = Money.to_string(amount)
 
@@ -361,7 +361,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> amount = %{value: Decimal.new(42), currency: "USD"}
       iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
-  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
     {currency, value} = Money.to_string(amount)
 
@@ -396,7 +396,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, store_result} = Gringotts.store(Gringotts.Gateways.Monei, card, [])
   """
-  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def store(%CreditCard{} = card, opts) do
     params = card_params(card)
     commit(:post, "registrations", params, opts)
@@ -409,7 +409,7 @@ defmodule Gringotts.Gateways.Monei do
 
   Deletes previously stored payment-source data.
   """
-  @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
+  @spec unstore(String.t(), keyword) :: {:ok | :error, Response.t()}
   def unstore(registration_id, opts)
 
   def unstore(<<registration_id::bytes-size(32)>>, opts) do
@@ -447,7 +447,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
-  @spec void(String.t(), keyword) :: {:ok | :error, Response}
+  @spec void(String.t(), keyword) :: {:ok | :error, Response.t()}
   def void(payment_id, opts)
 
   def void(<<payment_id::bytes-size(32)>>, opts) do
@@ -466,70 +466,99 @@ defmodule Gringotts.Gateways.Monei do
     ]
   end
 
-  # Makes the request to MONEI's network.
-  @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response}
-  defp commit(method, endpoint, params, opts) do
-    auth_params = [
+  defp auth_params(opts) do
+    [
       "authentication.userId": opts[:config][:userId],
       "authentication.password": opts[:config][:password],
       "authentication.entityId": opts[:config][:entityId]
     ]
+  end
 
+
+  # Makes the request to MONEI's network.
+  @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response.t()}
+  defp commit(:post, endpoint, params, opts) do
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
 
     case expand_params(opts, params[:paymentType]) do
       {:error, reason} ->
-        {:error, Response.error(description: reason)}
+        {:error, Response.error(reason: reason)}
 
       validated_params ->
-        network_response =
-          case method do
-            :post ->
-              HTTPoison.post(
-                url,
-                {:form, params ++ validated_params ++ auth_params},
-                @default_headers
-              )
-
-            :delete ->
-              HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
-          end
-
-        respond(network_response)
+        url
+        |> HTTPoison.post({:form, params ++ validated_params ++ auth_params(opts)}, @default_headers)
+        |> respond
     end
+  end
+
+  # This clause is only used by `unstore/2`
+  defp commit(:delete, endpoint, _params, opts) do
+    base_url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
+    auth_params = auth_params(opts)
+    query_string = auth_params |> URI.encode_query()
+
+    base_url <> "?" <> query_string
+    |> HTTPoison.delete()
+    |> respond
   end
 
   # Parses MONEI's response and returns a `Gringotts.Response` struct in a
   # `:ok`, `:error` tuple.
-  @spec respond(term) :: {:ok | :error, Response}
+  @spec respond(term) :: {:ok | :error, Response.t()}
   defp respond(monei_response)
 
   defp respond({:ok, %{status_code: 200, body: body}}) do
-    case decode(body) do
-      {:ok, decoded_json} ->
-        case parse_response(decoded_json) do
-          {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
-          {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
-        end
+    common = [raw: body, status_code: 200]
+
+    with {:ok, decoded_json} <- decode(body),
+         {:ok, results}      <- parse_response(decoded_json) do
+      {:ok, Response.success(common ++ results)}
+    else
+      {:not_ok, errors} ->
+        {:ok, Response.error(common ++ errors)}
 
       {:error, _} ->
-        {:error, Response.error(raw: body, code: :undefined_response_from_monei)}
+        {:error, Response.error([reason: "undefined response from monei"] ++ common)}
     end
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
-    {:error, Response.error(code: status_code, raw: body)}
+    {:error, Response.error(status_code: status_code, raw: body)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
     {
       :error,
       Response.error(
-        code: error.id,
         reason: "network related failure",
-        description: "HTTPoison says '#{error.reason}'"
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
       )
     }
+  end
+
+  defp parse_response(%{"result" => result} = data) do
+    {address, zip_code} = @avs_code_translator[result["avsResponse"]]
+
+    results = [
+      id: data["id"],
+      token: data["registrationId"],
+      gateway_code: result["code"],
+      message: result["description"],
+      fraud_review: data["risk"],
+      cvc_result: @cvc_code_translator[result["cvvResponse"]],
+      avs_result: %{address: address, zip_code: zip_code}
+    ]
+
+    non_nil_params = Enum.filter(results, fn {_, v} -> v != nil end)
+    verify(non_nil_params)
+  end
+
+  defp verify(results) do
+    if String.match?(results[:gateway_code], ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
+      {:ok, results}
+    else
+      {:not_ok, [{:reason, results[:message]} | results]}
+    end
   end
 
   defp expand_params(params, action_type) do
@@ -585,31 +614,6 @@ defmodule Gringotts.Gateways.Monei do
 
   defp valid_currency?(currency) do
     currency in @supported_currencies
-  end
-
-  defp parse_response(%{"result" => result} = data) do
-    {address, zip_code} = @avs_code_translator[result["avsResponse"]]
-
-    results = [
-      code: result["code"],
-      description: result["description"],
-      risk: data["risk"]["score"],
-      cvc_result: @cvc_code_translator[result["cvvResponse"]],
-      avs_result: [address: address, zip_code: zip_code],
-      raw: data,
-      token: data["registrationId"]
-    ]
-
-    filtered = Enum.filter(results, fn {_, v} -> v != nil end)
-    verify(filtered)
-  end
-
-  defp verify(results) do
-    if String.match?(results[:code], ~r{^(000\.000\.|000\.100\.1|000\.[36])}) do
-      {:ok, results}
-    else
-      {:error, [{:reason, results[:description]} | results]}
-    end
   end
 
   defp make(prefix, param) do

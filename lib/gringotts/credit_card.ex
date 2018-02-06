@@ -1,6 +1,6 @@
 defmodule Gringotts.CreditCard do
   @moduledoc """
-  Defines a `Struct` for (credit) cards and some utilities.
+  Defines a `struct` for (credit) cards and some utilities.
   """
 
   defstruct [:number, :month, :year, :first_name, :last_name, :verification_code, :brand]
