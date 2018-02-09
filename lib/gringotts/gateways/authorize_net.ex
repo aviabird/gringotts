@@ -47,11 +47,15 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   ## Notes
 
-  Authorize.Net supports [multiple currencies][currencies] however, multiple
-  currencies in one account are not supported. A merchant would need multiple
-  Authorize.Net accounts, one for each chosen currency.
-
-  > Currently, `Gringotts` supports single Authorize.Net account configuration.
+  1. Though Authorize.Net supports [multiple currencies][currencies] however,
+     multiple currencies in one account are not supported in _this_ module. A
+     merchant would need multiple Authorize.Net accounts, one for each chosen
+     currency.
+  2. The responses of this module include a non-standard field: `:cavv_result`.
+     - `:cavv_result` is the "cardholder authentication verification response
+       code". In case of Mastercard transactions, this field will always be
+       `nil`. Please refer the "Response Format" section in the [docs][docs] for
+       more details.
 
   [currencies]: https://community.developer.authorize.net/t5/The-Authorize-Net-Developer-Blog/Authorize-Net-UK-Europe-Update/ba-p/35957
 
@@ -109,7 +113,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   @test_url "https://apitest.authorize.net/xml/v1/request.api"
   @production_url "https://api.authorize.net/xml/v1/request.api"
-  @header [{"Content-Type", "text/xml"}]
+  @headers [{"Content-Type", "text/xml"}]
 
   @transaction_type %{
     purchase: "authCaptureTransaction",
@@ -182,8 +186,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec purchase(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response}
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -243,8 +246,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec authorize(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response}
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -286,8 +288,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec capture(String.t(), Money.t(), Keyword.t()) :: {:ok | :error, Response}
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -316,8 +317,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec refund(Money.t(), String.t(), Keyword.t()) :: {:ok | :error, Response}
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -342,8 +342,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec void(String.t(), Keyword.t()) :: {:ok | :error, Response}
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -402,8 +401,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         card |> create_customer_profile(opts) |> generate(format: :none)
       end
 
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   @doc """
@@ -421,15 +419,15 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec unstore(String.t(), Keyword.t()) :: {:ok | :error, Response}
   def unstore(customer_profile_id, opts) do
     request_data = customer_profile_id |> delete_customer_profile(opts) |> generate(format: :none)
-    response_data = commit(:post, request_data, opts)
-    respond(response_data)
+    commit(request_data, opts)
   end
 
   # method to make the API request with params
-  defp commit(method, payload, opts) do
-    path = base_url(opts)
-    headers = @header
-    HTTPoison.request(method, path, payload, headers)
+  defp commit(payload, opts) do
+    opts
+    |> base_url()
+    |> HTTPoison.post(payload, @headers)
+    |> respond()
   end
 
   defp respond({:ok, %{body: body, status_code: 200}}), do: ResponseHandler.respond(body)
@@ -754,6 +752,50 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       "deleteCustomerProfileResponse"
     ]
 
+    @avs_code_translator %{
+      "A" => {"pass", "fail"}, #The street address matched, but the postal code did not.
+      "B" => {nil, nil},       # No address information was provided.
+      "E" => {"fail", nil},    # The AVS check returned an error.
+      "G" => {nil, nil},       # The card was issued by a bank outside the U.S. and does not support AVS.
+      "N" => {"fail", "fail"}, # Neither the street address nor postal code matched.
+      "P" => {nil, nil},       # AVS is not applicable for this transaction.
+      "R" => {nil, nil},       # Retry — AVS was unavailable or timed out.
+      "S" => {nil, nil},       # AVS is not supported by card issuer.
+      "U" => {nil, nil},       # Address information is unavailable.
+      "W" => {"fail", "pass"}, # The US ZIP+4 code matches, but the street address does not.
+      "X" => {"pass", "pass"}, # Both the street address and the US ZIP+4 code matched.
+      "Y" => {"pass", "pass"}, # The street address and postal code matched.
+      "Z" => {"fail", "pass"}, # The postal code matched, but the street address did not.
+      ""  => {nil, nil},       # fallback in-case of absence
+      nil => {nil, nil}        # fallback in-case of absence
+    }
+
+    @cvc_code_translator %{
+      "M" => "CVV matched.",
+      "N" => "CVV did not match.",
+      "P" => "CVV was not processed.",
+      "S" => "CVV should have been present but was not indicated.",
+      "U" => "The issuer was unable to process the CVV check.",
+      nil => nil # fallback in-case of absence
+    }
+
+    @cavv_code_translator %{
+      "" => "CAVV not validated.",
+      "0" => "CAVV was not validated because erroneous data was submitted.",
+      "1" => "CAVV failed validation.",
+      "2" => "CAVV passed validation.",
+      "3" => "CAVV validation could not be performed; issuer attempt incomplete.",
+      "4" => "CAVV validation could not be performed; issuer system error.",
+      "5" => "Reserved for future use.",
+      "6" => "Reserved for future use.",
+      "7" => "CAVV failed validation, but the issuer is available. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "8" => "CAVV passed validation and the issuer is available. Valid for U.S.-issued card submitted to non-U.S. acquirer.",
+      "9" => "CAVV failed validation and the issuer is unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "A" => "CAVV passed validation but the issuer unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "B" => "CAVV passed validation, information only, no liability shift.",
+      nil => nil # fallback in-case of absence
+    }
+
     def respond(body) do
       response_map = XmlToMap.naive_map(body)
       case extract_gateway_response(response_map) do
@@ -793,7 +835,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       id = result["transactionResponse"]["transId"]
       message = result["messages"]["message"]["text"]
       avs_result = result["transactionResponse"]["avsResultCode"]
-      cvc_result = result["transactionResponse"]["cavvResultCode"]
+      cvc_result = result["transactionResponse"]["cvvResultCode"]
+      cavv_result = result["transactionResponse"]["cavvResultCode"]
       gateway_code = result["messages"]["message"]["code"]
 
       base_response
@@ -802,6 +845,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       |> set_gateway_code(gateway_code)
       |> set_avs_result(avs_result)
       |> set_cvc_result(cvc_result)
+      |> set_cavv_result(cavv_result)
     end
 
     def parse_gateway_error(result, base_response) do
@@ -827,7 +871,18 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     defp set_gateway_code(response, code), do: %{response | gateway_code: code}
     defp set_reason(response, body),       do: %{response | reason: body}
 
-    defp set_avs_result(response, result), do: %{response | avs_result: result}
-    defp set_cvc_result(response, result), do: %{response | cvc_result: result}
+    defp set_avs_result(response, avs_code) do
+      {street, zip_code} = @avs_code_translator[avs_code]
+      %{response | avs_result: %{street: street, zip_code: zip_code}}
+    end
+
+    defp set_cvc_result(response, cvv_code) do
+      %{response | cvc_result: @cvc_code_translator[cvv_code]}
+    end
+
+    defp set_cavv_result(response, cavv_code) do
+      Map.put(response, :cavv_result, @cavv_code_translator[cavv_code])
+    end
+
   end
 end
