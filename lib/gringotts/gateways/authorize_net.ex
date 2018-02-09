@@ -94,7 +94,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
-  iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+  iex> amount = Money.new(20, :USD}
   iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
   ```
 
@@ -136,8 +136,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   Charges a credit `card` for the specified `amount`. It performs `authorize`
   and `capture` at the [same time][auth-cap-same-time].
 
-  Authorize.Net returns `transId` (available in the `Response.authorization`
-  field) which can be used to:
+  Authorize.Net returns `transId` (available in the `Response.id` field) which
+  can be used to:
 
   * `refund/3` a settled transaction.
   * `void/2` a transaction.
@@ -170,7 +170,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
 
   ## Example
-      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+      iex> amount = Money.new(20, :USD}
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"},
@@ -182,7 +182,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     commit(request_data, opts)
@@ -197,8 +197,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   To transfer the funds to merchant's account follow this up with a `capture/3`.
 
-  Authorize.Net returns a `transId` (available in the `Response.authorization`
-  field) which can be used for:
+  Authorize.Net returns a `transId` (available in the `Response.id` field) which
+  can be used for:
 
   * `capture/3` an authorized transaction.
   * `void/2` a transaction.
@@ -230,7 +230,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
 
   ## Example
-      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+      iex> amount = Money.new(20, :USD}
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"},
@@ -242,7 +242,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.authorize(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec authorize(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def authorize(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:authorize])
     commit(request_data, opts)
@@ -254,8 +254,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   `amount` is transferred to the merchant account by Authorize.Net when it is smaller or
   equal to the amount used in the pre-authorization referenced by `id`.
 
-  Authorize.Net returns a `transId` (available in the `Response.authorization`
-  field) which can be used to:
+  Authorize.Net returns a `transId` (available in the `Response.id` field) which
+  can be used to:
 
   * `refund/3` a settled transaction.
   * `void/2` a transaction.
@@ -280,11 +280,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> opts = [
         ref_id: "123456"
       ]
-      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+      iex> amount = Money.new(20, :USD}
       iex> id = "123456"
       iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
-  @spec capture(String.t(), Money.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def capture(id, amount, opts) do
     request_data = normal_capture(amount, id, opts, @transaction_type[:capture])
     commit(request_data, opts)
@@ -310,10 +310,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: "123456"
       ]
       iex> id = "123456"
-      iex> amount = %{value: Decimal.new(20.0), currency: "USD"}
+      iex> amount = Money.new(20, :USD}
       iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
-  @spec refund(Money.t(), String.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def refund(amount, id, opts) do
     request_data = normal_refund(amount, id, opts, @transaction_type[:refund])
     commit(request_data, opts)
@@ -338,7 +338,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> id = "123456"
       iex> result = Gringotts.void(Gringotts.Gateways.AuthorizeNet, id, opts)
   """
-  @spec void(String.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec void(String.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def void(id, opts) do
     request_data = normal_void(id, opts, @transaction_type[:void])
     commit(request_data, opts)
@@ -391,7 +391,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, card, opts)
   """
-  @spec store(CreditCard.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec store(CreditCard.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def store(card, opts) do
     request_data =
       if opts[:customer_profile_id] do
@@ -411,11 +411,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   ## Example
       iex> id = "123456"
-      iex> opts = []
-      iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, id, opts)
+      iex> result = Gringotts.store(Gringotts.Gateways.AuthorizeNet, id)
   """
 
-  @spec unstore(String.t(), Keyword.t()) :: {:ok | :error, Response}
+  @spec unstore(String.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def unstore(customer_profile_id, opts) do
     request_data = customer_profile_id |> delete_customer_profile(opts) |> generate(format: :none)
     commit(request_data, opts)
