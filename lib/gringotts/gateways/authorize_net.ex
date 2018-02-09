@@ -101,7 +101,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   """
 
   import XmlBuilder
-  import XmlToMap
 
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:name, :transaction_key]
@@ -397,9 +396,9 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   def store(card, opts) do
     request_data =
       if opts[:customer_profile_id] do
-        card |> create_customer_payment_profile(opts) |> generate
+        card |> create_customer_payment_profile(opts) |> generate(format: :none)
       else
-        card |> create_customer_profile(opts) |> generate
+        card |> create_customer_profile(opts) |> generate(format: :none)
       end
 
     response_data = commit(:post, request_data, opts)
@@ -420,42 +419,32 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   @spec unstore(String.t(), Keyword.t()) :: {:ok | :error, Response}
   def unstore(customer_profile_id, opts) do
-    request_data = customer_profile_id |> delete_customer_profile(opts) |> generate
+    request_data = customer_profile_id |> delete_customer_profile(opts) |> generate(format: :none)
     response_data = commit(:post, request_data, opts)
     respond(response_data)
   end
 
-  # method to make the api request with params
+  # method to make the API request with params
   defp commit(method, payload, opts) do
     path = base_url(opts)
     headers = @header
     HTTPoison.request(method, path, payload, headers)
   end
 
-  # Function to return a response
-  defp respond({:ok, %{body: body, status_code: 200}}) do
-    raw_response = naive_map(body)
-    response_type = ResponseHandler.check_response_type(raw_response)
-    response_check(raw_response[response_type], raw_response)
-  end
+  defp respond({:ok, %{body: body, status_code: 200}}), do: ResponseHandler.respond(body)
 
   defp respond({:ok, %{body: body, status_code: code}}) do
-    {:error, Response.error(params: body, error_code: code)}
+    {:error, %Response{raw: body, status_code: code}}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {:error, Response.error(error_code: error.id, message: "HTTPoison says '#{error.reason}'")}
-  end
-
-  # Functions to send successful and error responses depending on message received
-  # from gateway.
-
-  defp response_check(%{"messages" => %{"resultCode" => "Ok"}}, raw_response) do
-    {:ok, ResponseHandler.parse_gateway_success(raw_response)}
-  end
-
-  defp response_check(%{"messages" => %{"resultCode" => "Error"}}, raw_response) do
-    {:error, ResponseHandler.parse_gateway_error(raw_response)}
+    {
+      :error,
+      %Response{
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      }
+    }
   end
 
   ##############################################################################
@@ -470,7 +459,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       add_order_id(opts),
       add_purchase_transaction_request(amount, transaction_type, payment, opts)
     ])
-    |> generate
+    |> generate(format: :none)
   end
 
   # function for formatting the request for  normal capture
@@ -481,7 +470,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       add_order_id(opts),
       add_capture_transaction_request(amount, id, transaction_type, opts)
     ])
-    |> generate
+    |> generate(format: :none)
   end
 
   # function to format the request for normal refund
@@ -492,7 +481,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       add_order_id(opts),
       add_refund_transaction_request(amount, id, opts, transaction_type)
     ])
-    |> generate
+    |> generate(format: :none)
   end
 
   # function to format the request for normal void operation
@@ -506,7 +495,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         add_ref_trans_id(id)
       ])
     ])
-    |> generate
+    |> generate(format: :none)
   end
 
   defp create_customer_payment_profile(card, opts) do
@@ -746,88 +735,98 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     end
   end
 
+  ##################################################################################
+  #                               RESPONSE_HANDLER MODULE                          #
+  #                                                                                #
+  ##################################################################################
+
   defmodule ResponseHandler do
     @moduledoc false
     alias Gringotts.Response
 
-    @response_type %{
-      auth_response: "authenticateTestResponse",
-      transaction_response: "createTransactionResponse",
-      error_response: "ErrorResponse",
-      customer_profile_response: "createCustomerProfileResponse",
-      customer_payment_profile_response: "createCustomerPaymentProfileResponse",
-      delete_customer_profile: "deleteCustomerProfileResponse"
-    }
+    @supported_response_types [
+      "authenticateTestResponse",
+      "createTransactionResponse",
+      "ErrorResponse",
+      "createCustomerProfileResponse",
+      "createCustomerPaymentProfileResponse",
+      "deleteCustomerProfileResponse"
+    ]
 
-    def parse_gateway_success(raw_response) do
-      response_type = check_response_type(raw_response)
-      token = raw_response[response_type]["transactionResponse"]["transId"]
-      message = raw_response[response_type]["messages"]["message"]["text"]
-      avs_result = raw_response[response_type]["transactionResponse"]["avsResultCode"]
-      cvc_result = raw_response[response_type]["transactionResponse"]["cavvResultCode"]
+    def respond(body) do
+      response_map = XmlToMap.naive_map(body)
+      case extract_gateway_response(response_map) do
+        :undefined_response ->
+          {
+            :error,
+            %Response{
+              reason: "Undefined response from AunthorizeNet",
+              raw: body,
+              message: "You might wish to open an issue with Gringotts."
+            }
+          }
 
-      []
-      |> status_code(200)
-      |> set_token(token)
+        result ->
+          build_response(result, %Response{raw: body, status_code: 200})
+      end
+    end
+
+    def extract_gateway_response(response_map) do
+      # The type of the response should be supported
+      @supported_response_types
+      |> Stream.map(&Map.get(response_map, &1, nil))
+      # Find the first non-nil from the above, if all are `nil`...
+      # We are in trouble!
+      |> Enum.find(:undefined_response, &(&1))
+    end
+
+    defp build_response(%{"messages" => %{"resultCode" => "Ok"}} = result, base_response) do
+      {:ok, ResponseHandler.parse_gateway_success(result, base_response)}
+    end
+
+    defp build_response(%{"messages" => %{"resultCode" => "Error"}} = result, base_response) do
+      {:error, ResponseHandler.parse_gateway_error(result, base_response)}
+    end
+
+    def parse_gateway_success(result, base_response) do
+      id = result["transactionResponse"]["transId"]
+      message = result["messages"]["message"]["text"]
+      avs_result = result["transactionResponse"]["avsResultCode"]
+      cvc_result = result["transactionResponse"]["cavvResultCode"]
+      gateway_code = result["messages"]["message"]["code"]
+
+      base_response
+      |> set_id(id)
       |> set_message(message)
+      |> set_gateway_code(gateway_code)
       |> set_avs_result(avs_result)
       |> set_cvc_result(cvc_result)
-      |> set_params(raw_response)
-      |> set_success(true)
-      |> handle_opts
     end
 
-    def parse_gateway_error(raw_response) do
-      response_type = check_response_type(raw_response)
+    def parse_gateway_error(result, base_response) do
+      message = result["messages"]["message"]["text"]
+      gateway_code = result["messages"]["message"]["code"]
 
-      {message, error_code} =
-        if raw_response[response_type]["transactionResponse"]["errors"] do
-          {
-            raw_response[response_type]["messages"]["message"]["text"] <>
-              " " <>
-              raw_response[response_type]["transactionResponse"]["errors"]["error"]["errorText"],
-            raw_response[response_type]["transactionResponse"]["errors"]["error"]["errorCode"]
-          }
-        else
-          {
-            raw_response[response_type]["messages"]["message"]["text"],
-            raw_response[response_type]["messages"]["message"]["code"]
-          }
-        end
+      error_text = result["transactionResponse"]["errors"]["error"]["errorText"]
+      error_code = result["transactionResponse"]["errors"]["error"]["errorCode"]
+      reason = "#{error_text} [Error code (#{error_code})]"
 
-      []
-      |> status_code(200)
+      base_response
       |> set_message(message)
-      |> set_error_code(error_code)
-      |> set_params(raw_response)
-      |> set_success(false)
-      |> handle_opts
+      |> set_gateway_code(gateway_code)
+      |> set_reason(reason)
     end
 
-    def check_response_type(raw_response) do
-      cond do
-        raw_response[@response_type[:transaction_response]] -> "createTransactionResponse"
-        raw_response[@response_type[:error_response]] -> "ErrorResponse"
-        raw_response[@response_type[:customer_profile_response]] -> "createCustomerProfileResponse"
-        raw_response[@response_type[:customer_payment_profile_response]] -> "createCustomerPaymentProfileResponse"
-        raw_response[@response_type[:delete_customer_profile]] -> "deleteCustomerProfileResponse"
-      end
-    end
+    ############################################################################
+    #                                   HELPERS                                #
+    ############################################################################
 
-    defp set_token(opts, token), do: [{:authorization, token} | opts]
-    defp set_success(opts, value), do: [{:success, value} | opts]
-    defp status_code(opts, code), do: [{:status, code} | opts]
-    defp set_message(opts, message), do: [{:message, message} | opts]
-    defp set_avs_result(opts, result), do: [{:avs, result} | opts]
-    defp set_cvc_result(opts, result), do: [{:cvc, result} | opts]
-    defp set_params(opts, raw_response), do: [{:params, raw_response} | opts]
-    defp set_error_code(opts, code), do: [{:error, code} | opts]
+    defp set_id(response, id),             do: %{response | id: id}
+    defp set_message(response, message),   do: %{response | message: message}
+    defp set_gateway_code(response, code), do: %{response | gateway_code: code}
+    defp set_reason(response, body),       do: %{response | reason: body}
 
-    defp handle_opts(opts) do
-      case Keyword.fetch(opts, :success) do
-        {:ok, true} -> Response.success(opts)
-        {:ok, false} -> Response.error(opts)
-      end
-    end
+    defp set_avs_result(response, result), do: %{response | avs_result: result}
+    defp set_cvc_result(response, result), do: %{response | cvc_result: result}
   end
 end
