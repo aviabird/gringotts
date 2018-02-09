@@ -443,26 +443,10 @@ defmodule Gringotts.Gateways.Cams do
       end
     end
 
-    def parse({:ok, %HTTPoison.Response{body: body, status_code: 400}}) do
+    def parse({:ok, %HTTPoison.Response{body: body, status_code: code}}) do
       response = %Response{
-        status_code: 400,
+        status_code: code,
         raw: body
-      }
-
-      {:error, response}
-    end
-
-    # There is no mock test for this.
-    # Don't know in which scenario we recieve a 404 :(
-    def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
-      decoded_body = URI.decode_query(body)
-      error_message = List.to_string(Map.keys(decoded_body))
-      [_ | parse_message] = Regex.run(~r|<title>(.*)</title>|, error_message)
-      message = List.to_string(parse_message)
-      response = %Response{
-        status_code: 404,
-        raw: body,
-        reason: message
       }
 
       {:error, response}
