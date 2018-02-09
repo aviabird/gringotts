@@ -67,26 +67,25 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with correct params" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.successful_purchase() end do
-        {:ok, %Response{success: result}} = Gringotts.purchase(Gateway, @money, @card, @options)
-        assert result
+        assert {:ok, %Response{}} = Gringotts.purchase(Gateway, @money, @card, @options)
       end
     end
 
     test "with bad card" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.failed_purchase_with_bad_credit_card() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.purchase(Gateway, @money, @bad_card, @options)
 
-        assert String.contains?(result, "Invalid Credit Card Number")
+        assert String.contains?(message, "Invalid Credit Card Number")
       end
     end
 
     test "with invalid currency" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.with_invalid_currency() end do
-        {:ok, %Response{message: result}} = Gringotts.purchase(Gateway, @bad_currency, @card, @options)
-        assert String.contains?(result, "The cc payment type")
+        {:error, %Response{message: message}} = Gringotts.purchase(Gateway, @bad_currency, @card, @options)
+        assert String.contains?(message, "The cc payment type")
       end
     end
   end
@@ -95,18 +94,17 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with correct params" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.successful_authorize() end do
-        {:ok, %Response{success: result}} = Gringotts.authorize(Gateway, @money, @card, @options)
-        assert result
+        assert {:ok, %Response{}} = Gringotts.authorize(Gateway, @money, @card, @options)
       end
     end
 
     test "with bad card" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.failed_authorized_with_bad_card() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.authorize(Gateway, @money, @bad_card, @options)
 
-        assert String.contains?(result, "Invalid Credit Card Number")
+        assert String.contains?(message, "Invalid Credit Card Number")
       end
     end
   end
@@ -114,49 +112,45 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "capture" do
     test "with full amount" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
-        {:ok, %Response{success: result}} =
+        assert {:ok, %Response{}} =
           Gringotts.capture(Gateway, @money, @authorization, @options)
-
-        assert result
       end
     end
 
     test "with partial amount" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
-        {:ok, %Response{success: result}} =
+        assert {:ok, %Response{}} =
           Gringotts.capture(Gateway, @money_less, @authorization, @options)
-
-        assert result
       end
     end
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.invalid_transaction_id() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.capture(Gateway, @money, @bad_authorization, @options)
 
-        assert String.contains?(result, "Transaction not found")
+        assert String.contains?(message, "Transaction not found")
       end
     end
 
-    test "with more than authorization amount" do
+    test "with more than authorized amount" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.more_than_authorization_amount() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.capture(Gateway, @money_more, @authorization, @options)
 
-        assert String.contains?(result, "exceeds the authorization amount")
+        assert String.contains?(message, "exceeds the authorization amount")
       end
     end
 
     test "on already captured transaction" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.multiple_capture_on_same_transaction() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.capture(Gateway, @money, @authorization, @options)
 
-        assert String.contains?(result, "A capture requires that")
+        assert String.contains?(message, "A capture requires that")
       end
     end
   end
@@ -164,20 +158,18 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "refund" do
     test "with correct params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_refund() end do
-        {:ok, %Response{success: result}} =
+        assert {:ok, %Response{}} =
           Gringotts.refund(Gateway, @money, @authorization, @options)
-
-        assert result
       end
     end
 
     test "with more than purchased amount" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.more_than_purchase_amount() end do
-        {:ok, %Response{message: result}} =
+        {:error, %Response{message: message}} =
           Gringotts.refund(Gateway, @money_more, @authorization, @options)
 
-        assert String.contains?(result, "Refund amount may not exceed")
+        assert String.contains?(message, "Refund amount may not exceed")
       end
     end
   end
@@ -185,16 +177,16 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "void" do
     test "with correct params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_void() end do
-        {:ok, %Response{message: result}} = Gringotts.void(Gateway, @authorization, @options)
-        assert String.contains?(result, "Void Successful")
+        {:ok, %Response{message: message}} = Gringotts.void(Gateway, @authorization, @options)
+        assert String.contains?(message, "Void Successful")
       end
     end
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.invalid_transaction_id() end do
-        {:ok, %Response{message: result}} = Gringotts.void(Gateway, @bad_authorization, @options)
-        assert String.contains?(result, "Transaction not found")
+        {:error, %Response{message: message}} = Gringotts.void(Gateway, @bad_authorization, @options)
+        assert String.contains?(message, "Transaction not found")
       end
     end
   end
@@ -203,8 +195,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with correct params" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.validate_creditcard() end do
-        {:ok, %Response{success: result}} = Gateway.validate(@card, @options ++ [config: @auth])
-        assert result
+        assert {:ok, %Response{}} = Gateway.validate(@card, @options ++ [config: @auth])
       end
     end
   end
