@@ -14,8 +14,8 @@ defmodule Gringotts.Gateways.TrexleTest do
   @valid_card %CreditCard{
     first_name: "Harry",
     last_name: "Potter",
-    number: "4200000000000000",
-    year: 2099,
+    number: "4000056655665556",
+    year: 2068,
     month: 12,
     verification_code: "123",
     brand: "VISA"
@@ -24,7 +24,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   @invalid_card %CreditCard{
     first_name: "Harry",
     last_name: "Potter",
-    number: "4200000000000000",
+    number: "4000056655665556",
     year: 2010,
     month: 12,
     verification_code: "123",
@@ -46,10 +46,10 @@ defmodule Gringotts.Gateways.TrexleTest do
   # 50 US cents, trexle does not work with amount smaller than 50 cents.
   @bad_amount Money.new("0.49", :USD)
 
-  @valid_token "7214344252e11af79c0b9e7b4f3f6234"
-  @invalid_token "14a62fff80f24a25f775eeb33624bbb3"
+  @valid_token "some_valid_token"
+  @invalid_token "some_invalid_token"
 
-  @auth %{api_key: "7214344252e11af79c0b9e7b4f3f6234"}
+  @auth %{api_key: "some_api_key"}
   @opts [
     config: @auth,
     email: "masterofdeath@ministryofmagic.gov",
@@ -64,10 +64,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_purchase_with_valid_card()
         end do
-        {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
-        assert response.status_code == 201
-        assert response.raw["response"]["success"] == true
-        assert response.raw["response"]["captured"] == false
+        assert {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
       end
     end
 
@@ -76,10 +73,8 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_purchase_with_invalid_card()
         end do
-        {:error, response} = Trexle.purchase(@amount, @invalid_card, @opts)
-        assert response.status_code == 400
-        assert response.success == false
-        assert response.message == "Your card's expiration year is invalid."
+        assert {:error, response} = Trexle.purchase(@amount, @invalid_card, @opts)
+        assert response.reason == "Your card's expiration year is invalid."
       end
     end
 
@@ -88,10 +83,9 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_purchase_with_invalid_amount()
         end do
-        {:error, response} = Trexle.purchase(@bad_amount, @valid_card, @opts)
+        assert {:error, response} = Trexle.purchase(@bad_amount, @valid_card, @opts)
         assert response.status_code == 400
-        assert response.success == false
-        assert response.message == "Amount must be at least 50 cents"
+        assert response.reason == "Amount must be at least 50 cents"
       end
     end
   end
@@ -102,10 +96,8 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_authorize_with_valid_card()
         end do
-        {:ok, response} = Trexle.authorize(@amount, @valid_card, @opts)
+        assert {:ok, response} = Trexle.authorize(@amount, @valid_card, @opts)
         assert response.status_code == 201
-        assert response.raw["response"]["success"] == true
-        assert response.raw["response"]["captured"] == false
       end
     end
   end
@@ -116,10 +108,8 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_authorize_with_valid_card()
         end do
-        {:ok, response} = Trexle.refund(@amount, @valid_token, @opts)
+        assert {:ok, response} = Trexle.refund(@amount, @valid_token, @opts)
         assert response.status_code == 201
-        assert response.raw["response"]["success"] == true
-        assert response.raw["response"]["captured"] == false
       end
     end
   end
@@ -130,11 +120,9 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_capture_with_valid_chargetoken()
         end do
-        {:ok, response} = Trexle.capture(@valid_token, @amount, @opts)
+        assert {:ok, response} = Trexle.capture(@valid_token, @amount, @opts)
+        # Why 200 here?? It's 201 everywhere lese. Check trexle docs.
         assert response.status_code == 200
-        assert response.raw["response"]["success"] == true
-        assert response.raw["response"]["captured"] == true
-        assert response.message == "Transaction approved"
       end
     end
 
@@ -143,10 +131,9 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_capture_with_invalid_chargetoken()
         end do
-        {:error, response} = Trexle.capture(@invalid_token, @amount, @opts)
+        assert {:error, response} = Trexle.capture(@invalid_token, @amount, @opts)
         assert response.status_code == 400
-        assert response.success == false
-        assert response.message == "invalid token"
+        assert response.reason == "invalid token"
       end
     end
   end
@@ -157,7 +144,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_store_with_valid_card()
         end do
-        {:ok, response} = Trexle.store(@valid_card, @opts)
+        assert {:ok, response} = Trexle.store(@valid_card, @opts)
         assert response.status_code == 201
       end
     end
@@ -170,8 +157,7 @@ defmodule Gringotts.Gateways.TrexleTest do
           MockResponse.test_for_network_failure()
         end do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
-        assert response.success == false
-        assert response.message == "HTTPoison says 'some_hackney_error'"
+        assert response.message == "HTTPoison says 'some_hackney_error' [ID: some_hackney_error_id]"
       end
     end
   end
