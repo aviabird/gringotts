@@ -137,8 +137,6 @@ defmodule Gringotts do
         # some_other_key: another_value
   """
   
-  import GenServer, only: [call: 2]
-
   @doc """
   Performs a (pre) Authorize operation.
 
