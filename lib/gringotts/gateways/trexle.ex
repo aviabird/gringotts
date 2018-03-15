@@ -66,35 +66,16 @@ defmodule Gringotts.Gateways.Trexle do
           that as described
           [above](#module-registering-your-trexle-account-at-gringotts).
 
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
-  ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.Trexle}
-  iex> card = %CreditCard{
-               first_name: "Harry",
-               last_name: "Potter",
-               number: "4200000000000000",
-               year: 2099, month: 12,
-               verification_code: "123",
-               brand: "VISA"}
-  iex> address = %Address{
-                  street1: "301, Gryffindor",
-                  street2: "Hogwarts School of Witchcraft and Wizardry, Hogwarts Castle",
-                  city: "Highlands",
-                  region: "SL",
-                  country: "GB",
-                  postal_code: "11111",
-                  phone: "(555)555-5555"}
-  iex> options = [email: "masterofdeath@ministryofmagic.gov",
-                  ip_address: "127.0.0.1",
-                  billing_address: address,
-                  description: "For our valued customer, Mr. Potter"]
-  ```
+  2. To save a lot of time, create a [`.iex.exs`][iex-docs] file as shown in
+     [this gist][trexle.iex.exs] to introduce a set of handy bindings and
+     aliases.
 
-  We'll be using these in the examples below.
+  We'll be using these bindings in the examples below.
 
   [example-repo]: https://github.com/aviabird/gringotts_example
-  [gs]: #
+  [iex-docs]: https://hexdocs.pm/iex/IEx.html#module-the-iex-exs-file
+  [trexle.iex.exs]: https://gist.github.com/oyeb/055f40e9ad4102f5480febd2cfa00787
+  [gs]: https://github.com/aviabird/gringotts/wiki
   """
 
   @base_url "https://core.trexle.com/api/v1/"
@@ -120,7 +101,7 @@ defmodule Gringotts.Gateways.Trexle do
   a sample `card`.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -170,7 +151,7 @@ defmodule Gringotts.Gateways.Trexle do
   authorized a payment worth $10 by referencing the obtained `charge_token`.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.capture(Gringotts.Gateways.Trexle, token, amount)
   ```
@@ -194,7 +175,7 @@ defmodule Gringotts.Gateways.Trexle do
   one-shot, without (pre) authorization.
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -242,7 +223,7 @@ defmodule Gringotts.Gateways.Trexle do
   `purchase/3` (and similarily for `capture/3`s).
 
   ```
-  iex> amount = %{value: Decimal.new(100),currency: "USD")
+  iex> amount = Money.new(10, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
