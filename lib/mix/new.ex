@@ -48,7 +48,7 @@ Comma separated list of required configuration keys:
 > }
 
   def run(args) do
-    {key_list, [name], []} =
+    {key_list, name, []} =
       OptionParser.parse(
         args,
         switches: [module: :string, url: :string, file: :string],
@@ -58,12 +58,16 @@ Comma separated list of required configuration keys:
     Mix.Shell.IO.info("Generating barebones implementation for #{name}.")
     Mix.Shell.IO.info("Hit enter to select the suggestion.")
 
-    module_suggestion = name |> String.split |> Enum.map(&String.capitalize(&1)) |> Enum.join("")
+    module_suggestion =
+      name |> String.split() |> Enum.map(&String.capitalize(&1)) |> Enum.join("")
+
     module_name =
       case Keyword.fetch(key_list, :module) do
         :error ->
           prompt_with_suggestion("\nModule name", module_suggestion)
-        {:ok, mod_name} -> mod_name
+
+        {:ok, mod_name} ->
+          mod_name
       end
 
     url =
@@ -71,7 +75,7 @@ Comma separated list of required configuration keys:
         :error ->
           prompt_with_suggestion(
             "\nHomepage URL",
-            "https://www.#{String.Casing.downcase(module_suggestion)}.com"
+            "https://www.#{String.downcase(module_suggestion)}.com"
           )
 
         {:ok, url} ->
@@ -86,11 +90,13 @@ Comma separated list of required configuration keys:
         {:ok, filename} ->
           filename
       end
+
     file_base_name = String.slice(file_name, 0..-4)
-    
+
     required_keys =
       case Mix.Shell.IO.prompt(@long_msg) |> String.trim() do
-        "" -> []
+        "" ->
+          []
 
         keys ->
           String.split(keys, ",") |> Enum.map(&String.trim(&1)) |> Enum.map(&String.to_atom(&1))
