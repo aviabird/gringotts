@@ -58,16 +58,16 @@ defmodule Gringotts.Mixfile do
       {:ex_money, "~> 1.1.0", only: [:dev, :test], optional: true},
 
       # docs and tests
-      {:ex_doc, "~> 0.16", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
-      {:excoveralls, "~> 0.7", only: :test},
+      {:excoveralls, "~> 0.8", only: :test},
 
       # various analyses tools
       {:credo, "~> 0.3", only: [:dev, :test]},
       {:inch_ex, "~> 0.5", only: :docs},
       {:dialyxir, "~> 0.3", only: :dev},
-      {:timex, "~> 3.1"}
+      {:timex, "~> 3.2"}
     ]
   end
 

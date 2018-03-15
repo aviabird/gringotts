@@ -1,20 +1,53 @@
 defmodule Gringotts.Adapter do
-  @moduledoc ~S"""
-  Adapter module is currently holding the validation part.
+  @moduledoc """
+  Validates the "required" configuration.
 
-  This modules is being `used` by all the payment gateways and raises a run-time 
-  error for the missing configurations which are passed by the gateways to 
-  `validate_config` method.
+  All gateway modules must `use` this module, which provides a run-time
+  configuration validator.
 
-  Raises an exception `ArgumentError` if the config is not as per the `@required_config`
+  Gringotts picks up the merchant's Gateway authentication secrets from the
+  Application config. The configuration validator can be customized by providing
+  a list of `required_config` keys. The validator will check if these keys are
+  available at run-time, before each call to the Gateway.
+
+  ## Example
+
+  Say a merchant must provide his `secret_user_name` and `secret_password` to
+  some Gateway `XYZ`. Then, `Gringotts` expects that the `GatewayXYZ` module
+  would use `Adapter` in the following manner:
+  
+  ```
+  defmodule Gringotts.Gateways.GatewayXYZ do
+    
+    use Gringotts.Adapter, required_config: [:secret_user_name, :secret_password]
+    use Gringotts.Gateways.Base
+    
+    # the rest of the implentation
+  end
+  ```
+
+  And, the merchant woud provide these secrets in the Application config,
+  possibly via `config/config.exs` like so,
+  ```
+  # config/config.exs
+
+  config :gringotts, Gringotts.Gateways.GatewayXYZ,
+    adapter: Gringotts.Gateways.GatewayXYZ,
+    secret_user_name: "some_really_secret_user_name",
+    secret_password: "some_really_secret_password"
+
+  ```
   """
-
+  
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @required_config opts[:required_config] || []
 
       @doc """
-      Validates the config dynamically depending on what is the value of `required_config`
+      Catches gateway configuration errors.
+
+      Raises a run-time `ArgumentError` if any of the `required_config` values
+      is not available or missing from the Application config.
       """
       def validate_config(config) do
         missing_keys = Enum.reduce(@required_config, [], fn(key, missing_keys) ->
