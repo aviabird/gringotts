@@ -39,7 +39,7 @@ defmodule Gringotts.Gateways.MoneiTest do
     birthDate: "1980-07-31",
     mobile: "+15252525252",
     email: "masterofdeath@ministryofmagic.gov",
-    ip: "1.1.1",
+    ip: "127.0.0.1",
     status: "NEW"
   }
   @merchant %{
@@ -96,7 +96,7 @@ defmodule Gringotts.Gateways.MoneiTest do
      "card":{
        "bin":"420000",
        "last4Digits":"0000",
-       "holder":"Jo Doe",
+       "holder":"Harry Potter",
        "expiryMonth":"12",
        "expiryYear":"2099"
      }
@@ -123,16 +123,24 @@ defmodule Gringotts.Gateways.MoneiTest do
     end
 
     test "when MONEI is down or unreachable.", %{bypass: bypass, auth: auth} do
-      Bypass.expect_once(bypass, fn conn ->
-        Plug.Conn.resp(conn, 200, @auth_success)
-      end)
-
       Bypass.down(bypass)
       {:error, response} = Gateway.authorize(@amount42, @card, config: auth)
       assert response.reason == "network related failure"
-
       Bypass.up(bypass)
-      {:ok, _} = Gateway.authorize(@amount42, @card, config: auth)
+    end
+
+    test "that all auth info is picked.", %{bypass: bypass, auth: auth} do
+      Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["authentication.entityId"] == "some_secret_entity_id"
+        assert params["authentication.password"] == "some_secret_password"
+        assert params["authentication.userId"] == "some_secret_user_id"
+        Plug.Conn.resp(conn, 200, @auth_success)
+      end)
+
+      {:ok, response} = Gateway.purchase(@amount42, @card, config: auth)
+      assert response.gateway_code == "000.100.110"
     end
 
     test "with all extra_params.", %{bypass: bypass, auth: auth} do
@@ -142,20 +150,21 @@ defmodule Gringotts.Gateways.MoneiTest do
       ]
 
       Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
-        conn_ = parse(conn)
-        assert conn_.body_params["createRegistration"] == "true"
-        assert conn_.body_params["customParameters"] == @extra_opts[:custom]
-        assert conn_.body_params["merchantInvoiceId"] == randoms[:invoice_id]
-        assert conn_.body_params["merchantTransactionId"] == randoms[:transaction_id]
-        assert conn_.body_params["transactionCategory"] == @extra_opts[:category]
-        assert conn_.body_params["customer.merchantCustomerId"] == @customer[:merchantCustomerId]
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["createRegistration"] == "true"
+        assert params["customParameters"] == @extra_opts[:custom]
+        assert params["merchantInvoiceId"] == randoms[:invoice_id]
+        assert params["merchantTransactionId"] == randoms[:transaction_id]
+        assert params["transactionCategory"] == @extra_opts[:category]
+        assert params["customer.merchantCustomerId"] == @customer[:merchantCustomerId]
 
-        assert conn_.body_params["shipping.customer.merchantCustomerId"] ==
+        assert params["shipping.customer.merchantCustomerId"] ==
                  @customer[:merchantCustomerId]
 
-        assert conn_.body_params["merchant.submerchantId"] == @merchant[:submerchantId]
-        assert conn_.body_params["billing.city"] == @billing[:city]
-        assert conn_.body_params["shipping.method"] == @shipping[:method]
+        assert params["merchant.submerchantId"] == @merchant[:submerchantId]
+        assert params["billing.city"] == @billing[:city]
+        assert params["shipping.method"] == @shipping[:method]
         Plug.Conn.resp(conn, 200, @register_success)
       end)
 
@@ -165,7 +174,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       assert response.token == "8a82944a60e09c550160e92da144491e"
     end
 
-    test "when card has expired.", %{bypass: bypass, auth: auth} do
+    test "when we get non-json.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
         Plug.Conn.resp(conn, 400, "<html></html>")
       end)
@@ -177,6 +186,11 @@ defmodule Gringotts.Gateways.MoneiTest do
   describe "authorize" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect(bypass, "POST", "/v1/payments", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["amount"] == "42.00"
+        assert params["currency"] == "USD"
+        assert params["paymentType"] == "PA"
         Plug.Conn.resp(conn, 200, @auth_success)
       end)
 
@@ -188,6 +202,11 @@ defmodule Gringotts.Gateways.MoneiTest do
   describe "purchase" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["amount"] == "42.00"
+        assert params["currency"] == "USD"
+        assert params["paymentType"] == "DB"
         Plug.Conn.resp(conn, 200, @auth_success)
       end)
 
@@ -197,8 +216,9 @@ defmodule Gringotts.Gateways.MoneiTest do
 
     test "with createRegistration.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
-        conn_ = parse(conn)
-        assert conn_.body_params["createRegistration"] == "true"
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["createRegistration"] == "true"
         Plug.Conn.resp(conn, 200, @register_success)
       end)
 
@@ -211,6 +231,14 @@ defmodule Gringotts.Gateways.MoneiTest do
   describe "store" do
     test "when all is good.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(bypass, "POST", "/v1/registrations", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        params["card.cvv"] == "123"
+        params["card.expiryMonth"] == "12"
+        params["card.expiryYear"] == "2099"
+        params["card.holder"] == "Harry Potter"
+        params["card.number"] == "4200000000000000"
+        params["paymentBrand"] == "VISA"
         Plug.Conn.resp(conn, 200, @store_success)
       end)
 
@@ -226,6 +254,11 @@ defmodule Gringotts.Gateways.MoneiTest do
         "POST",
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
+          p_conn = parse(conn)
+          params = p_conn.body_params
+          assert params["amount"] == "42.00"
+          assert params["currency"] == "USD"
+          assert params["paymentType"] == "CP"
           Plug.Conn.resp(conn, 200, @auth_success)
         end
       )
@@ -242,8 +275,9 @@ defmodule Gringotts.Gateways.MoneiTest do
         "POST",
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
-          conn_ = parse(conn)
-          assert :error == Map.fetch(conn_.body_params, "createRegistration")
+          p_conn = parse(conn)
+          params = p_conn.body_params
+          assert :error == Map.fetch(params, "createRegistration")
           Plug.Conn.resp(conn, 200, @auth_success)
         end
       )
@@ -267,6 +301,11 @@ defmodule Gringotts.Gateways.MoneiTest do
         "POST",
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
+          p_conn = parse(conn)
+          params = p_conn.body_params
+          assert params["amount"] == "3.00"
+          assert params["currency"] == "USD"
+          assert params["paymentType"] == "RF"
           Plug.Conn.resp(conn, 200, @auth_success)
         end
       )
@@ -284,6 +323,11 @@ defmodule Gringotts.Gateways.MoneiTest do
         "DELETE",
         "/v1/registrations/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
+          p_conn = parse(conn)
+          params = p_conn.query_params
+          assert params["authentication.entityId"] == "some_secret_entity_id"
+          assert params["authentication.password"] == "some_secret_password"
+          assert params["authentication.userId"] == "some_secret_user_id"
           Plug.Conn.resp(conn, 200, "<html></html>")
         end
       )
@@ -300,6 +344,11 @@ defmodule Gringotts.Gateways.MoneiTest do
         "POST",
         "/v1/payments/7214344242e11af79c0b9e7b4f3f6234",
         fn conn ->
+          p_conn = parse(conn)
+          params = p_conn.body_params
+          assert :error == Map.fetch(params, :amount)
+          assert :error == Map.fetch(params, :currency)
+          assert params["paymentType"] == "RV"
           Plug.Conn.resp(conn, 200, @auth_success)
         end
       )
@@ -307,17 +356,6 @@ defmodule Gringotts.Gateways.MoneiTest do
       {:ok, response} = Gateway.void("7214344242e11af79c0b9e7b4f3f6234", config: auth)
       assert response.gateway_code == "000.100.110"
     end
-  end
-
-  @tag :skip
-  test "respond various scenarios, can't test a private function." do
-    json_200 = %HTTPoison.Response{body: @auth_success, status_code: 200}
-    json_not_200 = %HTTPoison.Response{body: @auth_success, status_code: 300}
-    html_200 = %HTTPoison.Response{body: ~s[<html></html>\n], status_code: 200}
-    html_not_200 = %HTTPoison.Response{body: ~s[<html></html?], status_code: 300}
-    all = [json_200, json_not_200, html_200, html_not_200]
-    then = Enum.map(all, &Gateway.respond({:ok, &1}))
-    assert Keyword.keys(then) == [:ok, :error, :error, :error]
   end
 
   def parse(conn, opts \\ []) do
