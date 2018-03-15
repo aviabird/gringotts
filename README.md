@@ -5,24 +5,24 @@
 </p>
 
 <p align="center">
-  Gringotts is a payment processing library in Elixir integrating various payment gateways, this draws motivation for shopify's <a href="https://github.com/activemerchant/active_merchant">activemerchant</a> gem. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">Demo</a> here.
+  Gringotts is a payment processing library in Elixir integrating various payment gateways, drawing motivation for Shopify's <a href="https://github.com/activemerchant/active_merchant"><code>activemerchant</code></a> gem. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">Demo</a> here.
 </p>
 <p align="center">
  <a href="https://travis-ci.org/aviabird/gringotts"><img src="https://travis-ci.org/aviabird/gringotts.svg?branch=master"  alt='Build Status' /></a>  <a href='https://coveralls.io/github/aviabird/gringotts?branch=master'><img src='https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master' alt='Coverage Status' /></a> <a href=""><img src="https://img.shields.io/hexpm/v/gringotts.svg"/></a> <a href="https://inch-ci.org/github/aviabird/gringotts"><img src="http://inch-ci.org/github/aviabird/gringotts.svg?branch=master" alt="Docs coverage"></img></a> <a href="https://gitter.im/aviabird/gringotts"><img src="https://badges.gitter.im/aviabird/gringotts.svg"/></a>
  <a href="https://www.codetriage.com/aviabird/gringotts"><img src="https://www.codetriage.com/aviabird/gringotts/badges/users.svg" alt='Help Contribute to Open Source' /></a>
 </p>
 
-A simple and unified API to access dozens of different payment
-gateways with very different internal APIs is what Gringotts has to offer you.
+Gringotts offers a **simple and unified API** to access dozens of different payment
+gateways with very different APIs, response schemas, documentation and jargon.
 
 ## Installation
 
-### From hex.pm
+### From [`hex.pm`][hexpm]
 
-Make the following changes to the `mix.exs` file.
-
-Add gringotts to the list of dependencies.
+Add `gringotts` to the list of dependencies of your application.
 ```elixir
+# your mix.exs
+
 def deps do
   [
     {:gringotts, "~> 1.0"},
@@ -35,22 +35,30 @@ end
 
 ## Usage
 
-This simple example demonstrates how a purchase can be made using a person's credit card details.
+This simple example demonstrates how a `purchase` can be made using a sample
+credit card using the [MONEI][monei] gateway.
 
-Add configs in `config/config.exs` file.
+One must "register" their account with `gringotts` ie, put all the
+authentication details in the Application config. Usually via
+`config/config.exs`
 
 ```elixir
+# config/config.exs
+
 config :gringotts, Gringotts.Gateways.Monei,
     userId: "your_secret_user_id",
     password: "your_secret_password",
     entityId: "your_secret_channel_id"
 ```
 
-Copy and paste this code in your module
+Copy and paste this code in a module or an `IEx` session
 
 ```elixir
 alias Gringotts.Gateways.Monei
 alias Gringotts.{CreditCard}
+
+# a fake sample card that will work now because the Gateway is by default
+# in "test" mode.
 
 card = %CreditCard{
   first_name: "Harry",
@@ -61,9 +69,10 @@ card = %CreditCard{
   brand: "VISA"
 }
 
+# a sum of $42
 amount = Money.new(42, :USD)
 
-case Gringotts.purchase(Monei, amount, card, opts) do
+case Gringotts.purchase(Monei, amount, card) do
   {:ok,    %{id: id}} ->
     IO.puts("Payment authorized, reference token: '#{id}'")
 
@@ -71,6 +80,9 @@ case Gringotts.purchase(Monei, amount, card, opts) do
     IO.puts("Error: #{error}\nRaw:\n#{raw_response}")
 end
 ```
+
+[hexpm]: https://hex.pm/packages/gringotts
+[monei]: http://www.monei.net
 
 ## Supported Gateways
 
@@ -95,9 +107,29 @@ end
 
 ## Road Map
 
-- Support more gateways on an on-going basis.
-- Each gateway request is hosted in a worker process and supervised.
+Apart from supporting more and more gateways, we also keep a somewhat detailed
+plan for the future on our [wiki][roadmap].
+
+## FAQ
+
+#### 1. What's with the name? "Gringotts"?
+
+Gringotts has a nice ring to it. Also [this][reason].
+
+#### 2. What is the worker doing in the middle?
+
+We wanted to "supervise" our payments, and power utilities to process recurring
+payments, subscriptions with it. But yes, as of now, it is a bottle neck and
+unnecessary.
+
+It's slated to be removed in [`v2.0.0`][milestone-2_0_0_alpha] and any supervised / async /
+parallel work can be explicitly managed via native elixir constructs.
+
+[milestone-2_0_0_alpha]: https://github.com/aviabird/gringotts/milestone/3
+[reason]: http://harrypotter.wikia.com/wiki/Gringotts
 
 ## License
 
 MIT
+
+[roadmap]: https://github.com/aviabird/gringotts/wiki/Roadmap

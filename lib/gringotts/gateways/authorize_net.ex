@@ -89,18 +89,16 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       that gives you a pre-configured sample app ready-to-go.
         + You could use the same config or update it the with your "secrets"
           [above](#module-configuring-your-authorizenet-account-at-gringotts).
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-     aliases to it (to save some time):
+  
+  2. To save a lot of time, create a [`.iex.exs`][iex-docs] file as shown in
+     [this gist][authorize_net.iex.exs] to introduce a set of handy bindings and
+     aliases.
 
-  ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.AuthorizeNet}
-  iex> amount = Money.new(20, :USD}
-  iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
-  ```
-
-  We'll be using these in the examples below.
+  We'll be using these bindings in the examples below.
 
   [example-repo]: https://github.com/aviabird/gringotts_example
+  [iex-docs]: https://hexdocs.pm/iex/IEx.html#module-the-iex-exs-file
+  [authorize_net.iex.exs]: https://gist.github.com/oyeb/b1030058bda1fa9a3d81f1cf30723695
   [gs]: https://github.com/aviabird/gringotts/wiki
   """
 
@@ -170,7 +168,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       ]
 
   ## Example
-      iex> amount = Money.new(20, :USD}
+      iex> amount = Money.new(20, :USD)
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"},
@@ -230,7 +228,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
 
   ## Example
-      iex> amount = Money.new(20, :USD}
+      iex> amount = Money.new(20, :USD)
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"},
@@ -280,7 +278,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> opts = [
         ref_id: "123456"
       ]
-      iex> amount = Money.new(20, :USD}
+      iex> amount = Money.new(20, :USD)
       iex> id = "123456"
       iex> result = Gringotts.capture(Gringotts.Gateways.AuthorizeNet, id, amount, opts)
   """
@@ -310,7 +308,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         ref_id: "123456"
       ]
       iex> id = "123456"
-      iex> amount = Money.new(20, :USD}
+      iex> amount = Money.new(20, :USD)
       iex> result = Gringotts.refund(Gringotts.Gateways.AuthorizeNet, amount, id, opts)
   """
   @spec refund(Money.t(), String.t(), Keyword.t()) :: {:ok | :error, Response.t()}
@@ -465,7 +463,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     |> element(%{xmlns: @aut_net_namespace}, [
       add_merchant_auth(opts[:config]),
       add_order_id(opts),
-      add_capture_transaction_request(amount, id, transaction_type, opts)
+      add_capture_transaction_request(amount, id, transaction_type)
     ])
     |> generate(format: :none)
   end
@@ -561,7 +559,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       add_transaction_type(transaction_type),
       add_amount(amount),
       add_payment_source(payment),
-      add_invoice(transaction_type, opts),
+      add_invoice(opts),
       add_tax_fields(opts),
       add_duty_fields(opts),
       add_shipping_fields(opts),
@@ -570,7 +568,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     ])
   end
 
-  defp add_capture_transaction_request(amount, id, transaction_type, opts) do
+  defp add_capture_transaction_request(amount, id, transaction_type) do
     element(:transactionRequest, [
       add_transaction_type(transaction_type),
       add_amount(amount),
@@ -626,7 +624,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     ])
   end
 
-  defp add_invoice(transactionType, opts) do
+  defp add_invoice(opts) do
     element([
       element(:order, [
         element(:invoiceNumber, opts[:order][:invoice_number]),
