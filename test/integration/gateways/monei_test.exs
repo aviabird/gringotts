@@ -10,10 +10,11 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
   @moduletag :integration
 
   @amount Money.new(42, :EUR)
+  @sub_amount Money.new(21, :EUR)
 
   @card %CreditCard{
-    first_name: "Jo",
-    last_name: "Doe",
+    first_name: "Harry",
+    last_name: "Potter",
     number: "4200000000000000",
     year: 2099,
     month: 12,
@@ -29,7 +30,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     birthDate: "1980-07-31",
     mobile: "+15252525252",
     email: "masterofdeath@ministryofmagic.gov",
-    ip: "1.1.1",
+    ip: "127.0.0.1",
     status: "NEW"
   }
   @merchant %{
@@ -62,13 +63,20 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     custom: %{voldemort: "he who must not be named"}
   ]
 
+  @auth %{
+    userId: "8a8294186003c900016010a285582e0a",
+    password: "hMkqf2qbWf",
+    entityId: "8a82941760036820016010a28a8337f6"
+  }
+  
   setup_all do
     Application.put_env(
       :gringotts,
       Gringotts.Gateways.Monei,
-      userId: "8a8294186003c900016010a285582e0a",
-      password: "hMkqf2qbWf",
-      entityId: "8a82941760036820016010a28a8337f6"
+      adapter: Gringotts.Gateways.Monei,
+      userId: @auth[:userId],
+      password: @auth[:password],
+      entityId: @auth[:entityId]
     )
   end
 
@@ -78,52 +86,76 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
       transaction_id: Base.encode16(:crypto.hash(:md5, :crypto.strong_rand_bytes(32)))
     ]
 
-    {:ok, opts: randoms ++ @extra_opts}
+    {:ok, opts: [config: @auth] ++ randoms ++ @extra_opts}
   end
 
-  test "authorize", %{opts: opts} do
-    case Gringotts.authorize(Gateway, @amount, @card, opts) do
-      {:ok, response} ->
-        assert response.gateway_code == "000.100.110"
-
-        assert response.message ==
-                 "Request successfully processed in 'Merchant in Integrator Test Mode'"
-
-        assert String.length(response.id) == 32
-
+  test "[authorize] without tokenisation", %{opts: opts} do
+    with {:ok, auth_result} <- Gateway.authorize(@amount, @card, opts),
+         {:ok, _capture_result} <- Gateway.capture(auth_result.id, @amount, opts) do
+      "yay!"
+    else
       {:error, _err} ->
         flunk()
     end
+  end
+
+  test "[authorize -> capture] with tokenisation", %{opts: opts} do
+    with {:ok, auth_result} <- Gateway.authorize(@amount, @card, opts ++ [register: true]),
+         {:ok, _registration_token} <- Map.fetch(auth_result, :token),
+         {:ok, _capture_result} <- Gateway.capture(auth_result.id, @amount, opts) do
+      "yay!"
+    else {:error, _err} ->
+        flunk()
+    end
+  end
+
+  test "[authorize -> void]", %{opts: opts} do
+    with {:ok, auth_result} <- Gateway.authorize(@amount, @card, opts),
+         {:ok, _void_result} <- Gateway.void(auth_result.id, opts) do
+      "yay!"
+    else {:error, _err} ->
+        flunk()
+    end
+  end
+
+  test "[purchase/capture -> void]", %{opts: opts} do
+    with {:ok, purchase_result} <- Gateway.purchase(@amount, @card, opts),
+         {:ok, _void_result} <- Gateway.void(purchase_result.id, opts) do
+      "yay!"
+    else {:error, _err} ->
+        flunk()
+    end
+  end
+
+  test "[purchase/capture -> refund] (partial)", %{opts: opts} do
+    with {:ok, purchase_result} <- Gateway.purchase(@amount, @card, opts),
+         {:ok, _refund_result} <- Gateway.refund(@sub_amount, purchase_result.id, opts) do
+      "yay!"
+    else {:error, _err} ->
+        flunk()
+    end
+  end
+
+  test "[store]", %{opts: opts} do
+    assert {:ok, _store_result} = Gateway.store(@card, opts)
   end
 
   @tag :skip
-  test "capture", %{opts: _opts} do
-    case Gringotts.capture(Gateway, "s", @amount) do
-      {:ok, response} ->
-        assert response.gateway_code == "000.100.110"
-
-        assert response.message ==
-                 "Request successfully processed in 'Merchant in Integrator Test Mode'"
-
-        assert String.length(response.id) == 32
-
-      {:error, _err} ->
+  test "[store -> unstore]", %{opts: opts} do
+    with {:ok, store_result} <- Gateway.store(@card, opts),
+         {:ok, _unstore_result} <- Gateway.unstore(store_result.id, opts) do
+      "yay!"
+    else {:error, _err} ->
         flunk()
     end
   end
 
-  test "purchase", %{opts: opts} do
-    case Gringotts.purchase(Gateway, @amount, @card, opts) do
-      {:ok, response} ->
-        assert response.gateway_code == "000.100.110"
+  test "[purchase]", %{opts: opts} do
+    assert {:ok, _response} = Gateway.purchase(@amount, @card, opts)
+  end
 
-        assert response.message ==
-                 "Request successfully processed in 'Merchant in Integrator Test Mode'"
-
-        assert String.length(response.id) == 32
-
-      {:error, _err} ->
-        flunk()
-    end
+  test "Environment setup" do
+    config = Application.get_env(:gringotts, Gringotts.Gateways.Monei)
+    assert config[:adapter] == Gringotts.Gateways.Monei
   end
 end
