@@ -66,7 +66,7 @@ Comma separated list of required configuration keys:
         :error ->
           prompt_with_suggestion(
             "\nHomepage URL",
-            "https://www.#{String.Casing.downcase(name)}.com"
+            "https://www.#{String.downcase(name)}.com"
           )
 
         {:ok, url} ->
