@@ -170,8 +170,7 @@ defimpl Gringotts.Money, for: Any do
       value
       |> Decimal.mult(Decimal.new(100))
       |> Decimal.round(0)
-      |> Decimal.to_integer(),
-      -2
+      |> Decimal.to_integer()
     }
   end
 

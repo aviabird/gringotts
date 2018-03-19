@@ -98,10 +98,10 @@ defmodule Gringotts.Gateways.Pinpay do
 
   alias Gringotts.{Money, CreditCard, Response}
 
-  @test_url "https://test-api.pinpayments.com"
+  @test_url "https://test-api.pinpayments.com/1/"
   @production_url "https://api.pinpayments.com"
-  @header [{"Authorization", "Basic YzRueGd6bmFuVzRYWlVhRVFoeFM2Zzo="}]
-
+  @headers [{"Content-Type", "application/x-www-form-urlencoded"},{"Authorization", "Basic YzRueGd6bmFuVzRYWlVhRVFoeFM2Zzo="}]
+  
   @doc """
   Performs a (pre) Authorize operation.
 
@@ -124,11 +124,14 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
     # commit(args, ...)
-    {value, currency} = Money.to_string(amount)
+    {currency, value,_} = Money.to_integer(amount)
+
     params =
       [
-        amount: value
-      ] ++ card_params(card, opts)
+        amount: value,
+        capture: false
+      ] ++ card_params(card, opts) 
+
       
 
     commit(:post, "charges", params, [{:currency, currency} | opts])
@@ -136,16 +139,33 @@ defmodule Gringotts.Gateways.Pinpay do
 
   end
 
-  defp card_params(card, opts) do
+  def card_params(card, opts) do
     [
       "card[number]": card.number,
       "card[name]": card.first_name <> card.last_name,
       "card[expiry_month]": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
       "card[expiry_year]": card.year |> Integer.to_string(),
       "card[cvc]": card.verification_code,
-      "card[address_line1]": opts[:street1],
-      "card[address_city]": opts[:city],
-      "card[address_country]": opts[:country]
+      "card[address_line1]": opts[:Address][:street1],
+      "card[address_city]": opts[:Address][:city],
+      "card[address_country]": opts[:Address][:country],
+      "description": "hello",
+      "email": "hi@hello.com"
+    ]
+
+  end
+
+  def card_param(card, opts) do
+    [
+      "number": card.number,
+      "name": card.first_name <> card.last_name,
+      "expiry_month": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
+      "expiry_year": card.year |> Integer.to_string(),
+      "cvc": card.verification_code,
+      "address_line1": opts[:Address][:street1],
+      "address_city": opts[:Address][:city],
+      "address_country": opts[:Address][:country],
+      
     ]
 
   end
@@ -168,6 +188,8 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec capture(String.t(), Money.t, keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     # commit(args, ...)
+    url = @test_url <> "/1/charges/" <> payment_id <> "/capture"
+    commit(:put, url)
   end
 
   @doc """
@@ -188,6 +210,18 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
     # commit(args, ...)
+    # commit(args, ...)
+    {currency, value,_} = Money.to_integer(amount)
+
+    params =
+      [
+        amount: value
+        
+      ] ++ card_params(card, opts) 
+
+      
+
+    commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
   @doc """
@@ -230,7 +264,11 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     # commit(args, ...)
+    url=@test_url <>"charges/" <> payment_id <> "/refunds"
+
+    commit(:post, url)
   end
+
 
   @doc """
   Stores the payment-source data for later use.
@@ -256,6 +294,10 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do
     # commit(args, ...)
+
+    commit(:post, "cards", card_param(card, opts), opts)
+    |> respond
+
   end
 
   @doc """
@@ -288,19 +330,33 @@ defmodule Gringotts.Gateways.Pinpay do
   defp commit(:post, endpoint, param, opts) do
     # resp = HTTPoison.request(args, ...)
     # respond(resp, ...)
-    url = @test_url <> "/1/#{endpoint}"
-      headers = [{"Content-Type", "application/x-www-form-urlencoded"},{"Authorization", "Basic YzRueGd6bmFuVzRYWlVhRVFoeFM2Zzo="}]
+    url = @test_url <> "#{endpoint}"
+      
     
         url
-        |> HTTPoison.post({:form, param }, headers)
-        #|> respond
+        |> HTTPoison.post({:form, param }, @headers)
+        |> respond
+    end
+
+    defp commit(method, url) do
+      HTTPoison.request(method, url, [], @headers )
+      |> respond
     end
 
   # Parses PinPay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
   defp respond(pin_pay_response)
-  defp respond({:ok, %{status_code: 200, body: body}}), do: "something1"
-  defp respond({:ok, %{status_code: status_code, body: body}}), do: "something2"
+  #defp respond({:ok, %{status_code: 200, body: body}}), do: "something1"
+  defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
+    case decode(body) do
+      {:ok, results} -> {:ok, Response.success(raw: results, status_code: code)}
+    end
+  end
+  defp respond({:ok, %{status_code: code, body: body}}) when code in [400, 401, 402, 403, 404] do
+    case decode(body) do
+      {:ok, results} -> {:ok, Response.success(raw: results, status_code: code)}
+    end
+  end
   defp respond({:error, %HTTPoison.Error{} = error}), do: "something3"
 end
