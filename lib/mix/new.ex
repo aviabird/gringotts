@@ -48,7 +48,7 @@ Comma separated list of required configuration keys:
 > }
 
   def run(args) do
-    {key_list, name, []} =
+    {key_list, [name], []} =
       OptionParser.parse(
         args,
         switches: [module: :string, url: :string, file: :string],
