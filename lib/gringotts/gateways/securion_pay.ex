@@ -3,7 +3,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   [SecurionPay][home] gateway implementation.
 
   ## Instructions!
-  
+
   ***This is an example `moduledoc`, and suggests some items that should be
   documented in here.***
 
@@ -18,18 +18,20 @@ defmodule Gringotts.Gateways.SecurionPay do
   and tag it with the label `template`.
 
   ***Actual docs begin below this line!***
-  
+
   --------------------------------------------------------------------------------
 
-  > List features that have been implemented, and what "actions" they map to as
-  > per the SecurionPay gateway docs.
-  > A table suits really well for this.
+  The following set of functions for SecurionPay have been implemented:
+
+  | Action                                       | Method        |
+  | ------                                       | ------        |
+  | Authorize a Credit Card                      | `authorize/3` |
 
   ## Optional or extra parameters
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the gateway.
-  
+
   > List all available (ie, those that will be supported by this module) keys, a
   > description of their function/role and whether they have been implemented
   > and tested.
@@ -39,13 +41,13 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   Explain how to make an account with the gateway and show how to put the
   `required_keys` (like authentication info) to the configuration.
-  
+
   > Your Application config would look
   > something like this:
   > 
   >     config :gringotts, Gringotts.Gateways.SecurionPay,
-  
-  
+
+
   ## Scope of this module
 
   > It's unlikely that your first iteration will support all features of the
@@ -81,47 +83,79 @@ defmodule Gringotts.Gateways.SecurionPay do
   We'll be using these in the examples below.
 
   [gs]: https://github.com/aviabird/gringotts/wiki/
-  [home]: https://www.securionpay.com
+  [home]: https://securionpay.com/
   [example]: https://github.com/aviabird/gringotts_example
   """
 
+  @base_url "https://api.securionpay.com/"
   # The Base module has the (abstract) public API, and some utility
   # implementations.  
+
   use Gringotts.Gateways.Base
 
   # The Adapter module provides the `validate_config/1`
   # Add the keys that must be present in the Application config in the
   # `required_config` list
   use Gringotts.Adapter, required_config: []
-  
+
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money,
-                   CreditCard,
-                   Response}
+  alias Gringotts.{CreditCard, Response, Address}
 
   @doc """
-  Performs a (pre) Authorize operation.
+  Authorize a credit card transaction.
 
   The authorization validates the `card` details with the banking network,
-  places a hold on the transaction `amount` in the customer’s issuing bank.
+  places a hold on the transaction `amount` in the customer’s issuing bank and
+  also triggers risk management. Funds are not transferred.
 
-  > ** You could perhaps:**
-  > 1. describe what are the important fields in the Response struct
-  > 2. mention what a merchant can do with these important fields (ex:
-  > `capture/3`, etc.)
-  
-  ## Note
+  The second argument can be a CreditCard or a two element tuple containing the cardId and the customerId.
+  The cardId should be saved as one of the customer's cards for the latter option. 
 
-  > If there's anything noteworthy about this operation, it comes here.
+  To transfer the funds to merchant's account follow this up with a `capture/3`.
+
+  SecurionPay returns a `chargeId` which uniquely identifies a transaction (available in the `Response.id` field) 
+  which should be stored at your side to use in:
+
+  * `capture/3` an authorized transaction.
+  * `void/2` a transaction.
+
 
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+      iex> amount = Money.new(20, :USD}
+      iex> opts = [config: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"]
+      iex> card = %CreditCard{
+           first_name: "Harry",
+           last_name: "Potter",
+           number: "4200000000000000",
+           year: 2027,
+           month: 12,
+           verification_code: "123",
+           brand: "VISA"
+          }
+      iex> result = Gringotts.Gateways.SecurionPay(amount, card, opts)
   """
-  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount, card = %CreditCard{}, opts) do
-    # commit(args, ...)
+  @spec authorize(Money.t(), CreditCard.t() | {}, keyword) :: {:ok | :error, Response}
+  def authorize(amount, payment_info, opts)
+
+  def authorize(amount, %CreditCard{} = card, opts) do
+    header = [{"Authorization", "Basic " <> opts[:config]}]
+
+    create_token(card, header)
+    |> create_params(amount, false)
+    |> commit(:post, "charges", header)
+    |> respond
+  end
+
+  def authorize(amount, card, opts) when is_tuple(card) do
+    header = [{"Authorization", "Basic " <> opts[:config]}]
+
+    create_params(card, amount, false)
+    |> commit(:post, "charges", header)
+    |> respond
+  end
+
+  def authorize(amount, card, opts \\ []) do
   end
 
   @doc """
@@ -139,7 +173,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
-  @spec capture(String.t(), Money.t, keyword) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     # commit(args, ...)
   end
@@ -159,7 +193,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
     # commit(args, ...)
   end
@@ -201,7 +235,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     # commit(args, ...)
   end
@@ -245,22 +279,95 @@ defmodule Gringotts.Gateways.SecurionPay do
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
-  
+
+  # Creates the parameter for authorise and capture function when cardId and customerId is provided.
+  @spec create_params({}, Money.t(), boolean) :: {[]}
+  defp create_params({cardId, customerId}, amount, captured) do
+    {currency, value, _, _} = Money.to_integer_exp(amount)
+
+    [
+      {"amount", value},
+      {"currency", to_string(currency)},
+      {"card", cardId},
+      {"captured", "#{captured}"},
+      {"customerId", customerId}
+    ]
+  end
+
+  # Creates the parameter for authorise and capture function when token is provided.
+  @spec create_params(Integer.t(), Money.t(), boolean) :: {[]}
+  defp create_params(token, amount, captured) do
+    {currency, value, _, _} = Money.to_integer_exp(amount)
+
+    [
+      {"amount", value},
+      {"currency", to_string(currency)},
+      {"card", token},
+      {"captured", "#{captured}"}
+    ]
+  end
+
   # Makes the request to SecurionPay's network.
   # For consistency with other gateway implementations, make your (final)
   # network request in here, and parse it using another private method called
   # `respond`.
-  @spec commit(_) :: {:ok | :error, Response}
-  defp commit(_) do
-    # resp = HTTPoison.request(args, ...)
-    # respond(resp, ...)
+  defp commit(params, method, path, header) do
+    HTTPoison.request(method, "#{@base_url}#{path}", {:form, params}, header)
   end
 
   # Parses SecurionPay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
-  defp respond(securion_pay.ex_response)
-  defp respond({:ok, %{status_code: 200, body: body}}), do: "something"
-  defp respond({:ok, %{status_code: status_code, body: body}}), do: "something"
-  defp respond({:error, %HTTPoison.Error{} = error}), do: "something"
+
+  defp respond({:ok, %{status_code: 200, body: body}}) do
+    parsedBody = Poison.decode!(body)
+
+    {:ok,
+     %{
+       success: true,
+       id: Map.get(parsedBody, "id"),
+       token: Map.get(parsedBody["card"], "id"),
+       status_code: 200,
+       gateway_code: 200,
+       reason: nil,
+       message: "Card succesfully authorized",
+       avs_result: nil,
+       cvc_result: nil,
+       raw: body,
+       fraud_review: Map.get(parsedBody, "fraudDetails")
+     }}
+  end
+
+  defp respond({:ok, %{body: body, status_code: code}}) do
+    {:error, %Response{raw: body, status_code: code}}
+  end
+
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    {
+      :error,
+      %Response{
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      }
+    }
+  end
+
+  defp create_token(card, header) do
+    [
+      {"number", card.number},
+      {"expYear", card.year},
+      {"cvc", card.verification_code},
+      {"expMonth", card.month},
+      {"cardholderName", card.first_name <> " " <> card.last_name}
+    ]
+    |> commit(:post, "tokens", header)
+    |> make_map
+    |> Map.fetch!("id")
+  end
+
+  defp make_map(response) do
+    case response do
+      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!()
+    end
+  end
 end
