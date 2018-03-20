@@ -109,8 +109,8 @@ defmodule Gringotts.Gateways.SecurionPay do
   places a hold on the transaction `amount` in the customer’s issuing bank and
   also triggers risk management. Funds are not transferred.
 
-  The second argument can be a CreditCard or a two element tuple containing the cardId and the customerId.
-  The cardId should be saved as one of the customer's cards for the latter option. 
+  The second argument can be a CreditCard or a cardId. The customerId of the cutomer who owns the card must be
+  given in optional field. 
 
   To transfer the funds to merchant's account follow this up with a `capture/3`.
 
@@ -121,7 +121,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   * `void/2` a transaction.
 
 
-  ## Example
+  ## Example 1
       iex> amount = Money.new(20, :USD}
       iex> opts = [config: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"]
       iex> card = %CreditCard{
@@ -133,10 +133,17 @@ defmodule Gringotts.Gateways.SecurionPay do
            verification_code: "123",
            brand: "VISA"
           }
-      iex> result = Gringotts.Gateways.SecurionPay(amount, card, opts)
+      iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
+  
+  ## Example 2
+      iex> amount = Money.new(20, :USD}
+      iex> opts = [config: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6", customerId: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
+      iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
+      iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
+
   """
   @spec authorize(Money.t(), CreditCard.t() | {}, keyword) :: {:ok | :error, Response}
-  def authorize(amount, payment_info, opts)
+  def authorize(amount, card, opts)
 
   def authorize(amount, %CreditCard{} = card, opts) do
     header = [{"Authorization", "Basic " <> opts[:config]}]
@@ -147,15 +154,12 @@ defmodule Gringotts.Gateways.SecurionPay do
     |> respond
   end
 
-  def authorize(amount, card, opts) when is_tuple(card) do
+  def authorize(amount, card, opts) do
     header = [{"Authorization", "Basic " <> opts[:config]}]
 
-    create_params(card, amount, false)
+    create_params({card,opts[:customerId]}, amount, false)
     |> commit(:post, "charges", header)
     |> respond
-  end
-
-  def authorize(amount, card, opts \\ []) do
   end
 
   @doc """
