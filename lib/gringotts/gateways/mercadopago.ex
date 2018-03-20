@@ -329,7 +329,6 @@ defmodule Gringotts.Gateways.Mercadopago do
                 "first_name": card[:first_name],
                 "last_name": card[:last_name]
               },
-      
       "order": %{
                 "type": "mercadopago",
                 "id": opts[:order_id]
