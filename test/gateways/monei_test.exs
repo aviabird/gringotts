@@ -6,6 +6,7 @@ defmodule Gringotts.Gateways.MoneiTest do
   }
 
   alias Gringotts.Gateways.Monei, as: Gateway
+  alias Plug.{Conn, Parsers}
 
   @amount42 Money.new(42, :USD)
   @amount3 Money.new(3, :USD)
@@ -136,7 +137,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["authentication.entityId"] == "some_secret_entity_id"
         assert params["authentication.password"] == "some_secret_password"
         assert params["authentication.userId"] == "some_secret_user_id"
-        Plug.Conn.resp(conn, 200, @auth_success)
+        Conn.resp(conn, 200, @auth_success)
       end)
 
       {:ok, response} = Gateway.purchase(@amount42, @card, config: auth)
@@ -164,7 +165,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["merchant.submerchantId"] == @merchant[:submerchantId]
         assert params["billing.city"] == @billing[:city]
         assert params["shipping.method"] == @shipping[:method]
-        Plug.Conn.resp(conn, 200, @register_success)
+        Conn.resp(conn, 200, @register_success)
       end)
 
       opts = randoms ++ @extra_opts ++ [config: auth]
@@ -175,7 +176,7 @@ defmodule Gringotts.Gateways.MoneiTest do
 
     test "when we get non-json.", %{bypass: bypass, auth: auth} do
       Bypass.expect_once(bypass, "POST", "/v1/payments", fn conn ->
-        Plug.Conn.resp(conn, 400, "<html></html>")
+        Conn.resp(conn, 400, "<html></html>")
       end)
 
       {:error, _} = Gateway.authorize(@amount42, @bad_card, config: auth)
@@ -190,7 +191,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["amount"] == "42.00"
         assert params["currency"] == "USD"
         assert params["paymentType"] == "PA"
-        Plug.Conn.resp(conn, 200, @auth_success)
+        Conn.resp(conn, 200, @auth_success)
       end)
 
       {:ok, response} = Gateway.authorize(@amount42, @card, config: auth)
@@ -206,7 +207,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["amount"] == "42.00"
         assert params["currency"] == "USD"
         assert params["paymentType"] == "DB"
-        Plug.Conn.resp(conn, 200, @auth_success)
+        Conn.resp(conn, 200, @auth_success)
       end)
 
       {:ok, response} = Gateway.purchase(@amount42, @card, config: auth)
@@ -218,7 +219,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["createRegistration"] == "true"
-        Plug.Conn.resp(conn, 200, @register_success)
+        Conn.resp(conn, 200, @register_success)
       end)
 
       {:ok, response} = Gateway.purchase(@amount42, @card, register: true, config: auth)
@@ -238,7 +239,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["card.holder"] == "Harry Potter"
         assert params["card.number"] == "4200000000000000"
         assert params["paymentBrand"] == "VISA"
-        Plug.Conn.resp(conn, 200, @store_success)
+        Conn.resp(conn, 200, @store_success)
       end)
 
       {:ok, response} = Gateway.store(@card, config: auth)
@@ -258,7 +259,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           assert params["amount"] == "42.00"
           assert params["currency"] == "USD"
           assert params["paymentType"] == "CP"
-          Plug.Conn.resp(conn, 200, @auth_success)
+          Conn.resp(conn, 200, @auth_success)
         end
       )
 
@@ -277,7 +278,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           p_conn = parse(conn)
           params = p_conn.body_params
           assert :error == Map.fetch(params, "createRegistration")
-          Plug.Conn.resp(conn, 200, @auth_success)
+          Conn.resp(conn, 200, @auth_success)
         end
       )
 
@@ -305,7 +306,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           assert params["amount"] == "3.00"
           assert params["currency"] == "USD"
           assert params["paymentType"] == "RF"
-          Plug.Conn.resp(conn, 200, @auth_success)
+          Conn.resp(conn, 200, @auth_success)
         end
       )
 
@@ -327,7 +328,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           assert params["authentication.entityId"] == "some_secret_entity_id"
           assert params["authentication.password"] == "some_secret_password"
           assert params["authentication.userId"] == "some_secret_user_id"
-          Plug.Conn.resp(conn, 200, "<html></html>")
+          Conn.resp(conn, 200, "<html></html>")
         end
       )
 
@@ -348,7 +349,7 @@ defmodule Gringotts.Gateways.MoneiTest do
           assert :error == Map.fetch(params, :amount)
           assert :error == Map.fetch(params, :currency)
           assert params["paymentType"] == "RV"
-          Plug.Conn.resp(conn, 200, @auth_success)
+          Conn.resp(conn, 200, @auth_success)
         end
       )
 
@@ -358,8 +359,8 @@ defmodule Gringotts.Gateways.MoneiTest do
   end
 
   def parse(conn, opts \\ []) do
-    opts = Keyword.put_new(opts, :parsers, [Plug.Parsers.URLENCODED])
-    Plug.Parsers.call(conn, Plug.Parsers.init(opts))
+    opts = Keyword.put_new(opts, :parsers, [Parsers.URLENCODED])
+    Parsers.call(conn, Parsers.init(opts))
   end
 end
 

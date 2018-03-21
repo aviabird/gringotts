@@ -174,7 +174,7 @@ defmodule Gringotts.Gateways.Paymill do
       {"account.expiry.month", card.month},
       {"account.expiry.year", card.year},
       {"account.verification", card.verification_code},
-      {"account.holder", "#{card.first_name} #{card.last_name}"},
+      {"account.holder", CreditCard.full_name(card)},
       {"presentation.amount3D", get_amount(options)},
       {"presentation.currency3D", get_currency(options)}
     ]

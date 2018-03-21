@@ -124,7 +124,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.successful_purchase_response()
         end do
-        assert {:ok, response} = ANet.purchase(@amount, @card, @opts)
+        assert {:ok, _response} = ANet.purchase(@amount, @card, @opts)
       end
     end
 
@@ -144,7 +144,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.successful_authorize_response()
         end do
-        assert {:ok, response} = ANet.authorize(@amount, @card, @opts)
+        assert {:ok, _response} = ANet.authorize(@amount, @card, @opts)
       end
     end
 
@@ -164,7 +164,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.successful_capture_response()
         end do
-        assert {:ok, response} = ANet.capture(@capture_id, @amount, @opts)
+        assert {:ok, _response} = ANet.capture(@capture_id, @amount, @opts)
       end
     end
 
@@ -181,7 +181,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.successful_refund_response()
         end do
-        assert {:ok, response} = ANet.refund(@amount, @refund_id, @opts_refund)
+        assert {:ok, _response} = ANet.refund(@amount, @refund_id, @opts_refund)
       end
     end
 
@@ -202,7 +202,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   describe "void" do
     test "successful response with right params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_void() end do
-        assert {:ok, response} = ANet.void(@void_id, @opts)
+        assert {:ok, _response} = ANet.void(@void_id, @opts)
       end
     end
 
@@ -218,14 +218,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "successful response with right params" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.successful_store_response() end do
-        assert {:ok, response} = ANet.store(@card, @opts_store)
+        assert {:ok, _response} = ANet.store(@card, @opts_store)
       end
     end
 
     test "successful response without validation and customer type" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.successful_store_response() end do
-        assert {:ok, response} = ANet.store(@card, @opts_store_without_validation)
+        assert {:ok, _response} = ANet.store(@card, @opts_store_without_validation)
       end
     end
 
@@ -245,7 +245,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.customer_payment_profile_success_response()
         end do
-        assert {:ok, response} = ANet.store(@card, @opts_customer_profile)
+        assert {:ok, _response} = ANet.store(@card, @opts_customer_profile)
 
         "Ok"
       end
@@ -254,7 +254,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "successful response without valiadtion mode and customer type" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.successful_store_response() end do
-        assert {:ok, response} = ANet.store(@card, @opts_customer_profile_args)
+        assert {:ok, _response} = ANet.store(@card, @opts_customer_profile_args)
       end
     end
   end
@@ -265,7 +265,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.successful_unstore_response()
         end do
-        assert {:ok, response} = ANet.unstore(@unstore_id, @opts)
+        assert {:ok, _response} = ANet.unstore(@unstore_id, @opts)
       end
     end
   end

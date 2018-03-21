@@ -3,14 +3,6 @@ defmodule Gringotts.Gateways.WireCardTest do
 
   import Mock
 
-  alias Gringotts.{
-    CreditCard,
-    Address,
-    Response
-  }
-
-  alias Gringotts.Gateways.WireCard, as: Gateway
-
   setup do
     # TEST_AUTHORIZATION_GUWID = 'C822580121385121429927'
     # TEST_PURCHASE_GUWID =      'C865402121385575982910'
