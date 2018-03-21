@@ -2,24 +2,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   @moduledoc """
   [SecurionPay][home] gateway implementation.
 
-  ## Instructions!
-
-  ***This is an example `moduledoc`, and suggests some items that should be
-  documented in here.***
-
-  The quotation boxes like the one below will guide you in writing excellent
-  documentation for your gateway. All our gateways are documented in this manner
-  and we aim to keep our docs as consistent with each other as possible.
-  **Please read them and do as they suggest**. Feel free to add or skip sections
-  though.
-
-  If you'd like to make edits to the template docs, they exist at
-  `templates/gateway.eex`. We encourage you to make corrections and open a PR
-  and tag it with the label `template`.
-
-  ***Actual docs begin below this line!***
-
-  --------------------------------------------------------------------------------
+  For reference see [MONEI's API (v1) documentation][docs].
 
   The following set of functions for SecurionPay have been implemented:
 
@@ -27,64 +10,37 @@ defmodule Gringotts.Gateways.SecurionPay do
   | ------                                       | ------        |
   | Authorize a Credit Card                      | `authorize/3` |
 
-  ## Optional or extra parameters
+  [home]: https://securionpay.com/
+  [docs]: https://securionpay.com/docs
 
-  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
-  optional arguments for transactions with the gateway.
+  ## The `opts` argument
 
-  > List all available (ie, those that will be supported by this module) keys, a
-  > description of their function/role and whether they have been implemented
-  > and tested.
-  > A table suits really well for this.
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  [optional arguments][extra-arg-docs] for transactions with the MONEI
+  gateway. The following keys are supported:
+
+  | Key                      | Remark                                                                                        |
+  | ----                     | ---                                                                                           |
+  | `customerId`             | Unique identifier of the customer                                                             |
 
   ## Registering your SecurionPay account at `Gringotts`
 
-  Explain how to make an account with the gateway and show how to put the
-  `required_keys` (like authentication info) to the configuration.
+  After [making an account on SecurionPay][SP], find your `Secret key` at [Account Settings][api-key] 
 
-  > Your Application config would look
-  > something like this:
-  > 
-  >     config :gringotts, Gringotts.Gateways.SecurionPay,
+  Your Application config **must include the `:secret_key`  field**.
+  It would look something like this:
 
+      config :gringotts, Gringotts.Gateways.SecurionPay,
+        secret_key: "your_secret_key"
 
-  ## Scope of this module
+  [SP]: https://securionpay.com/
+  [api-key]: https://securionpay.com/account-settings#api-keys
 
-  > It's unlikely that your first iteration will support all features of the
-  > gateway, so list down those items that are missing.
+  ## Supported countries
 
-  ## Supported currencies and countries
+  SecurionPay supports the countries listed [here][country-list]
 
-  > It's enough if you just add a link to the gateway's docs or FAQ that provide
-  > info about this.
-
-  ## Following the examples
-
-  1. First, set up a sample application and configure it to work with MONEI.
-  - You could do that from scratch by following our [Getting Started][gs] guide.
-      - To save you time, we recommend [cloning our example
-      repo][example] that gives you a pre-configured sample app ready-to-go.
-          + You could use the same config or update it the with your "secrets"
-          as described [above](#module-registering-your-monei-account-at-SecurionPay).
-
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
-  ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.SecurionPay}
-  iex> card = %CreditCard{first_name: "Jo",
-                          last_name: "Doe",
-                          number: "4200000000000000",
-                          year: 2099, month: 12,
-                          verification_code: "123", brand: "VISA"}
-  ```
-
-  > Add any other frequently used bindings up here.
-
-  We'll be using these in the examples below.
-
-  [gs]: https://github.com/aviabird/gringotts/wiki/
-  [home]: https://securionpay.com/
-  [example]: https://github.com/aviabird/gringotts_example
+  [country-list]: https://securionpay.com/supported-countries-businesses/
   """
 
   @base_url "https://api.securionpay.com/"
@@ -96,7 +52,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   # The Adapter module provides the `validate_config/1`
   # Add the keys that must be present in the Application config in the
   # `required_config` list
-  use Gringotts.Adapter, required_config: []
+  use Gringotts.Adapter, required_config: [:secret_key]
 
   import Poison, only: [decode: 1]
 
@@ -123,7 +79,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   ## Example 1
       iex> amount = Money.new(20, :USD}
-      iex> opts = [config: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"]
+      iex> opts = [config: [:secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"]]
       iex> card = %CreditCard{
            first_name: "Harry",
            last_name: "Potter",
@@ -134,10 +90,10 @@ defmodule Gringotts.Gateways.SecurionPay do
            brand: "VISA"
           }
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
-  
+
   ## Example 2
       iex> amount = Money.new(20, :USD}
-      iex> opts = [config: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6", customerId: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
+      iex> opts = [config: [:secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"], customerId: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
       iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
@@ -146,7 +102,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   def authorize(amount, card, opts)
 
   def authorize(amount, %CreditCard{} = card, opts) do
-    header = [{"Authorization", "Basic " <> opts[:config]}]
+    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
 
     create_token(card, header)
     |> create_params(amount, false)
@@ -155,9 +111,9 @@ defmodule Gringotts.Gateways.SecurionPay do
   end
 
   def authorize(amount, card, opts) do
-    header = [{"Authorization", "Basic " <> opts[:config]}]
+    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
 
-    create_params({card,opts[:customerId]}, amount, false)
+    create_params({card, opts[:customerId]}, amount, false)
     |> commit(:post, "charges", header)
     |> respond
   end
@@ -197,9 +153,27 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
-  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card = %CreditCard{}, opts) do
+  @spec purchase(Money.t(), CreditCard.t() | {}, keyword) :: {:ok | :error, Response}
+  def purchase(amount, card, opts)
+
+  def purchase(amount, %CreditCard{} = card, opts) do
+    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
+
+    create_token(card, header)
+    |> create_params(amount, true)
+    |> commit(:post, "charges", header)
+    |> respond
+  end
+
+ # @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, card , opts) do
     # commit(args, ...)
+     header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
+
+    create_params({card, opts[:customerId]}, amount, true)
+    |> commit(:post, "charges", header)
+    |> respond
+
   end
 
   @doc """
@@ -242,6 +216,12 @@ defmodule Gringotts.Gateways.SecurionPay do
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     # commit(args, ...)
+    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
+    params = create_params(amount)
+    url = "charges/#{payment_id}/refund"
+    commit(params, :post, url, header)
+
+
   end
 
   @doc """
@@ -310,6 +290,15 @@ defmodule Gringotts.Gateways.SecurionPay do
       {"captured", "#{captured}"}
     ]
   end
+  
+  defp create_params(amount) do
+    {currency, value, _, _} = Money.to_integer_exp(amount)
+    [
+       {"amount", value}
+    ]
+  end
+
+
 
   # Makes the request to SecurionPay's network.
   # For consistency with other gateway implementations, make your (final)
