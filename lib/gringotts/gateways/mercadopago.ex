@@ -140,7 +140,6 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount , %CreditCard{} = card, opts) do
-    # commit(args, ...)
     {_, value, _, _} = Money.to_integer_exp(amount)
     if(is_nil(opts[:customer_id])) do
       customer_id = get_customer_id(opts)
@@ -175,7 +174,12 @@ defmodule Gringotts.Gateways.Mercadopago do
   """
   @spec capture(String.t(), Money.t, keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
-    # commit(args, ...)
+    body = %{"capture": true} |> Poison.encode!
+    headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
+    response = HTTPoison.put!("#{@base_url}/v1/payments/#{payment_id}?access_token=#{opts[:config][:access_token]}", body, headers, [])
+    %HTTPoison.Response{body: body, status_code: status_code} = response
+    body = body |> Poison.decode!()
+    format_response(body, status_code, opts)
   end
 
   @doc """
@@ -237,7 +241,13 @@ defmodule Gringotts.Gateways.Mercadopago do
   """
   @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
-    # commit(args, ...)
+    {_, value, _, _} = Money.to_integer_exp(amount)
+    body = %{"amount": value} |> Poison.encode!
+    headers = [{"content-type", "application/json"}]
+    response = HTTPoison.post!("#{@base_url}/v1/payments/#{payment_id}/refunds?access_token=#{opts[:config][:access_token]}", body, headers, [])
+    %HTTPoison.Response{body: body, status_code: status_code} = response
+    body = body |> Poison.decode!
+    format_response(body, status_code, opts)
   end
 
   @doc """
@@ -344,7 +354,7 @@ defmodule Gringotts.Gateways.Mercadopago do
       "transaction_amount": value,
       "payment_method_id": opts[:payment_method_id],    #visa
       "token": token_id,
-      capture: false
+      "capture": false
   }
   end
 
