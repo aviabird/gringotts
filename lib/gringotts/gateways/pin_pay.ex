@@ -225,6 +225,106 @@ defmodule Gringotts.Gateways.Pinpay do
 
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
+  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, card = %CreditCard{}, opts) do
+    {currency, value, _} = Money.to_integer(amount)
+    params =
+      [
+        amount: value
+      ] ++ card_params(card, opts) ++ opts
+    commit(:post, "charges", params, [{:currency, currency} | opts])
+  end
+
+  def purchase(amount, card, opts) do
+    {currency, value, _} = Money.to_integer(amount)
+    params =
+      [
+        amount: value,
+        card_token: card,
+      ] ++ card_params(card, opts) ++ opts
+    commit(:post, "charges", params, [{:currency, currency} | opts])
+  end
+
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal of a previous transaction referenced by
+  `payment_id`.
+
+  > As a consequence, the customer will never see any booking on his statement.
+
+  ## Note
+
+  > Which transactions can be voided?
+  > Is there a limited time window within which a void can be perfomed?
+
+  ## Example
+
+  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  """
+  @spec void(String.t(), keyword) :: {:ok | :error, Response}
+  def void(payment_id, opts) do
+    #can't be implemented in pinpayments
+  end
+
+  @doc """
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
+
+  > Refunds are allowed on which kinds of "prior" transactions?
+
+  ## Note
+
+  > The end customer will usually see two bookings/records on his statement. Is
+  > that true for PinPay?
+  > Is there a limited time window within which a void can be perfomed?
+
+  ## Example
+
+  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  """
+  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  def refund(amount, payment_id, opts) do
+    url=@test_url <> "charges/" <> payment_id <> "/refunds"
+    commit(:post, url)
+  end
+
+
+  @doc """
+  Stores the payment-source data for later use.
+
+  > This usually enable "One Click" and/or "Recurring Payments"
+
+  ## Note
+
+  > If there's anything noteworthy about this operation, it comes here.
+
+  ## Example
+
+  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  """
+  
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def store(%CreditCard{} = card, opts) do
+    commit(:post, "cards", card_for_token(card, opts), opts)
+  end
+
+  @doc """
+  Removes card or payment info that was previously `store/2`d
+
+  Deletes previously stored payment-source data.
+
+  ## Note
+
+  > If there's anything noteworthy about this operation, it comes here.
+
+  ## Example
+
+  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  """
+  @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
+  def unstore(registration_id, opts) do
+    # can't be implemented in pinpayments
+  end
 
   ###############################################################################
   #                                PRIVATE METHODS                              #
