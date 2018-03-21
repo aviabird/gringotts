@@ -33,6 +33,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   | `name`                   |  Object containing the name details of the consumer   |
   | `skipAuthentication`     |  3D Secure Authentication will be skipped for this transaction if set to true |
 
+  For more details of the required keys refer [this.][options]
   ## Registering your GlobalCollect account at `Gringotts`
 
   After creating your account successfully on [GlobalCollect][home] open the
@@ -55,6 +56,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
            secret_api_key: "your_secret_secret_api_key"
            api_key_id: "your_secret_api_key_id"
            merchant_id: "your_secret_merchant_id"
+
+   ## Scope of this module
+
+  * [All amount fields in globalCollect are in cents with each amount having 2 decimals.][amountReference]
 
   ## Supported currencies and countries
 
@@ -131,8 +136,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
   [docs]: https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/index.html
   [dashboard]: https://sandbox.account.ingenico.com/#/dashboard
   [gs]: #
+  [options]: https://epayments-api.developer-ingenico.com/s2sapi/v1/en_US/java/payments/create.html#payments-create-payload
   [currencies]: https://epayments.developer-ingenico.com/best-practices/services/currency-conversion
   [example]: https://github.com/aviabird/gringotts_example
+  [amountReference]: https://epayments-api.developer-ingenico.com/c2sapi/v1/en_US/swift/services/convertAmount.html
   """
   @base_url "https://api-sandbox.globalcollect.com/v1/"
 
@@ -426,7 +433,20 @@ defmodule Gringotts.Gateways.GlobalCollect do
           Response.success(
             authorization: results["payment"]["id"],
             raw: results,
-            status_code: code
+            status_code: code,
+            avs_result:
+              results["payment"]["paymentOutput"]["cardPaymentMethodSpecificOutput"][
+                "fraudResults"
+              ]["avsResult"],
+            cvc_result:
+              results["payment"]["paymentOutput"]["cardPaymentMethodSpecificOutput"][
+                "fraudResults"
+              ]["cvcResult"],
+            message: results["payment"]["status"],
+            fraud_review:
+              results["payment"]["paymentOutput"]["cardPaymentMethodSpecificOutput"][
+                "fraudResults"
+              ]["fraudServiceResult"]
           )
         }
 
