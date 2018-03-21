@@ -1,51 +1,40 @@
 defmodule Gringotts.Gateways.Mercadopago do
   @moduledoc """
-  [mercadopago][home] gateway implementation.
+  [MERCADOPAGO][home] gateway implementation.
 
-  ## Instructions!
-  
-  ***This is an example `moduledoc`, and suggests some items that should be
-  documented in here.***
+  For reference see [MERCADOPAGO API (v1) documentation][docs].
 
-  The quotation boxes like the one below will guide you in writing excellent
-  documentation for your gateway. All our gateways are documented in this manner
-  and we aim to keep our docs as consistent with each other as possible.
-  **Please read them and do as they suggest**. Feel free to add or skip sections
-  though.
+  The following features of MERCADOPAGO are implemented:
 
-  If you'd like to make edits to the template docs, they exist at
-  `templates/gateway.eex`. We encourage you to make corrections and open a PR
-  and tag it with the label `template`.
+  | Action                       | Method        | 
+  | ------                       | ------        | 
+  | Pre-authorize                | `authorize/3` | 
 
-  ***Actual docs begin below this line!***
-  
-  --------------------------------------------------------------------------------
+  [home]: https://www.mercadopago.com/
+  [docs]: https://www.mercadopago.com.ar/developers/en/api-docs/
 
-  > List features that have been implemented, and what "actions" they map to as
-  > per the mercadopago gateway docs.
-  > A table suits really well for this.
+  ## The `opts` argument
 
-  ## Optional or extra parameters
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  optional arguments for transactions with the MERCADOAPGO
+  gateway. The following keys are supported:
 
-  Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
-  optional arguments for transactions with the gateway.
-  
-  > List all available (ie, those that will be supported by this module) keys, a
-  > description of their function/role and whether they have been implemented
-  > and tested.
-  > A table suits really well for this.
+  | Key                      | Remark                                                                                  |
+  | ----                     | ---                                                                                     |
+  | `email`                  | Email of the customer. Type - string .                                                  |
+  | `order_id`               | Order id issued by the merchant. Type- integer.                                         |
+  | `payment_method_id`      | Payment network operators, eg. `visa`, `mastercard`. Type- string.                      |
+  | `customer_id`            | Unique customer id issued by the gateway. For new customer it must be nil. Type- string |  
 
-  ## Registering your mercadopago account at `Gringotts`
+  ## Registering your MERCADOPAGO account at `Gringotts`
 
-  Explain how to make an account with the gateway and show how to put the
-  `required_keys` (like authentication info) to the configuration.
-  
-  > Here's how the secrets map to the required configuration parameters for mercadopago:
-  > 
-  > | Config parameter | mercadopago secret   |
-  > | -------          | ----           |
-  > | `:public_key`     | **PublicKey**  |
-  > | `:access_token`     | **AccessToken**  |
+  After [making an account on MERCADOPAGO][credentials], head to the credentials and find
+  your account "secrets" in the `Checkout Transparent`.
+
+  | Config parameter | MERCADOPAGO secret |
+  | -------          | ----               |
+  | `:access_token`  | **Access Token**   |
+  | `:public_key`    | **Public Key**     |
   
   > Your Application config **must include the `[:public_key, :access_token]` field(s)** and would look
   > something like this:
@@ -53,39 +42,41 @@ defmodule Gringotts.Gateways.Mercadopago do
   >     config :gringotts, Gringotts.Gateways.Mercadopago,
   >         public_key: "your_secret_public_key"
   >         access_token: "your_secret_access_token"
-  
-  
-  ## Scope of this module
 
-  > It's unlikely that your first iteration will support all features of the
-  > gateway, so list down those items that are missing.
+  [credentials]: https://www.mercadopago.com/mlb/account/credentials?type=basic
+
+  * MERCADOPAGO does not process money in cents, and the `amount` is rounded to 2
+    decimal places.
+
+  > Please [raise an issue][new-issue] if you'd like us to add support for more
+  > currencies
+  [new-issue]: https://github.com/aviabird/gringotts/issues
 
   ## Supported currencies and countries
 
-  > It's enough if you just add a link to the gateway's docs or FAQ that provide
-  > info about this.
+  > MERCADOPAGO supports the currencies listed [here][all-currency-list]
+  [all-currency-list]: https://www.mercadopago.com.br/developers/en/api-docs/account/payments/search
+      :ARS, :BRL, :VEF,:CLP, :MXN, :COP, :PEN, :UYU
 
   ## Following the examples
 
-  1. First, set up a sample application and configure it to work with MONEI.
+  1. First, set up a sample application and configure it to work with MERCADOPAGO.
   - You could do that from scratch by following our [Getting Started][gs] guide.
       - To save you time, we recommend [cloning our example
       repo][example] that gives you a pre-configured sample app ready-to-go.
           + You could use the same config or update it the with your "secrets"
           as described [above](#module-registering-your-monei-account-at-mercadopago).
 
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings and
-  aliases to it (to save some time):
+  2. Run an `iex` session with `iex -S mix` and add some variable bindings :
   ```
-  iex> alias Gringotts.{Response, CreditCard, Gateways.Mercadopago}
-  iex> card = %CreditCard{first_name: "Jo",
-                          last_name: "Doe",
-                          number: "4200000000000000",
-                          year: 2099, month: 12,
-                          verification_code: "123", brand: "VISA"}
+  iex> card = %{first_name: "John",
+                last_name: "Doe",
+                number: "4509953566233704",
+                year: 2099,
+                month: 12,
+                verification_code: "123",
+                brand: "VISA"}
   ```
-
-  > Add any other frequently used bindings up here.
 
   We'll be using these in the examples below.
 
@@ -98,7 +89,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   # implementations.  
   @base_url "https://api.mercadopago.com"
   use Gringotts.Gateways.Base
-
+  alias Gringotts.CreditCard
   # The Adapter module provides the `validate_config/1`
   # Add the keys that must be present in the Application config in the
   # `required_config` list
@@ -106,8 +97,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money,
-                   CreditCard,
+  alias Gringotts.{CreditCard,
                    Response}
 
   @doc """
@@ -116,25 +106,42 @@ defmodule Gringotts.Gateways.Mercadopago do
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
 
-  > ** You could perhaps:**
-  > 1. describe what are the important fields in the Response struct
-  > 2. mention what a merchant can do with these important fields (ex:
-  > `capture/3`, etc.)
+  MERCADOPAGO's `authorize` returns a map containing authorization ID string which can be used to:
+
+  * `capture/3` _an_ amount.
+  * `void/2` a pre-authorization.
   
   ## Note
 
   > If there's anything noteworthy about this operation, it comes here.
 
   ## Example
+      iex> amount = Money.new(42, :BRL)
+      iex> card = %Gringotts.CreditCard{
+            first_name: "John",
+            last_name: "Doe",
+            number: "4509953566233704",
+            year: 2099,
+            month: 12,
+            verification_code: "123",
+            brand: "VISA"
+        }
+      iex> opts = [email: "xyz@test.com",
+           order_id: 123125,
+           customer_id: "308537342-HStv9cJCgK0dWU",
+           payment_method_id: "visa",
+           config: %{access_token: "TEST-2774702803649645-031303-1b9d3d63acb57cdad3458d386eee62bd-307592510",
+           public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"}]
+      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
+      iex> auth_result.id # This is the authorization ID
+      iex> auth_result.token # This is the customer ID/token
 
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
 
-
-
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount, card, opts) do
+  def authorize(amount , %CreditCard{} = card, opts) do
     # commit(args, ...)
+    {_, value, _, _} = Money.to_integer_exp(amount)
     if(is_nil(opts[:customer_id])) do
       customer_id = get_customer_id(opts)
       opts = opts ++ [customer_id: customer_id]
@@ -142,7 +149,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     token_id = get_token_id(card, opts)
     opts = opts ++ [token_id: token_id]
 
-    body = get_authorize_body(amount, card, opts, opts[:token_id], opts[:customer_id]) |> Poison.encode!()
+    body = get_authorize_body(value, card, opts, opts[:token_id], opts[:customer_id]) |> Poison.encode!()
     headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
 
     response = HTTPoison.post!("#{@base_url}/v1/payments?access_token=#{opts[:config][:access_token]}", body, headers, [])
@@ -187,7 +194,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   > A barebones example using the bindings you've suggested in the `moduledoc`.
   """
   @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card = %CreditCard{}, opts) do
+  def purchase(amount, %CreditCard{} = card, opts) do
     # commit(args, ...)
   end
 
@@ -300,19 +307,19 @@ defmodule Gringotts.Gateways.Mercadopago do
     body["id"]
   end
 
-  defp get_token_body(card) do
+  defp get_token_body(%CreditCard{} = card) do
     %{
-      "expirationYear": card[:year],
-      "expirationMonth": card[:month],
-      "cardNumber": card[:number],
-      "securityCode": card[:verification_code],
+      "expirationYear": card.year,
+      "expirationMonth": card.month,
+      "cardNumber": card.number,
+      "securityCode": card.verification_code,
       "cardholder": %{
-        "name": card[:first_name] <> card[:last_name]
+        "name": card.first_name <> card.last_name
       }
     }
   end 
 
-  defp get_token_id(card, opts) do
+  defp get_token_id(%CreditCard{} = card, opts) do
     body = get_token_body(card) |> Poison.encode!()
     headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
     token = HTTPoison.post!("#{@base_url}/v1/card_tokens/#{opts[:customer_id]}?public_key=#{opts[:config][:public_key]}", body, headers, [])
@@ -321,20 +328,20 @@ defmodule Gringotts.Gateways.Mercadopago do
     body["id"]
   end
 
-  defp get_authorize_body(amount, card, opts, token_id, customer_id) do
+  defp get_authorize_body(value, %CreditCard{} = card, opts, token_id, customer_id) do
     %{
       "payer": %{
                 "type": "customer",
                 "id": customer_id,
-                "first_name": card[:first_name],
-                "last_name": card[:last_name]
+                "first_name": card.first_name,
+                "last_name": card.last_name
               },
       "order": %{
                 "type": "mercadopago",
                 "id": opts[:order_id]
               },
       "installments": 1,
-      "transaction_amount": amount,
+      "transaction_amount": value,
       "payment_method_id": opts[:payment_method_id],    #visa
       "token": token_id,
       capture: false
