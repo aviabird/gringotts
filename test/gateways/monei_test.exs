@@ -159,8 +159,7 @@ defmodule Gringotts.Gateways.MoneiTest do
         assert params["transactionCategory"] == @extra_opts[:category]
         assert params["customer.merchantCustomerId"] == @customer[:merchantCustomerId]
 
-        assert params["shipping.customer.merchantCustomerId"] ==
-                 @customer[:merchantCustomerId]
+        assert params["shipping.customer.merchantCustomerId"] == @customer[:merchantCustomerId]
 
         assert params["merchant.submerchantId"] == @merchant[:submerchantId]
         assert params["billing.city"] == @billing[:city]

@@ -68,7 +68,7 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     password: "hMkqf2qbWf",
     entityId: "8a82941760036820016010a28a8337f6"
   }
-  
+
   setup_all do
     Application.put_env(
       :gringotts,
@@ -104,7 +104,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
          {:ok, _registration_token} <- Map.fetch(auth_result, :token),
          {:ok, _capture_result} <- Gateway.capture(auth_result.id, @amount, opts) do
       "yay!"
-    else {:error, _err} ->
+    else
+      {:error, _err} ->
         flunk()
     end
   end
@@ -113,7 +114,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     with {:ok, auth_result} <- Gateway.authorize(@amount, @card, opts),
          {:ok, _void_result} <- Gateway.void(auth_result.id, opts) do
       "yay!"
-    else {:error, _err} ->
+    else
+      {:error, _err} ->
         flunk()
     end
   end
@@ -122,7 +124,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     with {:ok, purchase_result} <- Gateway.purchase(@amount, @card, opts),
          {:ok, _void_result} <- Gateway.void(purchase_result.id, opts) do
       "yay!"
-    else {:error, _err} ->
+    else
+      {:error, _err} ->
         flunk()
     end
   end
@@ -131,7 +134,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     with {:ok, purchase_result} <- Gateway.purchase(@amount, @card, opts),
          {:ok, _refund_result} <- Gateway.refund(@sub_amount, purchase_result.id, opts) do
       "yay!"
-    else {:error, _err} ->
+    else
+      {:error, _err} ->
         flunk()
     end
   end
@@ -145,7 +149,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
     with {:ok, store_result} <- Gateway.store(@card, opts),
          {:ok, _unstore_result} <- Gateway.unstore(store_result.id, opts) do
       "yay!"
-    else {:error, _err} ->
+    else
+      {:error, _err} ->
         flunk()
     end
   end

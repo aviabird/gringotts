@@ -103,8 +103,8 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     customer_type: "individual"
   ]
   @opts_customer_profile_args [
-      config: @auth,
-      customer_profile_id: "1814012002"
+    config: @auth,
+    customer_profile_id: "1814012002"
   ]
 
   @refund_id "60036752756"
@@ -169,8 +169,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     end
 
     test "with bad transaction id" do
-      with_mock HTTPoison,
-        post: fn _url, _body, _headers -> MockResponse.bad_id_capture() end do
+      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.bad_id_capture() end do
         assert {:error, response} = ANet.capture(@capture_invalid_id, @amount, @opts)
       end
     end
@@ -187,8 +186,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     end
 
     test "bad payment params" do
-      with_mock HTTPoison,
-        post: fn _url, _body, _headers -> MockResponse.bad_card_refund() end do
+      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.bad_card_refund() end do
         assert {:error, response} = ANet.refund(@amount, @refund_id, @opts_refund_bad_payment)
       end
     end
@@ -203,8 +201,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
 
   describe "void" do
     test "successful response with right params" do
-      with_mock HTTPoison,
-        post: fn _url, _body, _headers -> MockResponse.successful_void() end do
+      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_void() end do
         assert {:ok, response} = ANet.void(@void_id, @opts)
       end
     end
@@ -239,7 +236,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         end do
         assert {:error, response} = ANet.store(@card, @opts_store_no_profile)
 
-                 "Error"
+        "Error"
       end
     end
 
@@ -250,7 +247,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         end do
         assert {:ok, response} = ANet.store(@card, @opts_customer_profile)
 
-                 "Ok"
+        "Ok"
       end
     end
 

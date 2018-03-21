@@ -12,18 +12,18 @@ defmodule Gringotts.Gateways.Base do
   ```
   because this module provides an implementation.
   """
-  
+
   alias Gringotts.Response
 
   defmacro __using__(_) do
     quote location: :keep do
       @doc false
-      def purchase(_amount, _card_or_id, _opts)  do
+      def purchase(_amount, _card_or_id, _opts) do
         not_implemented()
       end
 
       @doc false
-      def authorize(_amount, _card_or_id, _opts)  do
+      def authorize(_amount, _card_or_id, _opts) do
         not_implemented()
       end
 
@@ -57,7 +57,13 @@ defmodule Gringotts.Gateways.Base do
         {:error, Response.error(code: :not_implemented)}
       end
 
-      defoverridable [purchase: 3, authorize: 3, capture: 3, void: 2, refund: 3, store: 2, unstore: 2]
+      defoverridable purchase: 3,
+                     authorize: 3,
+                     capture: 3,
+                     void: 2,
+                     refund: 3,
+                     store: 2,
+                     unstore: 2
     end
   end
 end
