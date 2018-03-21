@@ -19,9 +19,8 @@ defmodule Gringotts.Mixfile do
       preferred_cli_env: [
         "coveralls": :test,
         "coveralls.detail": :test,
-        "coveralls.post": :test,
+        "coveralls.json": :test,
         "coveralls.html": :test,
-        "coveralls.travis": :test
       ],
       deps: deps(),
       docs: docs()]
