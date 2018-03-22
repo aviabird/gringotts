@@ -157,7 +157,9 @@ defmodule Gringotts.Gateways.TrexleTest do
           MockResponse.test_for_network_failure()
         end do
         {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
-        assert response.message == "HTTPoison says 'some_hackney_error' [ID: some_hackney_error_id]"
+
+        assert response.message ==
+                 "HTTPoison says 'some_hackney_error' [ID: some_hackney_error_id]"
       end
     end
   end

@@ -408,7 +408,7 @@ defmodule Gringotts.Gateways.Cams do
       "S" => {nil, nil},
       "0" => {nil, nil},
       "O" => {nil, nil},
-      ""  => {nil, nil}
+      "" => {nil, nil}
     }
 
     # Fetched from CAMS POST API docs.
@@ -426,6 +426,7 @@ defmodule Gringotts.Gateways.Cams do
       {street, zip_code} = @avs_code_translator[decoded_body["avsresponse"]]
       gateway_code = decoded_body["response_code"]
       message = decoded_body["responsetext"]
+
       response = %Response{
         status_code: 200,
         id: decoded_body["transactionid"],

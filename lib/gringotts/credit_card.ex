@@ -4,6 +4,7 @@ defmodule Gringotts.CreditCard do
   """
 
   defstruct [:number, :month, :year, :first_name, :last_name, :verification_code, :brand]
+
   @typedoc """
   Represents a Credit Card.
 
@@ -29,23 +30,24 @@ defmodule Gringotts.CreditCard do
   [mo]: http://www.maestrocard.com/gateway/index.html
   [dc]: http://www.dinersclub.com/
   """
-  @type t :: %__MODULE__{number: String.t,
-                         month: 1..12,
-                         year: non_neg_integer,
-                         first_name: String.t,
-                         last_name: String.t,
-                         verification_code: String.t,
-                         brand: String.t}
+  @type t :: %__MODULE__{
+          number: String.t(),
+          month: 1..12,
+          year: non_neg_integer,
+          first_name: String.t(),
+          last_name: String.t(),
+          verification_code: String.t(),
+          brand: String.t()
+        }
 
   @doc """
   Returns the full name of the card holder.
 
   Joins `first_name` and `last_name` with a space in between.
   """
-  @spec full_name(t) :: String.t
+  @spec full_name(t) :: String.t()
   def full_name(card) do
     name = "#{card.first_name} #{card.last_name}"
-    String.trim(name)    
+    String.trim(name)
   end
-
 end

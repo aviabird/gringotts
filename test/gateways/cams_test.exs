@@ -68,8 +68,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with bad card" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.failed_purchase_with_bad_credit_card() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.purchase(@money, @bad_card, @options)
+        {:error, %Response{reason: reason}} = Gateway.purchase(@money, @bad_card, @options)
 
         assert String.contains?(reason, "Invalid Credit Card Number")
       end
@@ -95,8 +94,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with bad card" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.failed_authorized_with_bad_card() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.authorize(@money, @bad_card, @options)
+        {:error, %Response{reason: reason}} = Gateway.authorize(@money, @bad_card, @options)
 
         assert String.contains?(reason, "Invalid Credit Card Number")
       end
@@ -106,23 +104,20 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "capture" do
     test "with full amount" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
-        assert {:ok, %Response{}} =
-          Gateway.capture(@money, @id , @options)
+        assert {:ok, %Response{}} = Gateway.capture(@money, @id, @options)
       end
     end
 
     test "with partial amount" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
-        assert {:ok, %Response{}} =
-          Gateway.capture(@money_less, @id , @options)
+        assert {:ok, %Response{}} = Gateway.capture(@money_less, @id, @options)
       end
     end
 
     test "with invalid transaction_id" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.invalid_transaction_id() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.capture(@money, @bad_id, @options)
+        {:error, %Response{reason: reason}} = Gateway.capture(@money, @bad_id, @options)
 
         assert String.contains?(reason, "Transaction not found")
       end
@@ -131,8 +126,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "with more than authorized amount" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.more_than_authorization_amount() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.capture(@money_more, @id , @options)
+        {:error, %Response{reason: reason}} = Gateway.capture(@money_more, @id, @options)
 
         assert String.contains?(reason, "exceeds the authorization amount")
       end
@@ -141,8 +135,7 @@ defmodule Gringotts.Gateways.CamsTest do
     test "on already captured transaction" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.multiple_capture_on_same_transaction() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.capture(@money, @id , @options)
+        {:error, %Response{reason: reason}} = Gateway.capture(@money, @id, @options)
 
         assert String.contains?(reason, "A capture requires that")
       end
@@ -152,16 +145,14 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "refund" do
     test "with correct params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_refund() end do
-        assert {:ok, %Response{}} =
-          Gateway.refund(@money, @id , @options)
+        assert {:ok, %Response{}} = Gateway.refund(@money, @id, @options)
       end
     end
 
     test "with more than purchased amount" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.more_than_purchase_amount() end do
-        {:error, %Response{reason: reason}} =
-          Gateway.refund(@money_more, @id , @options)
+        {:error, %Response{reason: reason}} = Gateway.refund(@money_more, @id, @options)
 
         assert String.contains?(reason, "Refund amount may not exceed")
       end
@@ -171,7 +162,7 @@ defmodule Gringotts.Gateways.CamsTest do
   describe "void" do
     test "with correct params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_void() end do
-        {:ok, %Response{message: message}} = Gateway.void(@id , @options)
+        {:ok, %Response{message: message}} = Gateway.void(@id, @options)
         assert String.contains?(message, "Void Successful")
       end
     end

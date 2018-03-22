@@ -124,17 +124,15 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money,
-                   CreditCard,
-                   Response}
+  alias Gringotts.{Money, CreditCard, Response}
 
-  @brand_map  %{
-    "visa": "1",
-    "american_express": "2",
-    "master": "3",
-    "discover": "128",
-    "jcb": "125",
-    "diners_club": "132"
+  @brand_map %{
+    visa: "1",
+    american_express: "2",
+    master: "3",
+    discover: "128",
+    jcb: "125",
+    diners_club: "132"
   }
 
   @doc """
@@ -209,7 +207,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   ```
 
   """
-  @spec capture(String.t(), Money.t, keyword) :: {:ok | :error, Response}
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     params = create_params_for_capture(amount, opts)
     commit(:post, "payments/#{payment_id}/approve", params, opts)
@@ -244,7 +242,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   ```
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
     case authorize(amount, card, opts) do
       {:ok, results} ->
@@ -300,7 +298,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.GlobalCollect, auth_result.payment.id, amount)
   ```
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     params = create_params_for_refund(amount, opts)
     commit(:post, "payments/#{payment_id}/refund", params, opts)
@@ -329,7 +327,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
     }
   end
 
-   defp create_params_for_capture(amount, opts) do
+  defp create_params_for_capture(amount, opts) do
     %{
       order: add_order(amount, opts)
     }
@@ -345,6 +343,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp add_money(amount, options) do
     {currency, amount, _} = Money.to_integer(amount)
+
     %{
       amount: amount,
       currencyCode: currency
@@ -393,15 +392,16 @@ defmodule Gringotts.Gateways.GlobalCollect do
     %{
       cvv: payment.verification_code,
       cardNumber: payment.number,
-      expiryDate:  "#{payment.month}"<>"#{payment.year}",
+      expiryDate: "#{payment.month}" <> "#{payment.year}",
       cardholderName: CreditCard.full_name(payment)
     }
   end
 
   defp add_payment(payment, brand_map, opts) do
     brand = payment.brand
+
     %{
-      paymentProductId:  Map.fetch!(brand_map, String.to_atom(brand)),
+      paymentProductId: Map.fetch!(brand_map, String.to_atom(brand)),
       skipAuthentication: opts[:skipAuthentication],
       card: add_card(payment)
     }
@@ -422,17 +422,25 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp create_headers(path, opts) do
     time = date
-    sha_signature = auth_digest(path, opts[:config][:secret_api_key], time, opts) |> Base.encode64
+
+    sha_signature =
+      auth_digest(path, opts[:config][:secret_api_key], time, opts) |> Base.encode64()
+
     auth_token = "GCS v1HMAC:#{opts[:config][:api_key_id]}:#{sha_signature}"
-    headers = [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", time}]
+
+    headers = [
+      {"Content-Type", "application/json"},
+      {"Authorization", auth_token},
+      {"Date", time}
+    ]
   end
 
   defp date() do
     use Timex
-    datetime = Timex.now |> Timex.local
+    datetime = Timex.now() |> Timex.local()
     strftime_str = Timex.format!(datetime, "%a, %d %b %Y %H:%M:%S ", :strftime)
     time_zone = Timex.timezone(:local, datetime)
-    time = strftime_str <>"#{time_zone.abbreviation}"
+    time = strftime_str <> "#{time_zone.abbreviation}"
   end
 
   # Parses GlobalCollect's response and returns a `Gringotts.Response` struct
@@ -448,13 +456,17 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:ok, results} = decode(body)
-    message = Enum.map(results["errors"],fn (x) -> x["message"] end)
+    message = Enum.map(results["errors"], fn x -> x["message"] end)
     detail = List.to_string(message)
     {:error, Response.error(status_code: status_code, message: detail, raw: results)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {:error, Response.error(code: error.id, reason: :network_fail?, description: "HTTPoison says '#{error.reason}'")}
+    {:error,
+     Response.error(
+       code: error.id,
+       reason: :network_fail?,
+       description: "HTTPoison says '#{error.reason}'"
+     )}
   end
-
 end
