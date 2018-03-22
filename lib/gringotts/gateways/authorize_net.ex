@@ -89,7 +89,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       that gives you a pre-configured sample app ready-to-go.
         + You could use the same config or update it the with your "secrets"
           [above](#module-configuring-your-authorizenet-account-at-gringotts).
-  
+
   2. To save a lot of time, create a [`.iex.exs`][iex-docs] file as shown in
      [this gist][authorize_net.iex.exs] to introduce a set of handy bindings and
      aliases.
@@ -225,7 +225,6 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         },
         customer_ip: String
       ]
-
 
   ## Example
       iex> amount = Money.new(20, :USD)
@@ -749,21 +748,36 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     ]
 
     @avs_code_translator %{
-      "A" => {"pass", "fail"}, #The street address matched, but the postal code did not.
-      "B" => {nil, nil},       # No address information was provided.
-      "E" => {"fail", nil},    # The AVS check returned an error.
-      "G" => {nil, nil},       # The card was issued by a bank outside the U.S. and does not support AVS.
-      "N" => {"fail", "fail"}, # Neither the street address nor postal code matched.
-      "P" => {nil, nil},       # AVS is not applicable for this transaction.
-      "R" => {nil, nil},       # Retry — AVS was unavailable or timed out.
-      "S" => {nil, nil},       # AVS is not supported by card issuer.
-      "U" => {nil, nil},       # Address information is unavailable.
-      "W" => {"fail", "pass"}, # The US ZIP+4 code matches, but the street address does not.
-      "X" => {"pass", "pass"}, # Both the street address and the US ZIP+4 code matched.
-      "Y" => {"pass", "pass"}, # The street address and postal code matched.
-      "Z" => {"fail", "pass"}, # The postal code matched, but the street address did not.
-      ""  => {nil, nil},       # fallback in-case of absence
-      nil => {nil, nil}        # fallback in-case of absence
+      # The street address matched, but the postal code did not.
+      "A" => {"pass", "fail"},
+      # No address information was provided.
+      "B" => {nil, nil},
+      # The AVS check returned an error.
+      "E" => {"fail", nil},
+      # The card was issued by a bank outside the U.S. and does not support AVS.
+      "G" => {nil, nil},
+      # Neither the street address nor postal code matched.
+      "N" => {"fail", "fail"},
+      # AVS is not applicable for this transaction.
+      "P" => {nil, nil},
+      # Retry — AVS was unavailable or timed out.
+      "R" => {nil, nil},
+      # AVS is not supported by card issuer.
+      "S" => {nil, nil},
+      # Address information is unavailable.
+      "U" => {nil, nil},
+      # The US ZIP+4 code matches, but the street address does not.
+      "W" => {"fail", "pass"},
+      # Both the street address and the US ZIP+4 code matched.
+      "X" => {"pass", "pass"},
+      # The street address and postal code matched.
+      "Y" => {"pass", "pass"},
+      # The postal code matched, but the street address did not.
+      "Z" => {"fail", "pass"},
+      # fallback in-case of absence
+      "" => {nil, nil},
+      # fallback in-case of absence
+      nil => {nil, nil}
     }
 
     @cvc_code_translator %{
@@ -772,7 +786,8 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       "P" => "CVV was not processed.",
       "S" => "CVV should have been present but was not indicated.",
       "U" => "The issuer was unable to process the CVV check.",
-      nil => nil # fallback in-case of absence
+      # fallback in-case of absence
+      nil => nil
     }
 
     @cavv_code_translator %{
@@ -784,16 +799,22 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       "4" => "CAVV validation could not be performed; issuer system error.",
       "5" => "Reserved for future use.",
       "6" => "Reserved for future use.",
-      "7" => "CAVV failed validation, but the issuer is available. Valid for U.S.-issued card submitted to non-U.S acquirer.",
-      "8" => "CAVV passed validation and the issuer is available. Valid for U.S.-issued card submitted to non-U.S. acquirer.",
-      "9" => "CAVV failed validation and the issuer is unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
-      "A" => "CAVV passed validation but the issuer unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "7" =>
+        "CAVV failed validation, but the issuer is available. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "8" =>
+        "CAVV passed validation and the issuer is available. Valid for U.S.-issued card submitted to non-U.S. acquirer.",
+      "9" =>
+        "CAVV failed validation and the issuer is unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
+      "A" =>
+        "CAVV passed validation but the issuer unavailable. Valid for U.S.-issued card submitted to non-U.S acquirer.",
       "B" => "CAVV passed validation, information only, no liability shift.",
-      nil => nil # fallback in-case of absence
+      # fallback in-case of absence
+      nil => nil
     }
 
     def respond(body) do
       response_map = XmlToMap.naive_map(body)
+
       case extract_gateway_response(response_map) do
         :undefined_response ->
           {
@@ -812,11 +833,11 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
     def extract_gateway_response(response_map) do
       # The type of the response should be supported
-      @supported_response_types
-      |> Stream.map(&Map.get(response_map, &1, nil))
       # Find the first non-nil from the above, if all are `nil`...
       # We are in trouble!
-      |> Enum.find(:undefined_response, &(&1))
+      @supported_response_types
+      |> Stream.map(&Map.get(response_map, &1, nil))
+      |> Enum.find(:undefined_response, & &1)
     end
 
     defp build_response(%{"messages" => %{"resultCode" => "Ok"}} = result, base_response) do
@@ -862,10 +883,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     #                                   HELPERS                                #
     ############################################################################
 
-    defp set_id(response, id),             do: %{response | id: id}
-    defp set_message(response, message),   do: %{response | message: message}
+    defp set_id(response, id), do: %{response | id: id}
+    defp set_message(response, message), do: %{response | message: message}
     defp set_gateway_code(response, code), do: %{response | gateway_code: code}
-    defp set_reason(response, body),       do: %{response | reason: body}
+    defp set_reason(response, body), do: %{response | reason: body}
 
     defp set_avs_result(response, avs_code) do
       {street, zip_code} = @avs_code_translator[avs_code]
@@ -879,6 +900,5 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     defp set_cavv_result(response, cavv_code) do
       Map.put(response, :cavv_result, @cavv_code_translator[cavv_code])
     end
-
   end
 end

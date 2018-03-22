@@ -15,7 +15,7 @@ defmodule Gringotts.Adapter do
   Say a merchant must provide his `secret_user_name` and `secret_password` to
   some Gateway `XYZ`. Then, `Gringotts` expects that the `GatewayXYZ` module
   would use `Adapter` in the following manner:
-  
+
   ```
   defmodule Gringotts.Gateways.GatewayXYZ do
     
@@ -38,7 +38,7 @@ defmodule Gringotts.Adapter do
 
   ```
   """
-  
+
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @required_config opts[:required_config] || []
@@ -50,16 +50,19 @@ defmodule Gringotts.Adapter do
       is not available or missing from the Application config.
       """
       def validate_config(config) do
-        missing_keys = Enum.reduce(@required_config, [], fn(key, missing_keys) ->
-          if config[key] in [nil, ""], do: [key | missing_keys], else: missing_keys
-        end)
+        missing_keys =
+          Enum.reduce(@required_config, [], fn key, missing_keys ->
+            if config[key] in [nil, ""], do: [key | missing_keys], else: missing_keys
+          end)
+
         raise_on_missing_config(missing_keys, config)
       end
 
       defp raise_on_missing_config([], _config), do: :ok
+
       defp raise_on_missing_config(key, config) do
         raise ArgumentError, """
-        expected #{inspect key} to be set, got: #{inspect config}
+        expected #{inspect(key)} to be set, got: #{inspect(config)}
         """
       end
     end

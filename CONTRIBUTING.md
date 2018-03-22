@@ -24,40 +24,42 @@ processed.
 [roadmap]: https://github.com/aviabird/gringotts/wiki/Roadmap
 [wiki-arch]: https://github.com/aviabird/gringotts/wiki/Architecture
 
-### PR submission checklist
-
-Each PR should introduce a *focussed set of changes*, and ideally not span over
-unrelated modules.
-
-* [ ] Run the edited files through [credo][credo] and the Elixir
-      [formatter][hashrocket-formatter] (new in `v1.6`).
-* [ ] Check the test coverage by running `mix coveralls`. 100% coverage is not
-      strictly required.
-* [ ] If the PR introduces a new Gateway or just Gateway specific changes,
-      please format the title like so,\
-      `[<gateway-name>] <the-title>`
-
-[gringotts]: https://github.com/aviabird/gringotts
-[milestones]: https://github.com/aviabird/gringotts/milestones
-[issues]: https://github.com/aviabird/gringotts/issues
-[first-issues]: https://github.com/aviabird/gringotts/issues?q=is%3Aissue+is%3Aopen+label%3A"good+first+issue"
-[ch-issues]: https://github.com/aviabird/gringotts/issues?q=is%3Aissue+is%3Aopen+label%3A"hotfix%3A+community-help"
-[hexdocs]: https://hexdocs.pm/gringotts
-[credo]: https://github.com/rrrene/credo
-[hashrocket-formatter]: https://hashrocket.com/blog/posts/format-your-elixir-code-now
-
 # Style Guidelines
 
-We use [`credo`][credo] and the elixir formatter for consistent style, so please
-use them!
+We follow
+[lexmag/elixir-style-guide](https://github.com/lexmag/elixir-style-guide) and
+[rrrene/elixir-style-guide](https://github.com/rrrene/elixir-style-guide) (both
+overlap a lot), and use the elixir formatter.
+
+To enforce these, and also to make it easier for new contributors to adhere to
+our style, we've provided a collection of handy `git-hooks` under the `.scripts/`
+directory.
+
+* `.scripts/pre-commit` Runs the `format --check-formatted` task.
+* `.scripts/post-commit` Runs a customised `credo` check.
+
+While we do not force you to use these hooks, you could write your
+very own by taking inspiration from ours :smile:
+
+To set the `git-hooks` as provided, go to the repo root,
+```sh
+cd path/to/gringotts/
+```
+and make these symbolic links:
+```sh
+ln -s .scripts/pre-commit .git/hooks/pre-commit
+ln -s .scripts/post-commit .git/hooks/post-commit
+```
+
+> Note that our CI will fail your PR if you dont run `mix format` in the project
+> root.
 
 ## General Rules
 
-* Keep line length below 120 characters.
+* Keep line length below 100 characters.
 * Complex anonymous functions should be extracted into named functions.
 * One line functions, should only take up one line!
-* Pipes are great, but don't use them, if they are less readable than brackets
-  then drop the pipe!
+* Pipes are great, but don't use them if they are less readable than brackets!
 
 ## Writing documentation
 
@@ -76,6 +78,39 @@ inspiration.
 [`bypass`][bypass] and [`mock`][mock] for mock tests, but we don't recommed
 using `mock` as it constrains tests to run serially. Use [`mox`][mox] instead.\
 Take a look at [MONEI's mock tests][src-monei-tests] for inspiration.
+
+# PR submission checklist
+
+Each PR should introduce a *focussed set of changes*, and ideally not span over
+unrelated modules.
+
+* [ ] Format the project with the Elixir formatter.
+  ```sh
+  cd path/to/gringotts/
+  mix format
+  ```
+* [ ] Run the edited files through [credo][credo] with the `--strict` flag.
+  ```sh
+  cd path/to/gringotts/
+  mix credo --strict
+  ```
+* [ ] Check the test coverage by running `mix coveralls`. 100% coverage is not
+      strictly required.
+* [ ] If the PR introduces a new Gateway or just Gateway specific changes,
+      please format the title like so,\
+      `[<gateway-name>] <the-title>`
+
+> **Note**
+> You can skip the first two steps if you have set up `git-hooks` as we have
+> provided!
+
+[gringotts]: https://github.com/aviabird/gringotts
+[milestones]: https://github.com/aviabird/gringotts/milestones
+[issues]: https://github.com/aviabird/gringotts/issues
+[first-issues]: https://github.com/aviabird/gringotts/issues?q=is%3Aissue+is%3Aopen+label%3A"good+first+issue"
+[ch-issues]: https://github.com/aviabird/gringotts/issues?q=is%3Aissue+is%3Aopen+label%3A"hotfix%3A+community-help"
+[hexdocs]: https://hexdocs.pm/gringotts
+[credo]: https://github.com/rrrene/credo
 
 --------------------------------------------------------------------------------
 
