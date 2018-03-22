@@ -99,13 +99,17 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   def authorize(amount, %CreditCard{} = card, opts) do
     header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
-    token_id = create_token(card, header)
     {currency, value, _, _} = Money.to_integer_exp(amount)
+    {res, token_response} = create_token(card, header)
 
-    token_id
-    |> create_params(currency, value, false)
-    |> commit(:post, "charges", header)
-    |> respond
+    if res == :ok do
+      token_response.id
+      |> create_params(currency, value, false)
+      |> commit(:post, "charges", header)
+      |> respond
+    else
+      {res, token_response}
+    end
   end
 
   def authorize(amount, card_id, opts) when is_binary(card_id) do
@@ -162,25 +166,33 @@ defmodule Gringotts.Gateways.SecurionPay do
     parsed_body = Poison.decode!(body)
 
     {:ok,
-     %{
+     %Response{
        success: true,
-       id: Map.get(parsed_body, "id"),
-       token: Map.get(parsed_body["card"], "id"),
+       id: parsed_body["id"],
+       token: get_in(parsed_body, ["card", "id"]),
        status_code: 200,
        raw: body,
-       fraud_review: Map.get(parsed_body, "fraudDetails")
+       fraud_review: parsed_body["fraudDetails"]
      }}
   end
 
   defp respond({:ok, %{body: body, status_code: code}}) do
-    {:error, %Response{raw: body, status_code: code}}
+    parsed_body = Poison.decode!(body)
+
+    {:error,
+     %Response{
+       raw: body,
+       status_code: code,
+       reason: get_in(parsed_body, ["error", "code"]),
+       message: get_in(parsed_body, ["error", "code"])
+     }}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
     {
       :error,
       %Response{
-        reason: "network related failure",
+        reason: "Network related failure",
         message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
       }
     }
@@ -195,13 +207,6 @@ defmodule Gringotts.Gateways.SecurionPay do
       {"cardholderName", CreditCard.full_name(card)}
     ]
     |> commit(:post, "tokens", header)
-    |> make_map
-    |> Map.fetch!("id")
-  end
-
-  defp make_map(response) do
-    case response do
-      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!()
-    end
+    |> respond
   end
 end
