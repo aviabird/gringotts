@@ -176,7 +176,7 @@ defmodule Gringotts.Gateways.Pinpay do
     commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
-  def authorize(amount, card, opts) do
+  def authorize(amount, card, opts) when is_binary(card) do
     {currency, value, _} = Money.to_integer(amount)
 
     params =
@@ -206,7 +206,7 @@ defmodule Gringotts.Gateways.Pinpay do
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
-    url = @test_url <> "/1/charges/" <> payment_id <> "/capture"
+    url = @test_url <> "charges/" <> payment_id <> "/capture"
     commit(:put, url)
   end
 
@@ -231,17 +231,17 @@ defmodule Gringotts.Gateways.Pinpay do
     params =
       [
         amount: value
-      ] ++ card_params(card, opts) ++ opts
+      ] ++ card_params(card, opts) ++ Keyword.delete(opts, :address)
     commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
-  def purchase(amount, card, opts) do
+  def purchase(amount, card, opts) when is_binary(card) do
     {currency, value, _} = Money.to_integer(amount)
     params =
       [
         amount: value,
         card_token: card,
-      ] ++ card_params(card, opts) ++ opts
+      ] ++ Keyword.delete(opts, :address)
     commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
@@ -348,6 +348,19 @@ defmodule Gringotts.Gateways.Pinpay do
     ]
   end
 
+  defp card_for_token(card, opts) do
+    [
+      "number": card.number,
+      "name": card.first_name <> card.last_name,
+      "expiry_month": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
+      "expiry_year": card.year |> Integer.to_string(),
+      "cvc": card.verification_code,
+      "address_line1": opts[:Address][:street1],
+      "address_city": opts[:Address][:city],
+      "address_country": opts[:Address][:country]
+    ]
+  end
+
   @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, param, opts) do
     auth_token = encoded_credentials("c4nxgznanW4XZUaEQhxS6g", "")
@@ -389,37 +402,22 @@ defmodule Gringotts.Gateways.Pinpay do
   # in a `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
 
-  defp respond({:ok, %{status_code: 200, body: body}}) do
-    parsed = Poison.decode!(body)
-
-    {:ok,
-     %{
-       success: true,
-       id: Map.get(parsed, "token"),
-       token: Map.get(parsed["card"], "token"),
-       status_code: 201,
-       reason: nil,
-       message: "Card succesfully authorized",
-       avs_result: nil,
-       cvc_result: nil,
-       raw: body,
-       fraud_review: nil,
-       email: Map.get(parsed, "email"),
-       description: Map.get(parsed, "description")
-     }}
+  defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
+    {:ok, parsed} = decode(body)
+    token = parsed["response"]["token"]
+    message = parsed["response"]["status_message"]
+    {
+      :ok, Response.success(authorization: token, message: message, raw: parsed, status_code: code)
+    }
   end
 
-  defp respond({:ok, %{body: body, status_code: code}}) do
-    {:error, %Response{raw: body, status_code: code}}
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    {:ok, parsed} = decode(body)
+    detail = parsed["detail"]
+    {:error, Response.error(status_code: status_code, message: detail, raw: parsed)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {
-      :error,
-      %Response{
-        reason: "network related failure",
-        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
-      }
-    }
+    {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
   end
 end
