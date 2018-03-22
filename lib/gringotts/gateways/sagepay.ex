@@ -205,7 +205,6 @@ defmodule Gringotts.Gateways.SagePay do
     endpoint = "transactions/" <> payment_id <> "/instructions"
 
     commit(:post, endpoint, capture_body, capture_header)
-    |> respond
   end
 
   @doc """
@@ -423,20 +422,22 @@ defmodule Gringotts.Gateways.SagePay do
 
   @spec respond(term) :: {:ok | :error, Response}
 
-  defp respond({:ok, %{status_code: status_code, body: body}}) do
+  defp respond({:ok, %{status_code: 201, body: body}}) do
     body = body |> Poison.decode!()
 
     {:ok,
      %Response{
        success: true,
        id: body["transactionId"],
-       status_code: status_code,
+       status_code: 201,
        message: body["statusDetail"],
        raw: body |> Poison.encode!()
      }}
   end
 
-  defp respond({:error, %{status_code: status_code, body: body}}) do
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    body = body |> Poison.decode!()
+
     {:error,
      %Response{
        success: false,
