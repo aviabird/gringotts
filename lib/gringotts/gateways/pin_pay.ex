@@ -176,7 +176,7 @@ defmodule Gringotts.Gateways.Pinpay do
     commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
-  def authorize(amount, card, opts) do
+  def authorize(amount, card, opts) when is_binary(card) do
     {currency, value, _} = Money.to_integer(amount)
 
     params =
@@ -235,7 +235,7 @@ defmodule Gringotts.Gateways.Pinpay do
     commit(:post, "charges", params, [{:currency, currency} | opts])
   end
 
-  def purchase(amount, card, opts) do
+  def purchase(amount, card, opts) when is_binary(card) do
     {currency, value, _} = Money.to_integer(amount)
     params =
       [
