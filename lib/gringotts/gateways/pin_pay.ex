@@ -1,4 +1,4 @@
-defmodule Gringotts.Gateways.Pinpay do
+defmodule Gringotts.Gateways.PinPayments do
   @moduledoc """
   [PinPay][home] gateway implementation.
 
@@ -139,7 +139,7 @@ defmodule Gringotts.Gateways.Pinpay do
   * `refund/3` the amount.
 
   ## Optional Fields
-      options[
+      options=[
         email_id: String,
         description: String,
   ip_address: String (optional)     
@@ -167,26 +167,31 @@ defmodule Gringotts.Gateways.Pinpay do
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
+    card_token = commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+    |> extract_card_token
     params =
       [
         amount: value,
-        capture: false
-      ] ++ card_params(card, opts) ++ Keyword.delete(opts, :address)
+        capture: false,
+        card_token: card_token,
+        currency: currency
+      ] ++ Keyword.delete(opts, :address)
 
-    commit(:post, "charges", params, [{:currency, currency} | opts])
+    commit(:post, "charges", params)
   end
 
-  def authorize(amount, card, opts) when is_binary(card) do
+  def authorize(amount, card_token, opts) when is_binary(card_token) do
     {currency, value, _} = Money.to_integer(amount)
 
     params =
       [
         amount: value,
         capture: false,
-        card_token: card
+        currency: currency,
+        card_token: card_token
       ] ++ Keyword.delete(opts, :address)
 
-    commit(:post, "charges", params, [{:currency, currency} | opts])
+    commit(:post, "charges", params)
   end
 
   @doc """
@@ -207,7 +212,7 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     url = @test_url <> "charges/" <> payment_id <> "/capture"
-    commit(:put, url)
+    commit(:put, url, opts)
   end
 
   @doc """
@@ -228,21 +233,28 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
     {currency, value, _} = Money.to_integer(amount)
+
+    card_token = commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+    |> extract_card_token
     params =
       [
-        amount: value
-      ] ++ card_params(card, opts) ++ Keyword.delete(opts, :address)
-    commit(:post, "charges", params, [{:currency, currency} | opts])
+        amount: value,
+        card_token: card_token,
+        currency: currency
+      ] ++ Keyword.delete(opts, :address)
+
+    commit(:post, "charges", params)
   end
 
-  def purchase(amount, card, opts) when is_binary(card) do
+  def purchase(amount, card_token, opts) when is_binary(card_token) do
     {currency, value, _} = Money.to_integer(amount)
     params =
       [
         amount: value,
-        card_token: card,
+        card_token: card_token,
+        currency: currency
       ] ++ Keyword.delete(opts, :address)
-    commit(:post, "charges", params, [{:currency, currency} | opts])
+    commit(:post, "charges", params)
   end
 
   @doc """
@@ -285,7 +297,7 @@ defmodule Gringotts.Gateways.Pinpay do
   @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     url=@test_url <> "charges/" <> payment_id <> "/refunds"
-    commit(:post, url)
+    commit(:post, url, opts)
   end
 
 
@@ -305,7 +317,7 @@ defmodule Gringotts.Gateways.Pinpay do
   
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do
-    commit(:post, "cards", card_for_token(card, opts), opts)
+    commit(:post, "cards", card_for_token(card, opts) ++ opts)
   end
 
   @doc """
@@ -335,23 +347,12 @@ defmodule Gringotts.Gateways.Pinpay do
   # network request in here, and parse it using another private method called
   # `respond`.
 
-  defp card_params(card, opts) do
-    [
-      "card[number]": card.number,
-      "card[name]": card.first_name <> card.last_name,
-      "card[expiry_month]": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
-      "card[expiry_year]": card.year |> Integer.to_string(),
-      "card[cvc]": card.verification_code,
-      "card[address_line1]": opts[:address].street1,
-      "card[address_city]": opts[:address].city,
-      "card[address_country]": opts[:address].country
-    ]
-  end
+
 
   defp card_for_token(card, opts) do
     [
       "number": card.number,
-      "name": card.first_name <> card.last_name,
+      "name": CreditCard.full_name(card),
       "expiry_month": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
       "expiry_year": card.year |> Integer.to_string(),
       "cvc": card.verification_code,
@@ -361,9 +362,9 @@ defmodule Gringotts.Gateways.Pinpay do
     ]
   end
 
-  @spec commit(atom, String.t(), keyword, keyword) :: {:ok | :error, Response}
-  defp commit(:post, endpoint, param, opts) do
-    auth_token = encoded_credentials("c4nxgznanW4XZUaEQhxS6g", "")
+  @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
+  defp commit(:post, endpoint, param) do
+    auth_token = encoded_credentials(param[:config].apiKey, param[:config].pass)
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -371,14 +372,14 @@ defmodule Gringotts.Gateways.Pinpay do
     ]
 
     url = @test_url <> "#{endpoint}"
-
+    param = Keyword.delete(param, :config)
     url
     |> HTTPoison.post({:form, param}, headers)
     |> respond
   end
 
-  defp commit(method, url) do
-    auth_token = encoded_credentials("c4nxgznanW4XZUaEQhxS6g", "")
+  defp commit(method, url, opts) do
+    auth_token = encoded_credentials(opts[:config].apiKey, opts[:config].pass)
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -390,13 +391,13 @@ defmodule Gringotts.Gateways.Pinpay do
   end
 
   defp encoded_credentials(login, password) do
-    [login, password]
-    |> join_string(":")
-    |> Base.encode64()
-    |> (&("Basic " <> &1)).()
+    hash = Base.encode64("#{login}:#{password}")
+    "Basic #{hash}"
   end
 
-  defp join_string(list_of_words, joiner), do: Enum.join(list_of_words, joiner)
+  defp extract_card_token({:ok, %{status_code: code, authorization: token}}) do
+   token
+  end
 
   # Parses PinPay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
