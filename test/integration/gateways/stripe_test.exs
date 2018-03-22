@@ -1,21 +1,22 @@
 defmodule Gringotts.Gateways.StripeTest do
-
   use ExUnit.Case
 
   alias Gringotts.Gateways.Stripe
+
   alias Gringotts.{
     CreditCard,
     Address
   }
 
   @moduletag integration: true
-  
+
   @amount Money.new(5, :USD)
   @card %CreditCard{
     first_name: "John",
     last_name: "Smith",
     number: "4242424242424242",
-    year: "2068", # Can't be more than 50 years in the future, Haha.
+    # Can't be more than 50 years in the future, Haha.
+    year: "2068",
     month: "12",
     verification_code: "123"
   }
