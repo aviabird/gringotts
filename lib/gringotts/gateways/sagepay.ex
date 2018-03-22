@@ -2,25 +2,6 @@ defmodule Gringotts.Gateways.SagePay do
   @moduledoc """
   [sagepay][home] gateway implementation.
 
-
-
-  ## Instructions!
-
-  ***This is an example `moduledoc`, and suggests some items that should be
-  documented in here.***
-
-  The quotation boxes like the one below will guide you in writing excellent
-  documentation for your gateway. All our gateways are documented in this manner
-  and we aim to keep our docs as consistent with each other as possible.
-  **Please read them and do as they suggest**. Feel free to add or skip sections
-  though.
-
-  If you'd like to make edits to the template docs, they exist at
-  `templates/gateway.eex`. We encourage you to make corrections and open a PR
-  and tag it with the label `template`.
-
-  ***Actual docs begin below this line!***
-
   --------------------------------------------------------------------------------
 
 
@@ -39,6 +20,23 @@ defmodule Gringotts.Gateways.SagePay do
 
   [home]: sagepay.co.uk
   [docs]: integrations.sagepay.co.uk
+
+  ## The `opts` argument
+
+  Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
+  [optional arguments][extra-arg-docs] for transactions with the MONEI
+  gateway. The following keys are supported:
+
+  | Key                      |
+  |  ---------------         |
+  |  [`merchant_id`]         |
+  |  [`vendor`]              |
+  |  [`vendorTxcode`]        |  
+  |  [`transactionType`]     |  
+  |  [`customerFirstName`]   |  
+  |  [`customerLastName`]    |  
+  |  [`billingAddress`]      |  
+  |  [`transaction_id`]      |    
 
 
   ## Registering your SagePay account at `Gringotts`
@@ -296,13 +294,21 @@ defmodule Gringotts.Gateways.SagePay do
   # `respond`.
 
   # @spec commit(_) :: {:ok | :error, Response}
-  def commit(:post, endpoint, params, opts) do
+  defp commit(:post, endpoint, params, opts) do
     a_url = @url <> endpoint
+
+    HTTPoison.post(a_url, params, opts)
+    |> respond
+  end
+
+  defp commit_for_key(:post, endpoint, params, opts) do
+    a_url = @url <> endpoint
+
     response = HTTPoison.post(a_url, params, opts)
     format_response(response)
   end
 
-  # Function generate_mkey generate a merchant_session_key that will exist only for 400 seconds
+  # Function generate_merchant_key generate a merchant session key that will exist only for 400 seconds
   # and for 3 wrong card identifiers
 
   defp generate_merchant_key(opts) do
@@ -313,11 +319,14 @@ defmodule Gringotts.Gateways.SagePay do
       {"Content-type", "application/json"}
     ]
 
-    {:ok, merchant_key} = commit(:post, "merchant-session-keys", vender_name, merchant_header)
+    {:ok, merchant_key} =
+      commit_for_key(:post, "merchant-session-keys", vender_name, merchant_header)
 
     merchant_key
     |> Map.get("merchantSessionKey")
   end
+
+  # card_params returns credit card details of a customer from Gringotts.Creditcard
 
   defp card_params(card) do
     %{
@@ -333,7 +342,7 @@ defmodule Gringotts.Gateways.SagePay do
     }
   end
 
-  # Function generate_ckey generate a unique cardidentifier for every transaction
+  # Function generate_card_identifier generate a unique cardidentifier for every transaction
 
   defp generate_card_identifier(card, merchant_key) do
     card_header = [
@@ -343,7 +352,7 @@ defmodule Gringotts.Gateways.SagePay do
 
     card = card |> Poison.encode!()
 
-    {:ok, card_identifier} = commit(:post, "card-identifiers", card, card_header)
+    {:ok, card_identifier} = commit_for_key(:post, "card-identifiers", card, card_header)
 
     card_identifier
     |> Map.get("cardIdentifier")
@@ -384,19 +393,35 @@ defmodule Gringotts.Gateways.SagePay do
   # in a `:ok`, `:error` tuple.
 
   defp format_response(response) do
-    {:ok, %{body: body}} = response
-
     case response do
-      {:ok, %{body: body}} -> {:ok, body |> Poison.decode!()}
-      _ -> {:error, "something went wrong, please try again later"}
+      {:ok, %HTTPoison.Response{body: body}} -> {:ok, body |> Poison.decode!()}
+      _ -> %{"error" => "something went wrong, please try again later"}
     end
   end
 
-  """
   @spec respond(term) :: {:ok | :error, Response}
-  defp respond(sagepay.ex_response)
-  defp respond({:ok, %{status_code: 200, body: body}}), do: "something"
-  defp respond({:ok, %{status_code: status_code, body: body}}), do: "something"
-  defp respond({:error, %HTTPoison.Error{} = error}), do: "something"
-  """
+
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    body = body |> Poison.decode!()
+
+    {:ok,
+     %Response{
+       success: true,
+       id: body["transactionId"],
+       status_code: status_code,
+       message: body["statusDetail"],
+       raw: body |> Poison.encode!()
+     }}
+  end
+
+  defp respond({:error, %{status_code: status_code, body: body}}) do
+    {:error,
+     %Response{
+       success: false,
+       id: body["transactionId"],
+       status_code: status_code,
+       message: body["statusDetail"],
+       raw: body
+     }}
+  end
 end
