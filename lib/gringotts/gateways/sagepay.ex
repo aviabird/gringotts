@@ -168,22 +168,44 @@ defmodule Gringotts.Gateways.SagePay do
   end
 
   @doc """
-  Captures a pre-authorized `amount`.
+  Captures a pre-authorized amount.
 
-  `amount` is transferred to the merchant account by sagepay used in the
-  pre-authorization referenced by `payment_id`.
+  amount is transferred to the merchant's account by sagepay used in the
+  pre-authorization referenced by payment_id.
 
   ## Note
 
-  > If there's anything noteworthy about this operation, it comes here.
-  > For example, does the gateway support partial, multiple captures?
+  * Deferred transactions are not sent to the bank for completion until you capture them using the capture instruction. 
+  * You can release only once and only for an amount up to and including the amount of the original Deferred transaction.
 
   ## Example
 
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  The following example shows how one would (partially) capture a previously
+  authorized a payment worth 100 by referencing the obtained authorization id.
+
+      iex> amount = Money.new(100, :GBP)
+      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
+      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.SagePay, amount, auth_result.id, opts)
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
+    {currency, value} = Money.to_string(amount)
+
+    capture_header = [
+      {"Authorization", "Basic " <> opts[:config].auth_id},
+      {"Content-type", "application/json"}
+    ]
+
+    capture_body =
+      Poison.encode!(%{
+        "instructionType" => "release",
+        "amount" => Kernel.trunc(String.to_float(value))
+      })
+
+    endpoint = "transactions/" <> payment_id <> "/instructions"
+
+    commit(:post, endpoint, capture_body, capture_header)
+    |> respond
   end
 
   @doc """
