@@ -36,7 +36,6 @@ defmodule Gringotts.Gateways.SecurionPay do
   [SP]: https://securionpay.com/
   [api-key]: https://securionpay.com/account-settings#api-keys
 
-
   ## Note
 
   * SecurionPay always processes the transactions in the minor units of the currency eg. `cents` instead of `dollar`
@@ -74,7 +73,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   To transfer the funds to merchant's account follow this up with a `capture/3`.
 
-  SecurionPay returns a `charge_id` which uniquely identifies a transaction (available in the `Response.id` field) 
+  SecurionPay returns a `charge_id` (available in the `Response.id` field) which uniquely identifies a transaction  
   which should be stored by the caller for using in:
 
   * `capture/3` an authorized transaction.
@@ -83,14 +82,14 @@ defmodule Gringotts.Gateways.SecurionPay do
   ## Example
   ### With a `CreditCard` struct
       iex> amount = Money.new(20, :USD)
-      iex> opts = [config: [secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"]]
+      iex> opts = [config: [secret_key: "sk_test_Ff2Jpq59sSWT7qmI9atii5zR"]]
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
   ## Example
   ### With a `card_token` and `customer_token`
       iex> amount = Money.new(20, :USD}
-      iex> opts = [config: [:secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"], customer_id: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
+      iex> opts = [config: [:secret_key: "sk_test_Ff2Jpq59sSWT7qmI9atii5zR"], customer_id: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
       iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
@@ -98,55 +97,51 @@ defmodule Gringotts.Gateways.SecurionPay do
   @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
 
   def authorize(amount, %CreditCard{} = card, opts) do
-    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
-    {currency, value, _, _} = Money.to_integer_exp(amount)
-    {res, token_response} = create_token(card, header)
-
-    if res == :ok do
-      token_response.id
-      |> create_params(currency, value, false)
-      |> commit(:post, "charges", header)
-      |> respond
-    else
-      {res, token_response}
-    end
+    params = common_params(amount, false) ++ card_params(card)
+    commit(params, "charges", opts)
   end
 
   def authorize(amount, card_id, opts) when is_binary(card_id) do
-    header = [{"Authorization", "Basic " <> opts[:config][:secret_key]}]
-    {currency, value, _, _} = Money.to_integer_exp(amount)
-    params = create_params(card_id, opts[:customer_id], currency, value, false)
-
-    params
-    |> commit(:post, "charges", header)
-    |> respond
+    params = common_params(amount, false) ++ card_params(card_id, opts)
+    commit(params, "charges", opts)
   end
 
-  ###############################################################################
-  #                                PRIVATE METHODS                              #
-  ###############################################################################
+  ##########################################################################
+  #                          PRIVATE METHODS                               #
+  ##########################################################################
 
-  # Creates the parameters for authorise function when 
-  # card_id and customerId is provided.
-  @spec create_params(String.t(), String.t(), String.t(), Integer.t(), boolean) :: {[]}
-  defp create_params(card_id, customer_id, currency, value, captured) do
+  # Creates the common parameters for authorise function
+  @spec common_params(String.t(), String.t()) :: {[]}
+  defp common_params(amount, captured) do
+    {currency, value, _, _} = Money.to_integer_exp(amount)
+
     [
-      {"amount", value},
-      {"currency", to_string(currency)},
-      {"card", card_id},
-      {"captured", "#{captured}"},
-      {"customerId", customer_id}
+      amount: value,
+      currency: to_string(currency),
+      captured: captured
     ]
   end
 
-  # Creates the parameters for authorise when token is provided.
-  @spec create_params(String.t(), String.t(), Integer.t(), boolean) :: {[]}
-  defp create_params(token, currency, value, captured) do
+  # Creates the card parameters for authorise function when
+  # card_id and customer_id is provided.
+  @spec card_params(String.t(), String.t()) :: {[]}
+  defp card_params(card_id, opts) do
     [
-      {"amount", value},
-      {"currency", to_string(currency)},
-      {"card", token},
-      {"captured", "#{captured}"}
+      card: card_id,
+      customerId: opts[:customer_id]
+    ]
+  end
+
+  # Creates the card parameters for authorise when
+  # `CreditCard` structure is provided
+  @spec card_params(CreditCard.t()) :: {[]}
+  defp card_params(card) do
+    [
+      "card[expYear]": card.year,
+      "card[cvc]": card.verification_code,
+      "card[cardholderName]": CreditCard.full_name(card),
+      "card[number]": card.number,
+      "card[expMonth]": card.month
     ]
   end
 
@@ -154,8 +149,10 @@ defmodule Gringotts.Gateways.SecurionPay do
   # For consistency with other gateway implementations, make your (final)
   # network request in here, and parse it using another private method called
   # `respond`.
-  defp commit(params, method, path, header) do
-    HTTPoison.request(method, "#{@base_url}#{path}", {:form, params}, header)
+  defp commit(params, path, opts) do
+    header = set_header(opts)
+    response = HTTPoison.post("#{@base_url}#{path}", {:form, params}, header)
+    respond(response)
   end
 
   # Parses SecurionPay's response and returns a `Gringotts.Response` struct
@@ -165,27 +162,28 @@ defmodule Gringotts.Gateways.SecurionPay do
   defp respond({:ok, %{status_code: 200, body: body}}) do
     parsed_body = Poison.decode!(body)
 
-    {:ok,
-     %Response{
-       success: true,
-       id: parsed_body["id"],
-       token: get_in(parsed_body, ["card", "id"]),
-       status_code: 200,
-       raw: body,
-       fraud_review: parsed_body["fraudDetails"]
-     }}
+    parsed_response = [
+      id: parsed_body["id"],
+      token: get_in(parsed_body, ["card", "id"]),
+      status_code: 200,
+      raw: body,
+      fraud_review: parsed_body["fraudDetails"]
+    ]
+
+    {:ok, Response.success(parsed_response)}
   end
 
   defp respond({:ok, %{body: body, status_code: code}}) do
     parsed_body = Poison.decode!(body)
 
-    {:error,
-     %Response{
-       raw: body,
-       status_code: code,
-       reason: get_in(parsed_body, ["error", "code"]),
-       message: get_in(parsed_body, ["error", "code"])
-     }}
+    parsed_response = [
+      raw: body,
+      status_code: code,
+      reason: get_in(parsed_body, ["error", "message"]),
+      message: get_in(parsed_body, ["error", "type"])
+    ]
+
+    {:error, Response.error(parsed_response)}
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
@@ -198,15 +196,8 @@ defmodule Gringotts.Gateways.SecurionPay do
     }
   end
 
-  defp create_token(card, header) do
-    [
-      {"number", card.number},
-      {"expYear", card.year},
-      {"cvc", card.verification_code},
-      {"expMonth", card.month},
-      {"cardholderName", CreditCard.full_name(card)}
-    ]
-    |> commit(:post, "tokens", header)
-    |> respond
+  defp set_header(opts) do
+    encoded_key = Base.encode64("#{opts[:config][:secret_key]}:")
+    [{"Authorization", "Basic #{encoded_key}"}]
   end
 end
