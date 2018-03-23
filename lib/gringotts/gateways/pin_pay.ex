@@ -1,13 +1,12 @@
 defmodule Gringotts.Gateways.PinPayments do
   @moduledoc """
-  [PinPay][home] gateway implementation.
+  [PinPayments][home] gateway implementation.
 
   The login credentials are:
 
   | Key      | Credentials        |
   | ------   | --------           |
   | username | `api_key`          |
-  | password | ``                 |
 
 
   The following features of PinPayments are implemented:
@@ -19,13 +18,12 @@ defmodule Gringotts.Gateways.PinPayments do
   | Purchase                     | `purchase/3`  |
   | Store                        | `store/2`     |
   | Refund                       | `refund/3`    |
-  | Respond                      | `respond/1`   |
 
 
-   ## The `opts` argument
+  ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
-  optional arguments for transactions with the PINPAY gateway. The following keys
+  optional arguments for transactions with the PinPayments gateway. The following keys
   are supported:
 
   | Key               | Type       | Remark                                           |
@@ -33,10 +31,10 @@ defmodule Gringotts.Gateways.PinPayments do
   | `address`         | `map`      | The address of the customer                      |
   | `email_id`        | `String.t` | Merchant provided email addres                   |
   | `description`     | `String.t` | Merchant provided description of the transaction |
-  | `ip_address`      | `String.t` | Merchant provided ip address (optional)                     |
+  | `ip_address`      | `String.t` | Merchant provided ip address (optional)          |
 
 
-  > PINPAY supports more optional keys and you can raise an [issue][issues] if
+  > PinPayments supports more optional keys and you can raise [issues] if
     this is important to you.
 
   [issues]: https://github.com/aviabird/gringotts/issues/new
@@ -44,45 +42,46 @@ defmodule Gringotts.Gateways.PinPayments do
 
   ### Schema
 
-  * `address` is a `map` from `atoms` to `String.t`, and can include any
+  * `address` is a structure from Gringotts.Address , and include any
     of the keys from:
-    `[:street1, :street2, :city, :region, :postal_code, :country, :phone, ]`
+
+    `[:street1, :street2, :city, :region, :postal_code, :country, :phone ]`
 
 
-  ## Registering your PINPAY account at `Gringotts`
+  ## Registering your PinPayments account at `Gringotts`
 
-  | Config parameter | PINPAY secret       |
-  | -------          | ----              |
-  | `:username`      | **API_SECRET_KEY**  |
-  | `:password`      | Empty string        |
+  | Config parameter | PinPayments secret    |
+  | -------          | ----                  |
+  | `:username`      | `**API_SECRET_KEY**`  |
 
-  > Your Application config **must include the `:username`, `:password`
+  > Your Application config **must include the `:username`
   > fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Pinpay,
           username: "your_secret_key",
-          password: "",
+          
 
-  * PINPAY **does not** process money in cents.
-  * Although PINPAY supports payments various cards. This module only
+  * PinPayments **does** process money in cents.
+  * Although PinPayments supports payments various cards. This module only
   accepts payments via `VISA`, `MASTER`, and `AMERICAN EXPRESS`.
 
   ## Supported countries
-  PINPAY supports the countries listed [here][all-country-list]
-  $ AUD, $ USD, $ NZD, $ SGD, € EUR, £ GBP, $ CAD, ¥ JPY
+  PinPayments supports the countries listed 
+  * Australia
+  * New Zealand
 
   ## Supported currencies
-  PINPAY supports the currencies listed [here][all-currency-list]
-  :AUD, :USD, :NZD, :SGD, :EUR, :GBP, :CAD, :HKD, :JPY, :MYR, :THB, :PHP, :ZAR, :IDR, :TWD
+  PinPayments supports the currencies listed [here](https://pinPayments.com/developers/api-reference/currency-support)
+
 
 
   ## Following the examples
 
   1. First, set up a sample application and configure it to work with Monei.
   - You could do that from scratch by following our [Getting Started][gs] guide.
-      - To save you time, we recommend [cloning our example
-      repo][example] that gives you a pre-configured sample app ready-to-go.
-          + You could use the same config or update it the with your "secrets"
+  - To save you time, we recommend [cloning our example
+  repo][example] that gives you a pre-configured sample app ready-to-go.
+  + You could use the same config or update it the with your "secrets"
           as described [above](#module-registering-your-monei-account-at-PinPay).
 
   2. Run an `iex` session with `iex -S mix` and add some variable bindings and
@@ -96,13 +95,11 @@ defmodule Gringotts.Gateways.PinPayments do
                           verification_code: "123", brand: "VISA"}
   ```
 
-  > Add any other frequently used bindings up here.
-
   We'll be using these in the examples below.
 
   [gs]: https://github.com/aviabird/gringotts/wiki/
-  [home]: https://pinpayments.com
-  [docs]: https://pinpayments.com/developers/api-reference
+  [home]: https://pinPayments.com
+  [docs]: https://pinPayments.com/developers/api-reference
   [example]: https://github.com/aviabird/gringotts_example
   """
 
@@ -119,34 +116,18 @@ defmodule Gringotts.Gateways.PinPayments do
 
   alias Gringotts.{Money, CreditCard, Response}
 
-  @test_url "https://test-api.pinpayments.com/1/"
-  @production_url "https://api.pinpayments.com/1/"
+  @test_url "https://test-api.pinPayments.com/1/"
+  @production_url "https://api.pinPayments.com/1/"
 
   @doc """
-  Performs a (pre) Authorize operation.
+  Creates a new charge and returns its details.
 
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
 
-  > ** You could perhaps:**
-  > 1. describe what are the important fields in the Response struct
-  > 2. mention what a merchant can do with these important fields (ex:
-  > `capture/3`, etc.)
 
-  PINPAY returns a **Payment Id** (available in the `Response.authorization`
-  field) which can be used later to:
+  PinPayments returns a **Token Id** which can be used later to:
   * `capture/3` an amount.
-  * `refund/3` the amount.
-
-  ## Optional Fields
-      options=[
-        email_id: String,
-        description: String,
-  ip_address: String (optional)     
-      ]
-
-
-
 
   ## Example
 
@@ -158,17 +139,19 @@ defmodule Gringotts.Gateways.PinPayments do
                           number: "4200000000000000",
                           year: 2099, month: 12,
                           verification_code: "123", brand: "VISA"}
-  iex> money = %{value: Decimal.new(20), currency: "USD"}
-  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Pinpay, money, card)
+  iex> money = Money.new(20000, :USD)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.PinPayments, amount, card, opts)
   ```
   """
 
-  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token = commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
-    |> extract_card_token
+    card_token =
+      commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+      |> extract_card_token
+
     params =
       [
         amount: value,
@@ -195,47 +178,75 @@ defmodule Gringotts.Gateways.PinPayments do
   end
 
   @doc """
-  Captures a pre-authorized `amount`.
+  Captures a previously authorised charge and returns its details. 
 
-  `amount` is transferred to the merchant account by PinPay used in the
+  `amount` is transferred to the merchant account by PinPayments used in the
   pre-authorization referenced by `payment_id`.
 
-  ## Note
+  Captures a previously authorised charge and returns its details. 
+  Currently, you can only capture the full amount that was originally authorised. 
 
-  > If there's anything noteworthy about this operation, it comes here.
-  > For example, does the gateway support partial, multiple captures?
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
 
-  ## Example
+  ## Examples
 
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  The following example shows how one would capture a previously
+  authorized a payment worth $10 by referencing the obtained authorization `id`.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(10000, :USD)
+  iex> authorization = auth_result.authorization
+  # authorization = "some_authorization_transaction_id"
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     url = @test_url <> "charges/" <> payment_id <> "/capture"
-    commit(:put, url, opts)
+    commit_short(:put, url, opts)
   end
 
   @doc """
   Transfers `amount` from the customer to the merchant.
 
-  PinPay attempts to process a purchase on behalf of the customer, by
+  PinPayments attempts to process a purchase on behalf of the customer, by
   debiting `amount` from the customer's account by charging the customer's
   `card`.
 
-  ## Note
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
 
-  > If there's anything noteworthy about this operation, it comes here.
+  ## Examples
 
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  The following example shows how one would process a payment worth $20 in
+  one-shot, without (pre) authorization.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card = %CreditCard{}, opts) do
+  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token = commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
-    |> extract_card_token
+    card_token =
+      commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+      |> extract_card_token
+
     params =
       [
         amount: value,
@@ -248,94 +259,71 @@ defmodule Gringotts.Gateways.PinPayments do
 
   def purchase(amount, card_token, opts) when is_binary(card_token) do
     {currency, value, _} = Money.to_integer(amount)
+
     params =
       [
         amount: value,
         card_token: card_token,
         currency: currency
       ] ++ Keyword.delete(opts, :address)
+
     commit(:post, "charges", params)
-  end
-
-  @doc """
-  Voids the referenced payment.
-
-  This method attempts a reversal of a previous transaction referenced by
-  `payment_id`.
-
-  > As a consequence, the customer will never see any booking on his statement.
-
-  ## Note
-
-  > Which transactions can be voided?
-  > Is there a limited time window within which a void can be perfomed?
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec void(String.t(), keyword) :: {:ok | :error, Response}
-  def void(payment_id, opts) do
-    #can't be implemented in pinpayments
   end
 
   @doc """
   Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-  > Refunds are allowed on which kinds of "prior" transactions?
+  PinPayments processes a full refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
 
-  ## Note
-
-  > The end customer will usually see two bookings/records on his statement. Is
-  > that true for PinPay?
-  > Is there a limited time window within which a void can be perfomed?
+  The end customer will usually see two bookings/records on his statement.
 
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.PinPayments, amount, payment_id, opts)
+  ```
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
-    url=@test_url <> "charges/" <> payment_id <> "/refunds"
-    commit(:post, url, opts)
-  end
+    url = @test_url <> "charges/" <> payment_id <> "/refunds"
 
+    commit_short(:post, url, opts)
+  end
 
   @doc """
   Stores the payment-source data for later use.
 
-  > This usually enable "One Click" and/or "Recurring Payments"
+  PinPayments can store the payment-source details, for example card or bank details
+  which can be used to effectively process _One-Click_ and _Recurring_ payments,
+  and return a card token for reference.
+
 
   ## Note
 
-  > If there's anything noteworthy about this operation, it comes here.
+  * _One-Click_ and _Recurring_ payments are currently not implemented.
+  * Payment details can be saved during a `purchase/3` or `capture/3`.
+
 
   ## Example
 
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  The following example shows how one would store a card (a payment-source) for
+  future use.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> {:ok, store_result} = Gringotts.store(Gringotts.Gateways.PinPayments, card, opts)
+  ```
   """
-  
+
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
   def store(%CreditCard{} = card, opts) do
-    commit(:post, "cards", card_for_token(card, opts) ++ opts)
-  end
-
-  @doc """
-  Removes card or payment info that was previously `store/2`d
-
-  Deletes previously stored payment-source data.
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
-  def unstore(registration_id, opts) do
-    # can't be implemented in pinpayments
+    commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
   end
 
   ###############################################################################
@@ -347,18 +335,16 @@ defmodule Gringotts.Gateways.PinPayments do
   # network request in here, and parse it using another private method called
   # `respond`.
 
-
-
   defp card_for_token(card, opts) do
     [
-      "number": card.number,
-      "name": CreditCard.full_name(card),
-      "expiry_month": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
-      "expiry_year": card.year |> Integer.to_string(),
-      "cvc": card.verification_code,
-      "address_line1": opts[:Address][:street1],
-      "address_city": opts[:Address][:city],
-      "address_country": opts[:Address][:country]
+      number: card.number,
+      name: CreditCard.full_name(card),
+      expiry_month: card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
+      expiry_year: card.year |> Integer.to_string(),
+      cvc: card.verification_code,
+      address_line1: opts[:Address][:street1],
+      address_city: opts[:Address][:city],
+      address_country: opts[:Address][:country]
     ]
   end
 
@@ -373,12 +359,13 @@ defmodule Gringotts.Gateways.PinPayments do
 
     url = @test_url <> "#{endpoint}"
     param = Keyword.delete(param, :config)
+
     url
     |> HTTPoison.post({:form, param}, headers)
     |> respond
   end
 
-  defp commit(method, url, opts) do
+  defp commit_short(method, url, opts) do
     auth_token = encoded_credentials(opts[:config].apiKey, opts[:config].pass)
 
     headers = [
@@ -395,8 +382,8 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{status_code: code, authorization: token}}) do
-   token
+  defp extract_card_token({:ok, %{status_code: code, token: token}}) do
+    token
   end
 
   # Parses PinPay's response and returns a `Gringotts.Response` struct
@@ -407,8 +394,10 @@ defmodule Gringotts.Gateways.PinPayments do
     {:ok, parsed} = decode(body)
     token = parsed["response"]["token"]
     message = parsed["response"]["status_message"]
+
     {
-      :ok, Response.success(authorization: token, message: message, raw: parsed, status_code: code)
+      :ok,
+      Response.success(token: token, message: message, raw: parsed, status_code: code)
     }
   end
 
