@@ -1,8 +1,8 @@
-defmodule Gringotts.Integration.Gateways.SagepayTest do
+defmodule Gringotts.Integration.Gateways.SagePayTest do
   # Integration tests for the Sagepay 
 
   use ExUnit.Case, async: false
-  alias Gringotts.Gateways.Sagepay
+  alias Gringotts.Gateways.SagePay
   alias Gringotts.{CreditCard, Response}
 
   @card %CreditCard{
@@ -79,26 +79,26 @@ defmodule Gringotts.Integration.Gateways.SagepayTest do
   end
 
   describe "authorize" do
-    test "successful response with right params test1" do
+    test "successful response with valid params" do
       random_code = Enum.random(1_000_000..10_000_000000000000) |> Integer.to_string()
       opts = @opts ++ [vendorTxCode: "demotransaction-" <> random_code]
       assert {:ok, response} = SagePay.authorize(@amount, @card, opts)
     end
 
-    test "successful response with right params test2" do
+    test "successful response with right params" do
       random_code = Enum.random(1_000_000..10_000_000000000000) |> Integer.to_string()
       opts = @opts ++ [vendorTxCode: "demotransaction-" <> random_code]
       assert {:ok, response} = SagePay.authorize(@amount, @card, opts)
     end
 
-    test "successful response" do
+    test "successful response message from authorize function" do
       random_code = Enum.random(1_000_000..10_000_000000000000) |> Integer.to_string()
       opts = @opts ++ [vendorTxCode: "demotransaction-" <> random_code]
       {:ok, response} = SagePay.authorize(@amount, @card, opts)
       assert response.message == "The Authorisation was Successful."
     end
 
-    test "unsuccessful response" do
+    test "unsuccessful response with invalid params" do
       {:error, response} = SagePay.authorize(@amount, @card, @bad_opts)
       refute response.message == "The Authorisation was Successful."
     end
