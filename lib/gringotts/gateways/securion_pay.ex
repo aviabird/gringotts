@@ -57,9 +57,9 @@ defmodule Gringotts.Gateways.SecurionPay do
   # `required_config` list
   use Gringotts.Adapter, required_config: [:secret_key]
 
-  import Poison, only: [decode: 1]
+  import Poison, only: [decode!: 1]
 
-  alias Gringotts.{CreditCard, Response, Address}
+  alias Gringotts.{CreditCard, Response}
 
   @doc """
   Authorizes a credit card transaction.
@@ -160,7 +160,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   @spec respond(term) :: {:ok | :error, Response}
 
   defp respond({:ok, %{status_code: 200, body: body}}) do
-    parsed_body = Poison.decode!(body)
+    parsed_body = decode!(body)
 
     parsed_response = [
       id: parsed_body["id"],
@@ -174,7 +174,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   end
 
   defp respond({:ok, %{body: body, status_code: code}}) do
-    parsed_body = Poison.decode!(body)
+    parsed_body = decode!(body)
 
     parsed_response = [
       raw: body,
