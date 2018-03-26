@@ -16,8 +16,8 @@ defmodule Gringotts.Gateways.SecurionPay do
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
-  [optional arguments][extra-arg-docs] for transactions with the SecurionPay
-  gateway. The following keys are supported:
+  optional arguments for transactions with the SecurionPay gateway. 
+  The following keys are supported:
 
   | Key                      | Remark                                                                                        |
   | ----                     | ---                                                                                           |
@@ -46,20 +46,11 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   [country-list]: https://securionpay.com/supported-countries-businesses/
   """
-  @base_url "https://api.securionpay.com/"
-  # The Base module has the (abstract) public API, and some utility
-  # implementations.
-
   use Gringotts.Gateways.Base
-
-  # The Adapter module provides the `validate_config/1`
-  # Add the keys that must be present in the Application config in the
-  # `required_config` list
   use Gringotts.Adapter, required_config: [:secret_key]
-
   import Poison, only: [decode!: 1]
-
   alias Gringotts.{CreditCard, Response}
+  @base_url "https://api.securionpay.com/"
 
   @doc """
   Authorizes a credit card transaction.
@@ -70,8 +61,6 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   The second argument can be a `CreditCard` or a `card_id`. The `customer_id` of the customer who owns the card must be
   given in optional field if `card_id` is used. 
-
-  To transfer the funds to merchant's account follow this up with a `capture/3`.
 
   SecurionPay returns a `charge_id` (available in the `Response.id` field) which uniquely identifies a transaction  
   which should be stored by the caller for using in:
@@ -110,7 +99,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   #                          PRIVATE METHODS                               #
   ##########################################################################
 
-  # Creates the common parameters for authorise function
+  # Creates the common parameters for authorize function
   @spec common_params(String.t(), String.t()) :: {[]}
   defp common_params(amount, captured) do
     {currency, value, _, _} = Money.to_integer_exp(amount)
@@ -122,9 +111,9 @@ defmodule Gringotts.Gateways.SecurionPay do
     ]
   end
 
-  # Creates the card parameters for authorise function when
+  # Creates the card parameters for authorize function when
   # card_id and customer_id is provided.
-  @spec card_params(String.t(), String.t()) :: {[]}
+  @spec card_params(String.t(), keyword) :: {[]}
   defp card_params(card_id, opts) do
     [
       card: card_id,
@@ -132,7 +121,7 @@ defmodule Gringotts.Gateways.SecurionPay do
     ]
   end
 
-  # Creates the card parameters for authorise when
+  # Creates the card parameters for authorize when
   # `CreditCard` structure is provided
   @spec card_params(CreditCard.t()) :: {[]}
   defp card_params(card) do
@@ -146,9 +135,6 @@ defmodule Gringotts.Gateways.SecurionPay do
   end
 
   # Makes the request to SecurionPay's network.
-  # For consistency with other gateway implementations, make your (final)
-  # network request in here, and parse it using another private method called
-  # `respond`.
   defp commit(params, path, opts) do
     header = set_header(opts)
     response = HTTPoison.post("#{@base_url}#{path}", {:form, params}, header)
