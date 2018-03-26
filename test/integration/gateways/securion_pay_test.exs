@@ -42,7 +42,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   @card_id "card_NH4bn2T2h2QyXvW1fsRkZo8O"
 
   test "[authorize] with CreditCard" do
-    use_cassette "authorize_with_credit_card" do
+    use_cassette "securion_pay/authorize_with_credit_card" do
       assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
       assert response.success == true
       assert response.status_code == 200
@@ -50,7 +50,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   end
 
   test "[authorize] with card_id and customer_id" do
-    use_cassette "authorize_with_card_id" do
+    use_cassette "securion_pay/authorize_with_card_id" do
       assert {:ok, response} = Gateway.authorize(@amount, @card_id, @opts)
       assert response.success == true
       assert response.status_code == 200
@@ -58,7 +58,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   end
 
   test "[authorize] with Expired CreditCard" do
-    use_cassette "authorize_with_expired_card" do
+    use_cassette "securion_pay/authorize_with_expired_card" do
       assert {:error, response} = Gateway.authorize(@amount, @bad_card, @opts)
       assert response.success == false
       refute response.status_code == 200
@@ -68,7 +68,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   end
 
   test "[authorize] with card_id but no customer_id" do
-    use_cassette "authorize_without_customer_id" do
+    use_cassette "securion_pay/authorize_without_customer_id" do
       assert {:error, response} = Gateway.authorize(@amount, @card_id, @bad_opts)
       assert response.success == false
       refute response.status_code == 200
