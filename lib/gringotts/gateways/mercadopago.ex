@@ -70,6 +70,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   ```
   iex> card = %CreditCard{first_name: "John", last_name: "Doe", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
   ```
+  
 
   We'll be using these in the examples below.
 
