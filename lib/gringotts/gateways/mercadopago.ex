@@ -64,7 +64,7 @@ defmodule Gringotts.Gateways.Mercadopago do
       - To save you time, we recommend [cloning our example
       repo][example] that gives you a pre-configured sample app ready-to-go.
           + You could use the same config or update it the with your "secrets"
-          as described [above](#module-registering-your-monei-account-at-mercadopago).
+          as described [above](#module-registering-your-mercadopago-account-at-mercadopago).
 
   2. Run an `iex` session with `iex -S mix` and add some variable bindings :
   ```
