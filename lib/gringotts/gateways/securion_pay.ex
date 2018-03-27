@@ -99,7 +99,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   ##########################################################################
 
   # Creates the common parameters for authorize function
-  @spec common_params(String.t(), String.t()) :: {[]}
+  @spec common_params(String.t(), String.t()) :: keyword
   defp common_params(amount, captured) do
     {currency, value, _, _} = Money.to_integer_exp(amount)
 
@@ -112,7 +112,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   # Creates the card parameters for authorize function when
   # card_id and customer_id is provided.
-  @spec card_params(String.t(), keyword) :: {[]}
+  @spec card_params(String.t(), keyword) :: keyword
   defp card_params(card_id, opts) do
     [
       card: card_id,
@@ -122,7 +122,7 @@ defmodule Gringotts.Gateways.SecurionPay do
 
   # Creates the card parameters for authorize when
   # `CreditCard` structure is provided
-  @spec card_params(CreditCard.t()) :: {[]}
+  @spec card_params(CreditCard.t()) :: keyword
   defp card_params(card) do
     [
       "card[expYear]": card.year,
@@ -134,6 +134,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   end
 
   # Makes the request to SecurionPay's network.
+  @spec commit(keyword, String.t(), keyword) :: {:ok | :error, Response}
   defp commit(params, path, opts) do
     header = set_header(opts)
     response = HTTPoison.post("#{@base_url}#{path}", {:form, params}, header)
