@@ -71,14 +71,13 @@ defmodule Gringotts.Gateways.SecurionPay do
   ## Example
   ### With a `CreditCard` struct
       iex> amount = Money.new(20, :USD)
-      iex> opts = [config: [secret_key: "sk_test_Ff2Jpq59sSWT7qmI9atii5zR"]]
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
-      iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
+      iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, [])
 
   ## Example
   ### With a `card_token` and `customer_token`
-      iex> amount = Money.new(20, :USD}
-      iex> opts = [config: [:secret_key: "sk_test_Ff2Jpq59sSWT7qmI9atii5zR"], customer_id: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
+      iex> amount = Money.new(20, :USD)
+      iex> opts = [customer_id: "cust_9999999999999999999999999"]
       iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
