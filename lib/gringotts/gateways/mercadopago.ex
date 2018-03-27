@@ -231,7 +231,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     }
   end
 
-  defp get_success_body(body, status_code, opts) do
+  defp success_body(body, status_code, opts) do
     %Response{
       success: true,
       id: body["id"],
@@ -241,7 +241,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     }
   end
 
-  defp get_error_body(body, status_code, opts) do
+  defp error_body(body, status_code, opts) do
     %Response{
       success: false,
       token: opts[:customer_id],
@@ -253,8 +253,8 @@ defmodule Gringotts.Gateways.Mercadopago do
   defp respond({:ok, %HTTPoison.Response{body: body, status_code: status_code}}, opts) do
     body = body |> Poison.decode!
     case body["cause"] do
-      nil -> {:ok, get_success_body(body, status_code, opts)}
-      _ -> {:error, get_error_body(body, status_code, opts)}
+      nil -> {:ok, success_body(body, status_code, opts)}
+      _ -> {:error, error_body(body, status_code, opts)}
     end
   end
 
