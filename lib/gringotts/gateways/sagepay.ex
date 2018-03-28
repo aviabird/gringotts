@@ -18,26 +18,24 @@ defmodule Gringotts.Gateways.SagePay do
   | Reversal                     | `void/2`      | 
   | Purchase                     | `purchase/3`  | 
 
-  [home]: sagepay.co.uk
+  [home]: http://sagepay.co.uk
   [docs]: integrations.sagepay.co.uk
 
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
-  [optional arguments][extra-arg-docs] for transactions with the MONEI
+  [optional arguments][extra-arg-docs] for transactions with the SAGEPAY
   gateway. The following keys are supported:
 
-  | Key                      |
-  |  ---------------         |
-  |  [`merchant_id`]         |
-  |  [`vendor`]              |
-  |  [`vendorTxcode`]        |  
-  |  [`transactionType`]     |  
-  |  [`customerFirstName`]   |  
-  |  [`customerLastName`]    |  
-  |  [`billingAddress`]      |  
-  |  [`transaction_id`]      |    
-
+  | Key                    |  Remarks
+  |  -----                 |  ------
+  |  `auth_id`             |  A unique merchant id provided by the merchant.
+  |  `vendor`              |  Name of the merchant.
+  |  `vendor_tx_code`      |  vendor_tx_code is a unique code for every transaction in SagePay.
+  |  `transaction_type`    |  SagePay allows four transactions type:- Deferred, Payment, Repeat, Refund.
+  |  `customer_first_name` |  First name of a customer.
+  |  `customer_last_name`  |  Last nmae of a customer.
+  |  `address`             |  Billing address of a customer.
 
   ## Registering your SagePay account at `Gringotts`
 
@@ -119,16 +117,17 @@ defmodule Gringotts.Gateways.SagePay do
 
   ## Note
 
-  * The merchantSessionKey expires after 400 seconds and can only be used to create one successful card identifier. 
+  * The merchant_session_key expires after 400 seconds and can only be used to create one successful card identifier. 
   * It will also expire and be removed after 3 failed attempts to create a card identifier.
-  * vendorTxCode in opts should always be unique.
+  * vendor_tx_code Code in opts should always be unique.
 
   ## Example
 
-  The following example shows how one would (pre) authorize a payment of $42 on
+  The following example shows how one would (pre) authorize a payment of 42£ on
   a sample `card`.
 
-      iex> amount = Money.new(42, :USD)
+      iex> amount = Money.new(42, :GBP)
+      iex> address = %{ address1: "407 St. John Street", city: "London", postalCode: "EC1V 4AB", country: "GB"} 
       iex> card = %Gringotts.CreditCard{number: "4929000005559",month: 3,year: 20,first_name: "SAM",last_name: "JONES",verification_code: "123",brand: "VISA"}
       iex> opts = [
                   config: %{
@@ -140,15 +139,10 @@ defmodule Gringotts.Gateways.SagePay do
                   description: "Demo Payment",
                   customerFirstName: "Sam",
                   customerLastName: "Jones",
-                  billingAddress: %{
-                          address1: "407 St. John Street",
-                          city: "London",
-                          postalCode: "EC1V 4AB",
-                          country: "GB"
-                  } 
+                  billingAddress: address
             ]
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
-      iex> auth_result.transactionId # This is the authorization/transacaction ID
+      iex> auth_result.id
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
@@ -165,144 +159,6 @@ defmodule Gringotts.Gateways.SagePay do
     ]
 
     commit(:post, "transactions", transaction_params, transaction_header)
-  end
-
-  @doc """
-  Captures a pre-authorized amount.
-
-  amount is transferred to the merchant's account by sagepay used in the
-  pre-authorization referenced by payment_id.
-
-  ## Note
-
-  * Deferred transactions are not sent to the bank for completion until you capture them using the capture instruction. 
-  * You can release only once and only for an amount up to and including the amount of the original Deferred transaction.
-
-  ## Example
-
-  The following example shows how one would (partially) capture a previously
-  authorized a payment worth 100 by referencing the obtained authorization id.
-
-      iex> amount = Money.new(100, :GBP)
-      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
-      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.SagePay, amount, auth_result.id, opts)
-  """
-  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
-  def capture(payment_id, amount, opts) do
-    {currency, value} = Money.to_string(amount)
-
-    capture_header = [
-      {"Authorization", "Basic " <> opts[:config].auth_id},
-      {"Content-type", "application/json"}
-    ]
-
-    capture_body =
-      Poison.encode!(%{
-        "instructionType" => "release",
-        "amount" => Kernel.trunc(String.to_float(value))
-      })
-
-    endpoint = "transactions/" <> payment_id <> "/instructions"
-
-    commit(:post, endpoint, capture_body, capture_header)
-  end
-
-  @doc """
-  Transfers `amount` from the customer to the merchant.
-
-  sagepay attempts to process a purchase on behalf of the customer, by
-  debiting `amount` from the customer's account by charging the customer's
-  `card`.
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def purchase(amount, card, opts) do
-    # commit(args, ...)
-  end
-
-  @doc """
-  Voids the referenced payment.
-
-  This method attempts a reversal of a previous transaction referenced by
-  `payment_id`.
-
-  > As a consequence, the customer will never see any booking on his statement.
-
-  ## Note
-
-  > Which transactions can be voided?
-  > Is there a limited time window within which a void can be perfomed?
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec void(String.t(), keyword) :: {:ok | :error, Response}
-  def void(payment_id, opts) do
-    # commit(args, ...)
-  end
-
-  @doc """
-  Refunds the `amount` to the customer's account with reference to a prior transfer.
-
-  > Refunds are allowed on which kinds of "prior" transactions?
-
-  ## Note
-
-  > The end customer will usually see two bookings/records on his statement. Is
-  > that true for sagepay?
-  > Is there a limited time window within which a void can be perfomed?
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
-  def refund(amount, payment_id, opts) do
-    # commit(args, ...)
-  end
-
-  @doc """
-  Stores the payment-source data for later use.
-
-  > This usually enable "One Click" and/or "Recurring Payments"
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def store(%CreditCard{} = card, opts) do
-    # commit(args, ...)
-  end
-
-  @doc """
-  Removes card or payment info that was previously `store/2`d
-
-  Deletes previously stored payment-source data.
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
-  ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
-  """
-  @spec unstore(String.t(), keyword) :: {:ok | :error, Response}
-  def unstore(registration_id, opts) do
-    # commit(args, ...)
   end
 
   ###############################################################################
@@ -333,7 +189,7 @@ defmodule Gringotts.Gateways.SagePay do
   # and for 3 wrong card identifiers
 
   defp generate_merchant_key(opts) do
-    vender_name = Poison.encode!(%{vendorName: opts[:config].vendor})
+    merchant_body = Poison.encode!(%{vendorName: opts[:config].vendor})
 
     merchant_header = [
       {"Authorization", "Basic " <> opts[:config].auth_id},
@@ -341,7 +197,7 @@ defmodule Gringotts.Gateways.SagePay do
     ]
 
     {:ok, merchant_key} =
-      commit_for_key(:post, "merchant-session-keys", vender_name, merchant_header)
+      commit_for_key(:post, "merchant-session-keys", merchant_body, merchant_header)
 
     merchant_key
     |> Map.get("merchantSessionKey")
@@ -380,8 +236,8 @@ defmodule Gringotts.Gateways.SagePay do
   end
 
   # Function transaction_details creates the actual body (details of the customer )of the card 
-  # and with merchant_session_key, card_identifiier ,shipping address of a
-  # customer, and other details and converting the map into keyword list
+  # and with merchant_session_key, card_identifiier ,shipping address of a customer, and
+  # other details and converting the map into keyword list
 
   defp transaction_details(amount, merchant_key, card_identifiier, opts) do
     {currency, value} = Money.to_string(amount)
@@ -446,5 +302,15 @@ defmodule Gringotts.Gateways.SagePay do
        message: body["statusDetail"],
        raw: body
      }}
+  end
+
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    {
+      :error,
+      Response.error(
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      )
+    }
   end
 end
