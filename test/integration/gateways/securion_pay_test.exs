@@ -40,6 +40,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   @bad_opts [config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"]]
 
   @card_id "card_wVuO1a5BGM12UV10FwpkK9YW"
+  @bad_charge_id "char_wVuO1a5BGM12UV10FwpkK9YW"
 
   describe "[authorize]" do
     test "with CreditCard" do
@@ -74,6 +75,27 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
         assert response.success == false
         refute response.status_code == 200
         assert response.message == "invalid_request"
+      end
+    end
+  end
+
+  describe "[capture]" do
+    test "with_authorized_payment_id" do
+      use_cassette "securion_pay/capture_after_authorization" do
+        {:ok, auth_response} = Gateway.authorize(@amount, @good_card, @opts)
+        assert {:ok, capt_response} = Gateway.capture(auth_response.id, @amount, @opts)
+        assert capt_response.success == true
+        assert capt_response.status_code == 200
+      end
+    end
+
+    test "with_invalid_payment_id" do
+      use_cassette "securion_pay/capture_with_invalid_payment_id" do
+        assert {:error, response} = Gateway.capture(@bad_charge_id, @amount, @opts)
+        assert response.success == false
+        refute response.status_code == 200
+        assert response.message == "invalid_request"
+        assert response.reason == "Charge '#{@bad_charge_id}' does not exist"
       end
     end
   end
