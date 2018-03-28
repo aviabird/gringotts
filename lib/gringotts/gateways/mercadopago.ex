@@ -49,6 +49,10 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   [credentials]: https://www.mercadopago.com/mlb/account/credentials?type=basic
 
+  ## Note
+
+  mercadopago processes money with upto two decimal places.
+
   ## Supported currencies and countries
 
   mercadopago supports the currencies listed [here][currencies].
@@ -68,7 +72,6 @@ defmodule Gringotts.Gateways.Mercadopago do
   ```
   iex> card = %CreditCard{first_name: "John", last_name: "Doe", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
   ```
-  
 
   We'll be using these in the examples below.
 
@@ -97,7 +100,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
 
-  mercadoapgo's `authorize` returns authorization ID :
+  mercadoapgo's `authorize` returns authorization ID(available in the `Response.id` field) :
 
   * `capture/3` _an_ amount.
   * `void/2` a pre-authorization.
@@ -107,8 +110,9 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   ## Example
 
-  ### Authorization for new customer. (Ignore `customer_id`)
+  ### Authorization for new customer.
     The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
+    Ignore `customer_id`.
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Lord", last_name: "Voldemort", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> opts = [email: "tommarvolo@riddle.com", order_id: 123123, payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
@@ -116,8 +120,9 @@ defmodule Gringotts.Gateways.Mercadopago do
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the customer ID/token
 
-  ### Authorization for old customer. (Mention `customer_id`)
+  ### Authorization for old customer.
     The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
+    Mention `customer_id`.  
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Hermione", last_name: "Granger", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> opts = [email: "hermione@granger.com", order_id: 123125, customer_id: "308537342-HStv9cJCgK0dWU", payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
@@ -138,9 +143,6 @@ defmodule Gringotts.Gateways.Mercadopago do
       end
     end
   end
-  
-
-  
 
   ###############################################################################
   #                                PRIVATE METHODS                              #
@@ -151,8 +153,9 @@ defmodule Gringotts.Gateways.Mercadopago do
   # network request in here, and parse it using another private method called
   # `respond`.
   #@spec commit(_, _, _, _) :: {:ok | :error, Response}
-  defp commit(method, path, body, headers) do
-    HTTPoison.request(method, path, body, headers, [])
+  defp commit(method, path, body, opts) do
+    headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
+    HTTPoison.request(method, path, body, headers, []) |> respond(opts)
   end
 
   # Parses mercadopago's response and returns a `Gringotts.Response` struct
@@ -173,16 +176,13 @@ defmodule Gringotts.Gateways.Mercadopago do
     opts = opts ++ [token_id: token_id]
     url = "#{@base_url}/v1/payments?access_token=#{opts[:config][:access_token]}"
     body = authorize_params(value, card, opts, opts[:token_id], opts[:customer_id], capture) |> Poison.encode!
-    headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
-    commit(:post, url, body, headers)
-    |> respond(opts)
+    commit(:post, url, body, opts)
   end
   
   defp create_customer(opts) do
     url = "#{@base_url}/v1/customers?access_token=#{opts[:config][:access_token]}"
     body = %{"email": opts[:email]} |> Poison.encode!
-    headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
-    {state, res} = commit(:post, url, body, headers) |> respond(opts)
+    {state, res} = commit(:post, url, body, opts)
     if state == :error do
       {state, res}
     else
@@ -202,9 +202,8 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   defp create_token(%CreditCard{} = card, opts) do
     url = "#{@base_url}/v1/card_tokens/#{opts[:customer_id]}?public_key=#{opts[:config][:public_key]}"
-    body = token_params(card) |> Poison.encode!()
-    headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
-    {state, res} = commit(:post, url, body, headers) |> respond(opts)
+    body = token_params(card) |> Poison.encode!
+    {state, res} = commit(:post, url, body, opts)
     case state do
        :error -> {state, res}
        _ -> {state, res.id}
@@ -223,9 +222,9 @@ defmodule Gringotts.Gateways.Mercadopago do
                 "type": "mercadopago",
                 "id": opts[:order_id]
                 },
-      "installments": opts[:installments],
+      "installments": opts[:installments] || 1,
       "transaction_amount": value,
-      "payment_method_id": opts[:payment_method_id], 
+      "payment_method_id": String.downcase(card.brand), 
       "token": token_id,
       "capture": capture
     }
@@ -258,8 +257,14 @@ defmodule Gringotts.Gateways.Mercadopago do
     end
   end
 
-  defp respond({:error, %HTTPoison.Error{id: _, reason: _}}, opts) do
-    {:error, "Network Error"}
+  defp respond({:error, %HTTPoison.Error{} = error}, opts) do
+    {
+      :error,
+      Response.error(
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      )
+    }
   end
 
 end
