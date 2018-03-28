@@ -279,27 +279,27 @@ defmodule Gringotts.Gateways.SagePay do
   @spec respond(term) :: {:ok | :error, Response}
 
   defp respond({:ok, %{status_code: 201, body: body}}) do
-    body = body |> Poison.decode!()
+    response_body = body |> Poison.decode!()
 
     {:ok,
      %Response{
        success: true,
-       id: body["transactionId"],
+       id: response_body["transactionId"],
        status_code: 201,
-       message: body["statusDetail"],
-       raw: body |> Poison.encode!()
+       message: response_body["statusDetail"],
+       raw: body
      }}
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
-    body = body |> Poison.decode!()
+    response_body = body |> Poison.decode!()
 
     {:error,
      %Response{
        success: false,
-       id: body["transactionId"],
+       id: response_body["transactionId"],
        status_code: status_code,
-       message: body["statusDetail"],
+       message: response_body["statusDetail"],
        raw: body
      }}
   end
