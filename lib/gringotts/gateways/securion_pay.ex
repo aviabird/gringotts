@@ -104,7 +104,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   Successful request returns a charge object that was captured.
 
   ## Note
-  > SecurionPay does not support partial captures. So there is no need of amount in capture.
+  SecurionPay does not support partial captures. So there is no need of amount in capture.
 
   ## Example
       iex> opts = [config: [secret_key: "c2tfdGVzdF82cGZBYTI3aDhvOUUxanRJZWhaQkE3dkE6"]]
