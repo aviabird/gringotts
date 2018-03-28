@@ -11,15 +11,6 @@ defmodule Gringotts.Integration.Gateways.PinpaymentsTest do
 
   #@moduletag :integration
 
-
-
-  setup_all do
-    Application.put_env(:gringotts, Gringotts.Gateways.Pinpayments,
-      [ # some_key: "some_secret_key"
-      ]
-    )
-  end
-
   @amount Money.new(420, :AUD)
 
   @bad_card1 %CreditCard{
@@ -56,25 +47,21 @@ defmodule Gringotts.Integration.Gateways.PinpaymentsTest do
 
     street1: "OBH",
     street2: "AIT",
-            city: "PUNE",
-            region: "Maharashtra", 
-            country: "IN",
-            postal_code: "411015",
-            phone: "8007810916",
+    city: "PUNE",
+    region: "Maharashtra", 
+    country: "IN",
+    postal_code: "411015",
+    phone: "8007810916",
     
-}
+  }
 
   @opts [
-            description: "hello", 
-            email: "hi@hello.com",
-            ip_address: "1.1.1.1",
-            config: %{apiKey: "c4nxgznanW4XZUaEQhxS6g", pass: ""}
+    description: "hello", 
+    email: "hi@hello.com",
+    ip_address: "1.1.1.1",
+    config: %{apiKey: "c4nxgznanW4XZUaEQhxS6g", pass: ""}
 
-            ] ++ [address: @add]
-
-
-  @card_token "card_QL_Rds2PP1jg8pzzdx0J0Q"          
-  # Group the test cases by public api
+  ] ++ [address: @add]
  
   test "[authorize] with CreditCard" do
     assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
@@ -94,11 +81,4 @@ defmodule Gringotts.Integration.Gateways.PinpaymentsTest do
     assert response.status_code == 400
   end
 
-  test "[authorize] with card token" do
-    assert {:ok, response} = Gateway.authorize(@amount, @card_token, @opts)
-    assert response.success == true
-    assert response.status_code == 201
-  end
-
-  
 end
