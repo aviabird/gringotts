@@ -62,6 +62,7 @@ defmodule Gringotts.Mixfile do
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
       {:excoveralls, "~> 0.8", only: :test},
+      {:exvcr, "~> 0.10", only: :test},
 
       # various analyses tools
       {:credo, "~> 0.3", only: [:dev, :test]},
