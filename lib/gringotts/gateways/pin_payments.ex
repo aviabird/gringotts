@@ -161,7 +161,6 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "charges", params)
   end
 
-  
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -184,7 +183,6 @@ defmodule Gringotts.Gateways.PinPayments do
       address_line2: opts[:address].street2,
       address_postcode: opts[:address].postal_code,
       address_state: opts[:address].region
-
     ]
   end
 
