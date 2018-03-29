@@ -41,12 +41,13 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
 
   @card_id "card_wVuO1a5BGM12UV10FwpkK9YW"
   @bad_charge_id "char_wVuO1a5BGM12UV10FwpkK9YW"
+  @refunded_charge_id "char_ELw8N3t3UsbXvolR5VzbDIon"
 
   describe "[authorize]" do
     test "with CreditCard" do
       use_cassette "securion_pay/authorize_with_credit_card" do
         assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
-        assert response.success == true
+        assert response.success
         assert response.status_code == 200
       end
     end
@@ -54,7 +55,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
     test "with card_id and customer_id" do
       use_cassette "securion_pay/authorize_with_card_id" do
         assert {:ok, response} = Gateway.authorize(@amount, @card_id, @opts)
-        assert response.success == true
+        assert response.success
         assert response.status_code == 200
       end
     end
@@ -62,7 +63,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
     test "with expired CreditCard" do
       use_cassette "securion_pay/authorize_with_expired_card" do
         assert {:error, response} = Gateway.authorize(@amount, @bad_card, @opts)
-        assert response.success == false
+        refute response.success
         refute response.status_code == 200
         assert response.message == "card_error"
         assert response.reason == "The card has expired."
@@ -72,7 +73,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
     test "with card_id but no customer_id" do
       use_cassette "securion_pay/authorize_without_customer_id" do
         assert {:error, response} = Gateway.authorize(@amount, @card_id, @bad_opts)
-        assert response.success == false
+        refute response.success
         refute response.status_code == 200
         assert response.message == "invalid_request"
       end
@@ -96,6 +97,28 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
         refute response.status_code == 200
         assert response.message == "invalid_request"
         assert response.reason == "Charge '#{@bad_charge_id}' does not exist"
+      end
+    end
+  end
+
+  describe "[void]" do
+    test "[authorize -> void]" do
+      use_cassette "securion_pay/void_after_authorize" do
+        {:ok, auth_resp} = Gateway.authorize(@amount, @card_id, @opts)
+        assert {:ok, response} = Gateway.void(auth_resp.id, @opts)
+        assert response.success
+        assert response.status_code == 200
+        assert is_binary(response.id)
+      end
+    end
+
+    test "already_cancelled" do
+      use_cassette "securion_pay/already_cancelled" do
+        assert {:error, response} = Gateway.void(@refunded_charge_id, @opts)
+        refute response.success
+        refute response.status_code == 200
+        assert response.message == "invalid_request"
+        assert response.reason == "Requested Charge is already refunded"
       end
     end
   end
