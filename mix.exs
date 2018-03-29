@@ -17,14 +17,14 @@ defmodule Gringotts.Mixfile do
         tool: ExCoveralls
       ],
       preferred_cli_env: [
-        "coveralls": :test,
+        coveralls: :test,
         "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test,
-        "coveralls.travis": :test
+        "coveralls.json": :test,
+        "coveralls.html": :test
       ],
       deps: deps(),
-      docs: docs()]
+      docs: docs()
+    ]
   end
 
   # Configuration for the OTP application
@@ -32,7 +32,7 @@ defmodule Gringotts.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex],
+      applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex]
     ]
   end
 
@@ -58,16 +58,16 @@ defmodule Gringotts.Mixfile do
       {:ex_money, "~> 1.1.0", only: [:dev, :test], optional: true},
 
       # docs and tests
-      {:ex_doc, "~> 0.16", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
-      {:excoveralls, "~> 0.7", only: :test},
+      {:excoveralls, "~> 0.8", only: :test},
 
       # various analyses tools
       {:credo, "~> 0.3", only: [:dev, :test]},
       {:inch_ex, "~> 0.5", only: :docs},
       {:dialyxir, "~> 0.3", only: :dev},
-      {:timex, "~> 3.1"}
+      {:timex, "~> 3.2"}
     ]
   end
 
@@ -89,8 +89,8 @@ defmodule Gringotts.Mixfile do
   end
 
   defp groups_for_modules do
-     [
-      "Gateways": ~r/^Gringotts.Gateways.?/,
-     ]
+    [
+      Gateways: ~r/^Gringotts.Gateways.?/
+    ]
   end
 end

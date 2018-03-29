@@ -6,21 +6,21 @@ defmodule Gringotts do
   easy for merchants to use multiple gateways.
   All gateways must conform to the API as described in this module, but can also
   support more gateway features than those required by Gringotts.
-  
+
   ## Standard API arguments
 
   All requests to Gringotts are served by a supervised worker, this might be
   made optional in future releases.
-  
+
   ### `gateway` (Module) Name
-  
+
   The `gateway` to which this request is made. This is required in all API calls
   because Gringotts supports multiple Gateways.
 
   #### Example
   If you've configured Gringotts to work with Stripe, you'll do this
   to make an `authorization` request:
-  
+
       Gringotts.authorize(Gingotts.Gateways.Stripe, other args ...)
 
   ### `amount` _and currency_
@@ -39,7 +39,7 @@ defmodule Gringotts do
 
   Otherwise, just wrap your `amount` with the `currency` together in a `Map` like so,
       money = %{value: Decimal.new("100.50"), currency: "USD"}
-  
+
   > When this highly precise `amount` is serialized into the network request, we
   > use a potentially lossy `Gringotts.Money.to_string/1` or
   > `Gringotts.Money.to_integer/1` to perform rounding (if required) using the
@@ -49,14 +49,14 @@ defmodule Gringotts do
   > STRONGLY RECOMMEND that merchants perform any required rounding and handle
   > remainders in their application logic -- before passing the `amount` to
   > Gringotts's API.**
-  
+
   #### Example
 
   If you use `ex_money` in your project, and want to make an authorization for
   $2.99 to the `XYZ` Gateway, you'll do the following:
 
       # the money lib is aliased as "MoneyLib"
-  
+
       amount = MoneyLib.new("2.99", :USD)
       Gringotts.authorize(Gringotts.Gateways.XYZ, amount, some_card, extra_options)
 
@@ -65,7 +65,7 @@ defmodule Gringotts do
   [money]: https://hexdocs.pm/money/Money.html
   [iss-money-lib-support]: https://github.com/aviabird/gringotts/projects/3#card-6801146
   [wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
-  
+
   ### `card`, a payment source
 
   Gringotts provides a `Gringotts.CreditCard` type to hold card parameters
@@ -78,7 +78,7 @@ defmodule Gringotts do
   gateways might support payment via other instruments such as e-wallets,
   vouchers, bitcoins or banks. Support for these instruments is planned in
   future releases.
-  
+
       %CreditCard {
           first_name: "Harry",
           last_name: "Potter",
@@ -93,18 +93,18 @@ defmodule Gringotts do
   `opts` is a `keyword` list of other options/information accepted by the
   gateway. The format, use and structure is gateway specific and documented in
   the Gateway's docs.
-  
+
   ## Configuration
-  
+
   Merchants must provide Gateway specific configuration in their application
   config in the usual elixir style. The required and optional fields are
   documented in every Gateway.
-  
+
   > The required config keys are validated at runtime, as they include
   > authentication information. See `Gringotts.Adapter.validate_config/2`.
-  
+
   ### Global config
-  
+
   This is set using the `:global_config` key once in your application.
 
   #### `:mode`
@@ -120,9 +120,9 @@ defmodule Gringotts do
     environments.  
   * `:prod` -- for live environment, all requests will reach the financial and
     banking networks. Switch to this in your application's `:prod` environment.
-  
+
   **Example**
-  
+
       config :gringotts, :global_config,
           # for live environment
           mode: :prod
@@ -136,7 +136,7 @@ defmodule Gringotts do
         # some_documented_key: associated_value
         # some_other_key: another_value
   """
-  
+
   @doc """
   Performs a (pre) Authorize operation.
 
@@ -171,7 +171,7 @@ defmodule Gringotts do
   * multiple captures, per authorization
 
   ## Example
-  
+
   To capture $4.20 on a previously authorized payment worth $4.20 by referencing
   the obtained authorization `id` with the `XYZ` gateway,
 
@@ -181,7 +181,7 @@ defmodule Gringotts do
       card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       Gringotts.capture(Gringotts.Gateways.XYZ, amount, auth_result.id, opts)
   """
-  def capture(gateway, id, amount, opts \\ []) do 
+  def capture(gateway, id, amount, opts \\ []) do
     config = get_and_validate_config(gateway)
     gateway.capture(id, amount, [{:config, config} | opts])
   end
@@ -195,14 +195,14 @@ defmodule Gringotts do
   This method _can_ be implemented as a chained call to `authorize/3` and
   `capture/3`. But it must be implemented as a single call to the Gateway if it
   provides a specific endpoint or action for this.
-  
+
   > ***Note!**
   > All gateways must implement (atleast) this method.
 
   ## Example
 
   To process a purchase worth $4.2, with the `XYZ` gateway,
-  
+
       amount = Money.new("4.2", :USD)
       # IF YOU DON'T USE ex_money
       # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
@@ -229,7 +229,7 @@ defmodule Gringotts do
       # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, id, opts)
   """
-  def refund(gateway, amount, id, opts \\ []) do 
+  def refund(gateway, amount, id, opts \\ []) do
     config = get_and_validate_config(gateway)
     gateway.refund(amount, id, [{:config, config} | opts])
   end
@@ -238,7 +238,7 @@ defmodule Gringotts do
   Stores the payment-source data for later use, returns a `token`.
 
   > The token must be returned in the `Response.authorization` field.
-  
+
   ## Note
 
   This usually enables _One-Click_ and _Recurring_ payments.
@@ -250,7 +250,7 @@ defmodule Gringotts do
       card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       Gringotts.store(Gringotts.Gateways.XYZ, card, opts)
   """
-  def store(gateway, card, opts \\ []) do 
+  def store(gateway, card, opts \\ []) do
     config = get_and_validate_config(gateway)
     gateway.store(card, [{:config, config} | opts])
   end
@@ -264,11 +264,11 @@ defmodule Gringotts do
   ## Example
 
   To unstore with the `XYZ` gateway,
-  
+
       token = "some_privileged_customer"
       Gringotts.unstore(Gringotts.Gateways.XYZ, token)
   """
-  def unstore(gateway, token, opts \\ []) do 
+  def unstore(gateway, token, opts \\ []) do
     config = get_and_validate_config(gateway)
     gateway.unstore(token, [{:config, config} | opts])
   end
@@ -289,7 +289,7 @@ defmodule Gringotts do
       id = "some_previously_obtained_token"
       Gringotts.void(Gringotts.Gateways.XYZ, id, opts)
   """
-  def void(gateway, id, opts \\ []) do 
+  def void(gateway, id, opts \\ []) do
     config = get_and_validate_config(gateway)
     gateway.void(id, [{:config, config} | opts])
   end

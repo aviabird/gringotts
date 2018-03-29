@@ -48,13 +48,11 @@ defmodule GringottsTest do
   end
 
   test "authorization" do
-    assert authorize(GringottsTest.FakeGateway, 100, :card, []) ==
-             :authorization_response
+    assert authorize(GringottsTest.FakeGateway, 100, :card, []) == :authorization_response
   end
 
   test "purchase" do
-    assert purchase(GringottsTest.FakeGateway, 100, :card, []) ==
-             :purchase_response
+    assert purchase(GringottsTest.FakeGateway, 100, :card, []) == :purchase_response
   end
 
   test "capture" do

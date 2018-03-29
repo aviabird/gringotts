@@ -2,13 +2,13 @@ defmodule Gringotts.Gateways.<%= gateway_module <> "Test" %> do
   # The file contains mocked tests for <%= gateway_module%>
   
   # We recommend using [mock][1] for this, you can place the mock responses from
-  # the Gateway in `test/mocks/<%= mock_response_filename%>.exs` file, which has also been
+  # the Gateway in `test/mocks/<%= mock_response_filename %>` file, which has also been
   # generated for you.
   #
   # [1]: https://github.com/jjh42/mock
   
   # Load the mock response file before running the tests.
-  Code.require_file "../mocks/<%= mock_response_filename <> ".exs"%>", __DIR__
+  Code.require_file "../mocks/<%= mock_response_filename %>", __DIR__
   
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.<%= gateway_module%>

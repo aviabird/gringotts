@@ -8,8 +8,17 @@ defmodule Gringotts.Response do
   """
 
   defstruct [
-    :success, :id, :token, :status_code, :gateway_code, :reason, :message,
-    :avs_result, :cvc_result, :raw, :fraud_review
+    :success,
+    :id,
+    :token,
+    :status_code,
+    :gateway_code,
+    :reason,
+    :message,
+    :avs_result,
+    :cvc_result,
+    :raw,
+    :fraud_review
   ]
 
   @typedoc """
@@ -54,19 +63,19 @@ defmodule Gringotts.Response do
 
   [cvc]: https://en.wikipedia.org/wiki/Card_security_code
   """
-  @type t:: %__MODULE__{
-    success: boolean,
-    id: String.t,
-    token: String.t,
-    status_code: non_neg_integer,
-    gateway_code: String.t,
-    reason: String.t,
-    message: String.t,
-    avs_result: %{street: String.t, zip_code: String.t},
-    cvc_result: String.t,
-    raw: String.t,
-    fraud_review: term
-  }
+  @type t :: %__MODULE__{
+          success: boolean,
+          id: String.t(),
+          token: String.t(),
+          status_code: non_neg_integer,
+          gateway_code: String.t(),
+          reason: String.t(),
+          message: String.t(),
+          avs_result: %{street: String.t(), zip_code: String.t()},
+          cvc_result: String.t(),
+          raw: String.t(),
+          fraud_review: term
+        }
 
   def success(opts \\ []) do
     new(true, opts)
