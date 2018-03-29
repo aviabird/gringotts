@@ -6,7 +6,7 @@ defmodule Gringotts.Gateways.PinPayments do
 
   | Key      | Credentials        |
   | ------   | --------           |
-  | username | `api_key`          |
+  | apiKey   | `api_key`          |
 
 
   The following features of PinPayments are implemented:
@@ -43,13 +43,13 @@ defmodule Gringotts.Gateways.PinPayments do
 
   | Config parameter | PinPayments secret    |
   | -------          | ----                  |
-  | `:username`      | `**API_SECRET_KEY**`  |
+  | `:apiKey`        | `**API_SECRET_KEY**`  |
 
-  > Your Application config **must include the `:username`
+  > Your Application config **must include the `:apiKey`
   > fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Pinpay,
-          username: "your_secret_key",
+          apiKey: "your_secret_key",
           
 
   * PinPayments **does** process money in cents.
@@ -73,7 +73,7 @@ defmodule Gringotts.Gateways.PinPayments do
   - To save you time, we recommend [cloning our example
   repo][example] that gives you a pre-configured sample app ready-to-go.
   + You could use the same config or update it the with your "secrets"
-          as described [above](#module-registering-your-monei-account-at-PinPay).
+          as described [above](#module-configuring-your-pinpay-account-at-gringotts).
 
   2. Run an `iex` session with `iex -S mix` and add some variable bindings and
   aliases to it (to save some time):
@@ -101,7 +101,7 @@ defmodule Gringotts.Gateways.PinPayments do
   # The Adapter module provides the `validate_config/1`
   # Add the keys that must be present in the Application config in the
   # `required_config` list
-  use Gringotts.Adapter, required_config: []
+  use Gringotts.Adapter, required_config: [:apiKey]
 
   import Poison, only: [decode: 1]
 
@@ -185,19 +185,19 @@ defmodule Gringotts.Gateways.PinPayments do
       expiry_month: card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
       expiry_year: card.year |> Integer.to_string(),
       cvc: card.verification_code,
-      address_line1: opts[:Address][:street1],
-      address_city: opts[:Address][:city],
-      address_country: opts[:Address][:country],
-      address_line2: opts[:Address][:street2],
-      address_postcode: opts[:Address][:postal_code],
-      address_state: opts[:Address][:region]
+      address_line1: opts[:address].street1,
+      address_city: opts[:address].city,
+      address_country: opts[:address].country,
+      address_line2: opts[:address].street2,
+      address_postcode: opts[:address].postal_code,
+      address_state: opts[:address].region
 
     ]
   end
 
   @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, param) do
-    auth_token = encoded_credentials(param[:config].apiKey, "")
+    auth_token = encoded_credentials(param[:config].apiKey)
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -213,7 +213,7 @@ defmodule Gringotts.Gateways.PinPayments do
   end
 
   defp commit_short(method, url, opts) do
-    auth_token = encoded_credentials(opts[:config].apiKey, "")
+    auth_token = encoded_credentials(opts[:config].apiKey)
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -224,8 +224,8 @@ defmodule Gringotts.Gateways.PinPayments do
     |> respond
   end
 
-  defp encoded_credentials(login, password) do
-    hash = Base.encode64("#{login}:#{password}")
+  defp encoded_credentials(login) do
+    hash = Base.encode64("#{login}:")
     "Basic #{hash}"
   end
 
