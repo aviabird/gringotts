@@ -1,6 +1,6 @@
 defmodule Gringotts.Gateways.SagePay do
   @moduledoc """
-  [sagepay][home] gateway implementation.
+  [SagePay][home] gateway implementation.
 
   --------------------------------------------------------------------------------
 
@@ -24,38 +24,40 @@ defmodule Gringotts.Gateways.SagePay do
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
-  [optional arguments][extra-arg-docs] for transactions with the SAGEPAY
-  gateway. The following keys are supported:
+  optional arguments for transactions with the SagePay gateway. 
 
-  | Key                    |  Remarks
-  |  -----                 |  ------
-  |  `auth_id`             |  A unique merchant id provided by the merchant.
-  |  `vendor`              |  Name of the merchant.
-  |  `vendor_tx_code`      |  vendor_tx_code is a unique code for every transaction in SagePay.
-  |  `transaction_type`    |  SagePay allows four transactions type:- Deferred, Payment, Repeat, Refund.
-  |  `customer_first_name` |  First name of a customer.
-  |  `customer_last_name`  |  Last nmae of a customer.
-  |  `address`             |  Billing address of a customer.
+  The following keys are supported:
+
+  |  Key                   |  Remarks                                                                    |
+  |  ---                   |  -------                                                                    |
+  |  `auth_id`             |  A unique merchant id provided by the merchant.                             |
+  |  `vendor`              |  Name of the merchant.                                                      |
+  |  `vendor_tx_code`      |  vendor_tx_code is a unique code for every transaction in SagePay.          |
+  |  `transaction_type`    |  SagePay allows four transactions type:- Deferred, Payment, Repeat, Refund. |
+  |  `customer_first_name` |  First name of a customer.                                                  |
+  |  `customer_last_name`  |  Last name of a customer.                                                   |
+  |  `address`             |  Billing address of a customer.                                             |
 
   ## Registering your SagePay account at `Gringotts`
 
-  After [making an account on SagePay][dashboard], head to the dashboard and find
-  your account "secrets" in the `Sub-Accounts > Overview` section.
+  After [making an account on SagePay][dashboard], provide your `:auth_id` and 
+  `:merchant_name` in Application config.
 
   Here's how the secrets map to the required configuration parameters for SagePay:
 
   | Config parameter        | SagePay secret         |
   | ------------------------| -----------------------|
   | `:auth_id`              | **Authorization Id**   |
-  | `:vendor_name`          | **Name of a merchant** |
+  | `:merchant_name`        | **Name of a merchant** |
 
-  Your Application config **must include the `:Authorization Id`, `:Merchant name`
+  Your Application config **must include the `:auth_id`, `:merchant_name`
   fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.SagePay,
         auth_id: "your_secret_user_id",
-        vendor_name: "name_of_vendor"
+        merchant_name: "name_of_merchant"
         
+  [dashboard]: https://applications.sagepay.com/apply
 
   ## Scope of this module
 
@@ -81,7 +83,8 @@ defmodule Gringotts.Gateways.SagePay do
      aliases.
 
   We'll be using these in the examples below.
-
+  [gs]: file:///home/anwar/gringotts/doc/Gringotts.Gateways.SagePay.html#
+  [example]: https://github.com/aviabird/gringotts_example
   [iex-docs]: https://hexdocs.pm/iex/IEx.html#module-the-iex-exs-file
   [sagepay.iex.exs]: https://github.com/Anwar0902/graph/blob/master/sagepay.iex.exs
   """
@@ -100,9 +103,9 @@ defmodule Gringotts.Gateways.SagePay do
   alias Gringotts.{Money, CreditCard, Response}
   @url "https://pi-test.sagepay.com/api/v1/"
 
-  # SagePay supports payment only by Merchant Authorization Id and Merchant name
-  # by generating merchant session key and then providing card details generates
-  # card_identifier which is required in authorization.
+  # SagePay supports payment only by providing Merchant `:auth_id` and `:merchant_name`
+  # which generates `merchant_session_key` and then providing card details generates
+  # `card_identifier` which is required for authorization.
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -110,16 +113,17 @@ defmodule Gringotts.Gateways.SagePay do
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
 
-  SagePay returns an trancaction ID string which can be used to:
+  SagePay returns an transaction ID(available in `Response.id`) string which can be used to:
   * `capture/3` an amount.
   * `void/2` abort deferred transaction.
   * `refund/3` an amount.
 
   ## Note
 
-  * The merchant_session_key expires after 400 seconds and can only be used to create one successful card identifier. 
-  * It will also expire and be removed after 3 failed attempts to create a card identifier.
-  * vendor_tx_code Code in opts should always be unique.
+  * The `merchant_session_key` expires after 400 seconds and can only be used to create one successful `card_identifier`. 
+  * It will also expire and will be removed after 3 failed attempts to create a `card_identifier`.
+  * `vendor_tx_code` in opts should always be unique.
+  * `address` should be provided as defined in `Gringotts.address`.
 
   ## Example
 
@@ -127,24 +131,24 @@ defmodule Gringotts.Gateways.SagePay do
   a sample `card`.
 
       iex> amount = Money.new(42, :GBP)
-      iex> address = %{ address1: "407 St. John Street", city: "London", postalCode: "EC1V 4AB", country: "GB"} 
+      iex> address = %{ street1: "407 St.", street2: "John Street", city: "London", postalCode: "EC1V 4AB", country: "GB"} 
       iex> card = %Gringotts.CreditCard{number: "4929000005559",month: 3,year: 20,first_name: "SAM",last_name: "JONES",verification_code: "123",brand: "VISA"}
       iex> opts = [
                   config: %{
-                      merchant_id: "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
-                      vendor: "sandbox"
+                      auth_id: "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
+                      merchant_name: "sandbox"
                   },
-                  transactionType: "Deferred",
-                  vendorTxCode: "demotransaction-51",
+                  transaction_type: "Deferred",
+                  vendor_tx_code: "demotransaction-51",
                   description: "Demo Payment",
-                  customerFirstName: "Sam",
-                  customerLastName: "Jones",
-                  billingAddress: address
+                  customer_first_name: "Sam",
+                  customer_last_name: "Jones",
+                  billing_address: address
             ]
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
       iex> auth_result.id
   """
-  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, %CreditCard{} = card, opts) do
     merchant_key = generate_merchant_key(opts)
 
@@ -178,18 +182,22 @@ defmodule Gringotts.Gateways.SagePay do
     |> respond
   end
 
-  defp commit_for_key(:post, endpoint, params, opts) do
+  defp format_response(:post, endpoint, params, opts) do
     a_url = @url <> endpoint
 
     response = HTTPoison.post(a_url, params, opts)
-    format_response(response)
+
+    case response do
+      {:ok, %HTTPoison.Response{body: body}} -> {:ok, body |> Poison.decode!()}
+      _ -> %{"error" => "something went wrong, please try again later"}
+    end
   end
 
-  # Function generate_merchant_key generate a merchant session key that will exist only for 400 seconds
-  # and for 3 wrong card identifiers
+  # Function `generate_merchant_key` generate a `merchant_session_key` that will exist only for 400 seconds
+  # and for 3 wrong `card_identifiers`.
 
   defp generate_merchant_key(opts) do
-    merchant_body = Poison.encode!(%{vendorName: opts[:config].vendor})
+    merchant_body = Poison.encode!(%{vendorName: opts[:config].merchant_name})
 
     merchant_header = [
       {"Authorization", "Basic " <> opts[:config].auth_id},
@@ -197,13 +205,13 @@ defmodule Gringotts.Gateways.SagePay do
     ]
 
     {:ok, merchant_key} =
-      commit_for_key(:post, "merchant-session-keys", merchant_body, merchant_header)
+      format_response(:post, "merchant-session-keys", merchant_body, merchant_header)
 
     merchant_key
     |> Map.get("merchantSessionKey")
   end
 
-  # card_params returns credit card details of a customer from Gringotts.Creditcard
+  # `card_params` returns credit card details of a customer from `Gringotts.Creditcard`.
 
   defp card_params(card) do
     %{
@@ -219,7 +227,7 @@ defmodule Gringotts.Gateways.SagePay do
     }
   end
 
-  # Function generate_card_identifier generate a unique cardidentifier for every transaction
+  # Function `generate_card_identifier` generate a unique `card_identifier` for every transaction.
 
   defp generate_card_identifier(card, merchant_key) do
     card_header = [
@@ -229,21 +237,22 @@ defmodule Gringotts.Gateways.SagePay do
 
     card = card |> Poison.encode!()
 
-    {:ok, card_identifier} = commit_for_key(:post, "card-identifiers", card, card_header)
+    {:ok, card_identifier} = format_response(:post, "card-identifiers", card, card_header)
 
     card_identifier
     |> Map.get("cardIdentifier")
   end
 
-  # Function transaction_details creates the actual body (details of the customer )of the card 
-  # and with merchant_session_key, card_identifiier ,shipping address of a customer, and
-  # other details and converting the map into keyword list
+  # Function `transaction_details` creates the actual body (details of the customer )of the card 
+  # and with `merchant_session_key`, `card_identifiier` ,shipping address of a customer, and
+  # other details and converting the map into keyword list.
 
   defp transaction_details(amount, merchant_key, card_identifiier, opts) do
     {currency, value} = Money.to_string(amount)
+    full_address = opts[:billing_address].street1 <> " " <> opts[:billing_address].street2
 
     Poison.encode!(%{
-      "transactionType" => opts[:transactionType],
+      "transactionType" => opts[:transaction_type],
       "paymentMethod" => %{
         "card" => %{
           "merchantSessionKey" => merchant_key,
@@ -251,30 +260,23 @@ defmodule Gringotts.Gateways.SagePay do
           "save" => false
         }
       },
-      "vendorTxCode" => opts[:vendorTxCode],
+      "vendorTxCode" => opts[:vendor_tx_code],
       "amount" => Kernel.trunc(String.to_float(value)),
       "currency" => currency,
       "description" => opts[:description],
-      "customerFirstName" => opts[:customerFirstName],
-      "customerLastName" => opts[:customerLastName],
+      "customerFirstName" => opts[:customer_first_name],
+      "customerLastName" => opts[:customer_last_name],
       "billingAddress" => %{
-        "address1" => opts[:billingAddress].address1,
-        "city" => opts[:billingAddress].city,
-        "postalCode" => opts[:billingAddress].postalCode,
-        "country" => opts[:billingAddress].country
+        "address1" => full_address,
+        "city" => opts[:billing_address].city,
+        "postalCode" => opts[:billing_address].postal_code,
+        "country" => opts[:billing_address].country
       }
     })
   end
 
   # Parses sagepay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
-
-  defp format_response(response) do
-    case response do
-      {:ok, %HTTPoison.Response{body: body}} -> {:ok, body |> Poison.decode!()}
-      _ -> %{"error" => "something went wrong, please try again later"}
-    end
-  end
 
   @spec respond(term) :: {:ok | :error, Response}
 
