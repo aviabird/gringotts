@@ -78,7 +78,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   ### With a `card_token` and `customer_token`
       iex> amount = Money.new(20, :USD)
       iex> opts = [customer_id: "cust_9999999999999999999999999"]
-      iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
+      iex> card = "card_999999999999999"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
   """
@@ -97,19 +97,17 @@ defmodule Gringotts.Gateways.SecurionPay do
   @doc """
   Captures a pre-authorized transcation from the customer.
 
-  The amount present in the pre-authorization referenced by `payment_id` is transferred to the 
-  merchant account by SecurionPay.
-
+  The complete amount present in the pre-authorization referenced by `payment_id` is transferred
+  to the merchant account by SecurionPay. The `amount` argument is ignored.
 
   Successful request returns a charge object that was captured.
 
   ## Note
-  SecurionPay does not support partial captures. So there is no need of amount in capture.
+  Because SecurionPay **does not support partial captures**, please pass `nil` in `amount`
 
   ## Example
-      iex> opts = [config: [secret_key: "c2tfdGVzdF82cGZBYTI3aDhvOUUxanRJZWhaQkE3dkE6"]]
-      iex> amount = 100
-      iex> payment_id = "char_WCglhaf1Gn9slpXWYBkZqbGK" 
+      iex> amount = nil
+      iex> payment_id = "char_9999999999999999" 
       iex> result = Gringotts.Gateways.SecurionPay.capture(payment_id, amount, opts)     
 
   """
