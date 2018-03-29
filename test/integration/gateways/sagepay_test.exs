@@ -71,9 +71,6 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
     {:ok, opts: [vendor_tx_code: "demotransaction-" <> random_code] ++ @opts}
   end
 
-  describe "purchase" do
-  end
-
   describe "authorize" do
     test "successful response with valid params", %{opts: opts} do
       use_cassette "SagePay/authorize_with_valid_params" do
