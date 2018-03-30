@@ -203,7 +203,7 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{status_code: _, token: token}}) do
+  defp extract_card_token({:ok, %{token: token}}) do
     token
   end
 
