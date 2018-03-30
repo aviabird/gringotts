@@ -14,7 +14,7 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
 
   @bad_amount Money.new("50.3", :USD)
 
-  @shippingAddress %{
+  @shipping_address %{
     street: "Desertroad",
     houseNumber: "1",
     additionalInfo: "Suite II",
@@ -31,7 +31,7 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     first_name: "John",
     last_name: "Doe",
     verification_code: "123",
-    brand: "visa"
+    brand: "VISA"
   }
 
   @invalid_card %CreditCard{
@@ -41,10 +41,10 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     first_name: "John",
     last_name: "Doe",
     verification_code: "123",
-    brand: "visa"
+    brand: "VISA"
   }
 
-  @billingAddress %{
+  @billing_address %{
     street: "Desertroad",
     houseNumber: "13",
     additionalInfo: "b",
@@ -71,16 +71,16 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
 
   @invalid_config [
     config: %{
-      secret_api_key: "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU=",
-      api_key_id: "e5743abfc360ed12"
+      secret_api_key: "some_secret_api_key",
+      api_key_id: "some_api_key_id"
     }
   ]
 
   @options [
     config: %{
-      secret_api_key: "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU=",
-      api_key_id: "e5743abfc360ed12",
-      merchant_id: "1226"
+      secret_api_key: "some_secret_api_key",
+      api_key_id: "some_api_key_id",
+      merchant_id: "some_merchant_id"
     },
     description: "Store Purchase 1437598192",
     merchantCustomerId: "234",
@@ -91,19 +91,11 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
     phone: "7468474533",
     order_id: "2323",
     invoice: @invoice,
-    billingAddress: @billingAddress,
-    shippingAddress: @shippingAddress,
+    billingAddress: @billing_address,
+    shippingAddress: @shipping_address,
     name: @name,
     skipAuthentication: "true"
   ]
-
-  describe "validation arguments check" do
-    test "with no merchant id passed in config" do
-      assert_raise ArgumentError, fn ->
-        GlobalCollect.validate_config(@invalid_config)
-      end
-    end
-  end
 
   describe "purchase" do
     test "with valid card" do

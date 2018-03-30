@@ -3,7 +3,15 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"creationOutput\" : {\n      \"additionalReference\" : \"00000012260000000074\",\n      \"externalReference\" : \"000000122600000000740000100001\"\n   },\n   \"payment\" : {\n      \"id\" : \"000000122600000000740000100001\",\n      \"paymentOutput\" : {\n         \"amountOfMoney\" : {\n            \"amount\" : 500,\n            \"currencyCode\" : \"USD\"\n         },\n         \"references\" : {\n            \"paymentReference\" : \"0\"\n         },\n         \"paymentMethod\" : \"card\",\n         \"cardPaymentMethodSpecificOutput\" : {\n            \"paymentProductId\" : 1,\n            \"authorisationCode\" : \"OK1131\",\n            \"fraudResults\" : {\n               \"fraudServiceResult\" : \"no-advice\",\n               \"avsResult\" : \"0\",\n               \"cvvResult\" : \"0\"\n            },\n            \"card\" : {\n               \"cardNumber\" : \"************7977\",\n               \"expiryDate\" : \"1218\"\n            }\n         }\n      },\n      \"status\" : \"PENDING_APPROVAL\",\n      \"statusOutput\" : {\n         \"isCancellable\" : true,\n         \"statusCategory\" : \"PENDING_MERCHANT\",\n         \"statusCode\" : 600,\n         \"statusCodeChangeDateTime\" : \"20180118135349\",\n         \"isAuthorized\" : true,\n         \"isRefundable\" : false\n      }\n   }\n}",
+         ~s/{"creationOutput":{"additionalReference":"00000012260000000074","externalReference":
+       "000000122600000000740000100001"},"payment":{"id":"000000122600000000740000100001",
+       "paymentOutput":{"amountOfMoney":{"amount":500,"currencyCode":"USD"},"references":
+       {"paymentReference":"0"},"paymentMethod":"card","cardPaymentMethodSpecificOutput":
+       {"paymentProductId":1,"authorisationCode":"OK1131","fraudResults":{"fraudServiceResult":
+       "no-advice","avsResult":"0","cvvResult":"0"},"card":{"cardNumber":"************7977",
+       "expiryDate":"1218"}}},"status":"PENDING_APPROVAL","statusOutput":{"isCancellable":true,
+       "statusCategory":"PENDING_MERCHANT","statusCode":600,"statusCodeChangeDateTime":
+       "20180118135349","isAuthorized":true,"isRefundable":false}}}/,
        headers: [
          {"Date", "Thu, 18 Jan 2018 12:53:49 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -22,7 +30,18 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"errorId\" : \"363899bd-acfb-4452-bbb0-741c0df6b4b8\",\n   \"errors\" : [ {\n      \"code\" : \"21000120\",\n      \"requestId\" : \"980825\",\n      \"propertyName\" : \"cardPaymentMethodSpecificInput.card.expiryDate\",\n      \"message\" : \"cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT\",\n      \"httpStatusCode\" : 400\n   } ],\n   \"paymentResult\" : {\n      \"creationOutput\" : {\n         \"additionalReference\" : \"00000012260000000075\",\n         \"externalReference\" : \"000000122600000000750000100001\"\n      },\n      \"payment\" : {\n         \"id\" : \"000000122600000000750000100001\",\n         \"paymentOutput\" : {\n            \"amountOfMoney\" : {\n               \"amount\" : 500,\n               \"currencyCode\" : \"USD\"\n            },\n            \"references\" : {\n               \"paymentReference\" : \"0\"\n            },\n            \"paymentMethod\" : \"card\",\n            \"cardPaymentMethodSpecificOutput\" : {\n               \"paymentProductId\" : 1\n            }\n         },\n         \"status\" : \"REJECTED\",\n         \"statusOutput\" : {\n            \"errors\" : [ {\n               \"code\" : \"21000120\",\n               \"requestId\" : \"546247\",\n               \"propertyName\" : \"cardPaymentMethodSpecificInput.card.expiryDate\",\n               \"message\" : \"cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT\",\n               \"httpStatusCode\" : 400\n            } ],\n            \"isCancellable\" : false,\n            \"statusCategory\" : \"UNSUCCESSFUL\",\n            \"statusCode\" : 100,\n            \"statusCodeChangeDateTime\" : \"20180118135651\",\n            \"isAuthorized\" : false,\n            \"isRefundable\" : false\n         }\n      }\n   }\n}",
+         ~s/{"errorId" : "363899bd-acfb-4452-bbb0-741c0df6b4b8","errors" : [ {"code" : "21000120",
+         "requestId" : "980825","propertyName" : "cardPaymentMethodSpecificInput.card.expiryDate",
+         "message" : "cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT",
+         "httpStatusCode" : 400} ],"paymentResult" : {"creationOutput" : { " additionalReference" : "00000012260000000075",
+         "externalReference" : "000000122600000000750000100001"},"payment" : {"id" : "000000122600000000750000100001",
+         "paymentOutput" : {"amountOfMoney" : {"amount" : 500,"currencyCode" : "USD"},"references" : {"paymentReference" : "0"},
+         "paymentMethod" : "card","cardPaymentMethodSpecificOutput" : {"paymentProductId" : 1}},
+         "status" : "REJECTED","statusOutput" : {"errors" : [ {"code" : "21000120",
+         "requestId" : "546247","propertyName" : "cardPaymentMethodSpecificInput.card.expiryDate",
+         "message" : "cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT",
+         "httpStatusCode" : 400} ],"isCancellable" : false,"statusCategory" : "UNSUCCESSFUL","statusCode" : 100,
+         "statusCodeChangeDateTime" : "20180118135651","isAuthorized" : false,"isRefundable" : false}}}}/,
        headers: [
          {"Date", "Thu, 18 Jan 2018 12:56:51 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -40,7 +59,10 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"errorId\" : \"8c34dc0b-776c-44e3-8cd4-b36222960153\",\n   \"errors\" : [ {\n      \"code\" : \"1099\",\n      \"id\" : \"INVALID_VALUE\",\n      \"category\" : \"CONNECT_PLATFORM_ERROR\",\n      \"message\" : \"INVALID_VALUE: '50.3' is not a valid value for field 'amount'\",\n      \"httpStatusCode\" : 400\n   } ]\n}",
+         ~s/{ "errorId" : "8c34dc0b-776c-44e3-8cd4-b36222960153","errors" : [ {"code" : "1099","id" :
+       "INVALID_VALUE","category" : "CONNECT_PLATFORM_ERROR","message" :
+       "INVALID_VALUE: '50.3' is not a valid value for field 'amount'",
+       "httpStatusCode" : 400 } ]}/,
        headers: [
          {"Date", "Wed, 24 Jan 2018 07:16:06 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -58,7 +80,16 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"creationOutput\" : {\n      \"additionalReference\" : \"00000012260000000065\",\n      \"externalReference\" : \"000000122600000000650000100001\"\n   },\n   \"payment\" : {\n      \"id\" : \"000000122600000000650000100001\",\n      \"paymentOutput\" : {\n         \"amountOfMoney\" : {\n            \"amount\" : 500,\n            \"currencyCode\" : \"USD\"\n         },\n         \"references\" : {\n            \"paymentReference\" : \"0\"\n         },\n         \"paymentMethod\" : \"card\",\n         \"cardPaymentMethodSpecificOutput\" : {\n            \"paymentProductId\" : 1,\n            \"authorisationCode\" : \"OK1131\",\n            \"fraudResults\" : {\n               \"fraudServiceResult\" : \"no-advice\",\n               \"avsResult\" : \"0\",\n               \"cvvResult\" : \"0\"\n            },\n            \"card\" : {\n               \"cardNumber\" : \"************7977\",\n               \"expiryDate\" : \"1218\"\n            }\n         }\n      },\n      \"status\" : \"PENDING_APPROVAL\",\n      \"statusOutput\" : {\n         \"isCancellable\" : true,\n         \"statusCategory\" : \"PENDING_MERCHANT\",\n         \"statusCode\" : 600,\n         \"statusCodeChangeDateTime\" : \"20180118110419\",\n         \"isAuthorized\" : true,\n         \"isRefundable\" : false\n      }\n   }\n}",
+         ~s/{"creationOutput" : {"additionalReference" : "00000012260000000065","externalReference" :
+        "000000122600000000650000100001"},"payment" : {"id" : "000000122600000000650000100001",
+        "paymentOutput" :{"amountOfMoney" : {"amount" : 500,"currencyCode" : "USD"},"references" :
+        {"paymentReference" : "0" },"paymentMethod" : "card","cardPaymentMethodSpecificOutput" :
+        {"paymentProductId" : 1,"authorisationCode" : "OK1131","fraudResults" :
+        {"fraudServiceResult" : "no-advice","avsResult" : "0","cvvResult" : "0"},"card" :
+        {"cardNumber" : "************7977","expiryDate" : "1218"}}},"status" : "PENDING_APPROVAL",
+        "statusOutput" : {"isCancellable" : true,"statusCategory" : "PENDING_MERCHANT","statusCode"
+        : 600,"statusCodeChangeDateTime" : "20180118110419","isAuthorized" : true,
+        "isRefundable" : false}}}/,
        headers: [
          {"Date", "Thu, 18 Jan 2018 10:04:19 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -77,7 +108,21 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"errorId\" : \"dcdf5c8d-e475-4fbc-ac57-76123c1640a2\",\n   \"errors\" : [ {\n      \"code\" : \"21000120\",\n      \"requestId\" : \"978754\",\n      \"propertyName\" : \"cardPaymentMethodSpecificInput.card.expiryDate\",\n      \"message\" : \"cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT\",\n      \"httpStatusCode\" : 400\n   } ],\n   \"paymentResult\" : {\n      \"creationOutput\" : {\n         \"additionalReference\" : \"00000012260000000066\",\n         \"externalReference\" : \"000000122600000000660000100001\"\n      },\n      \"payment\" : {\n         \"id\" : \"000000122600000000660000100001\",\n         \"paymentOutput\" : {\n            \"amountOfMoney\" : {\n               \"amount\" : 500,\n               \"currencyCode\" : \"USD\"\n            },\n            \"references\" : {\n               \"paymentReference\" : \"0\"\n            },\n            \"paymentMethod\" : \"card\",\n            \"cardPaymentMethodSpecificOutput\" : {\n               \"paymentProductId\" : 1\n            }\n         },\n         \"status\" : \"REJECTED\",\n         \"statusOutput\" : {\n            \"errors\" : [ {\n               \"code\" : \"21000120\",\n               \"requestId\" : \"978755\",\n               \"propertyName\" : \"cardPaymentMethodSpecificInput.card.expiryDate\",\n               \"message\" : \"cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT\",\n               \"httpStatusCode\" : 400\n            } ],\n            \"isCancellable\" : false,\n            \"statusCategory\" : \"UNSUCCESSFUL\",\n            \"statusCode\" : 100,\n            \"statusCodeChangeDateTime\" : \"20180118111508\",\n            \"isAuthorized\" : false,\n            \"isRefundable\" : false\n         }\n      }\n   }\n}",
+         ~s/{"errorId" : "dcdf5c8d-e475-4fbc-ac57-76123c1640a2","errors" : [ {"code" : "21000120",
+        "requestId" : "978754","propertyName" : "cardPaymentMethodSpecificInput.card.expiryDate","message":
+        "cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT",
+        "httpStatusCode" : 400} ],"paymentResult" : {"creationOutput" :
+        {"additionalReference" :"00000012260000000066","externalReference" :
+        "000000122600000000660000100001"},"payment" :{"id" : "000000122600000000660000100001",
+        "paymentOutput" : {"amountOfMoney" : {"amount" : 500,"currencyCode" : "USD"},
+        "references" : {"paymentReference" : "0"},"paymentMethod" : "card",
+        "cardPaymentMethodSpecificOutput" : {"paymentProductId" : 1}},"status" : "REJECTED",
+        "statusOutput":{"errors" : [ {"code" : "21000120","requestId" : "978755","propertyName" :
+        "cardPaymentMethodSpecificInput.card.expiryDate","message" :
+        "cardPaymentMethodSpecificInput.card.expiryDate (1210) IS IN THE PAST OR NOT IN CORRECT MMYY FORMAT",
+        "httpStatusCode" : 400} ],"isCancellable" : false,"statusCategory" :
+        "UNSUCCESSFUL","statusCode" : 100,"statusCodeChangeDateTime" : "20180118111508",
+        "isAuthorized" : false,"isRefundable" : false}}}}/,
        headers: [
          {"Date", "Thu, 18 Jan 2018 10:15:08 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -95,7 +140,9 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"errorId\" : \"1dbef568-ed86-4c8d-a3c3-74ced258d5a2\",\n   \"errors\" : [ {\n      \"code\" : \"1099\",\n      \"id\" : \"INVALID_VALUE\",\n      \"category\" : \"CONNECT_PLATFORM_ERROR\",\n      \"message\" : \"INVALID_VALUE: '50.3' is not a valid value for field 'amount'\",\n      \"httpStatusCode\" : 400\n   } ]\n}",
+         ~s/{"errorId" : "1dbef568-ed86-4c8d-a3c3-74ced258d5a2","errors" : [ {"code" : "1099","id" :
+       "INVALID_VALUE", "category" : "CONNECT_PLATFORM_ERROR","message" :
+       "INVALID_VALUE: '50.3' is not a valid value for field 'amount'","httpStatusCode" : 400} ]}/,
        headers: [
          {"Date", "Tue, 23 Jan 2018 11:18:11 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -113,7 +160,8 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"errorId\" : \"b6ba00d2-8f11-4822-8f32-c6d0a4d8793b\",\n   \"errors\" : [ {\n      \"code\" : \"300450\",\n      \"message\" : \"ORDER WITHOUT REFUNDABLE PAYMENTS\",\n      \"httpStatusCode\" : 400\n   } ]\n}",
+         ~s/{  "errorId" : "b6ba00d2-8f11-4822-8f32-c6d0a4d8793b",  "errors" : [ {"code" : "300450",
+       "message" : "ORDER WITHOUT REFUNDABLE PAYMENTS", "httpStatusCode" : 400  } ]}/,
        headers: [
          {"Date", "Wed, 24 Jan 2018 05:33:56 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -131,8 +179,15 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
   def test_for_capture_with_valid_paymentid do
     {:ok,
      %HTTPoison.Response{
-       body:
-         "{\n   \"payment\" : {\n      \"id\" : \"000000122600000000650000100001\",\n      \"paymentOutput\" : {\n         \"amountOfMoney\" : {\n            \"amount\" : 50,\n            \"currencyCode\" : \"USD\"\n         },\n         \"references\" : {\n            \"paymentReference\" : \"0\"\n         },\n         \"paymentMethod\" : \"card\",\n         \"cardPaymentMethodSpecificOutput\" : {\n            \"paymentProductId\" : 1,\n            \"authorisationCode\" : \"OK1131\",\n            \"fraudResults\" : {\n               \"fraudServiceResult\" : \"no-advice\",\n               \"avsResult\" : \"0\",\n               \"cvvResult\" : \"0\"\n            },\n            \"card\" : {\n               \"cardNumber\" : \"************7977\",\n               \"expiryDate\" : \"1218\"\n            }\n         }\n      },\n      \"status\" : \"CAPTURE_REQUESTED\",\n      \"statusOutput\" : {\n         \"isCancellable\" : true,\n         \"statusCategory\" : \"PENDING_CONNECT_OR_3RD_PARTY\",\n         \"statusCode\" : 800,\n         \"statusCodeChangeDateTime\" : \"20180123140826\",\n         \"isAuthorized\" : true,\n         \"isRefundable\" : false\n      }\n   }\n}",
+       body: ~s/{   "payment" : {"id" : "000000122600000000650000100001", "paymentOutput" : {
+         "amountOfMoney" :{"amount" : 50,"currencyCode" : "USD"},"references" : {"paymentReference"
+        : "0"},"paymentMethod" : "card","cardPaymentMethodSpecificOutput" : {"paymentProductId" :
+        1,"authorisationCode" : "OK1131","fraudResults" : {"fraudServiceResult" : "no-advice",
+        "avsResult" : "0","cvvResult" : "0"},"card" :{"cardNumber" : "************7977",
+        "expiryDate" : "1218"}}},"status" : "CAPTURE_REQUESTED","statusOutput" :
+        {"isCancellable" : true,"statusCategory" : "PENDING_CONNECT_OR_3RD_PARTY",
+        "statusCode" : 800,"statusCodeChangeDateTime" : "20180123140826","isAuthorized" : true,
+        "isRefundable" : false} }}/,
        headers: [
          {"Date", "Tue, 23 Jan 2018 13:08:26 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -149,8 +204,9 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
   def test_for_capture_with_invalid_paymentid do
     {:ok,
      %HTTPoison.Response{
-       body:
-         "{\n   \"errorId\" : \"ccb99804-0240-45b6-bb28-52aaae59d71b\",\n   \"errors\" : [ {\n      \"code\" : \"1002\",\n      \"id\" : \"UNKNOWN_PAYMENT_ID\",\n      \"category\" : \"CONNECT_PLATFORM_ERROR\",\n      \"propertyName\" : \"paymentId\",\n      \"message\" : \"UNKNOWN_PAYMENT_ID\",\n      \"httpStatusCode\" : 404\n   } ]\n}",
+       body: ~s/{   "errorId" : "ccb99804-0240-45b6-bb28-52aaae59d71b",   "errors" : [
+         {"code" : "1002","id" :"UNKNOWN_PAYMENT_ID","category" : "CONNECT_PLATFORM_ERROR",
+         "propertyName" : "paymentId","message": "UNKNOWN_PAYMENT_ID","httpStatusCode" :404}]}/,
        headers: [
          {"Date", "Tue, 23 Jan 2018 12:25:59 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
@@ -167,7 +223,15 @@ defmodule Gringotts.Gateways.GlobalCollectMock do
     {:ok,
      %HTTPoison.Response{
        body:
-         "{\n   \"payment\" : {\n      \"id\" : \"000000122600000000870000100001\",\n      \"paymentOutput\" : {\n         \"amountOfMoney\" : {\n            \"amount\" : 50,\n            \"currencyCode\" : \"USD\"\n         },\n         \"references\" : {\n            \"paymentReference\" : \"0\"\n         },\n         \"paymentMethod\" : \"card\",\n         \"cardPaymentMethodSpecificOutput\" : {\n            \"paymentProductId\" : 1,\n            \"authorisationCode\" : \"OK1131\",\n            \"fraudResults\" : {\n               \"fraudServiceResult\" : \"no-advice\",\n               \"avsResult\" : \"0\",\n               \"cvvResult\" : \"0\"\n            },\n            \"card\" : {\n               \"cardNumber\" : \"************7977\",\n               \"expiryDate\" : \"1218\"\n            }\n         }\n      },\n      \"status\" : \"CANCELLED\",\n      \"statusOutput\" : {\n         \"isCancellable\" : false,\n         \"statusCategory\" : \"UNSUCCESSFUL\",\n         \"statusCode\" : 99999,\n         \"statusCodeChangeDateTime\" : \"20180124064204\",\n         \"isAuthorized\" : false,\n         \"isRefundable\" : false\n      }\n   }\n}",
+         ~s/{ "payment" : {"id" : "000000122600000000870000100001","paymentOutput" : {"amountOfMoney"
+        :{"amount" : 50,"currencyCode" : "USD"},"references" : {"paymentReference" : "0"},
+        "paymentMethod" : "card","cardPaymentMethodSpecificOutput" : {"paymentProductId" : 1,
+        "authorisationCode" : "OK1131","fraudResults" : {"fraudServiceResult" : "no-advice",
+        "avsResult" : "0","cvvResult" : "0"},"card" :{"cardNumber" : "************7977",
+        "expiryDate" : "1218"}}},"status" : "CANCELLED","statusOutput":{"isCancellable" :
+        false,"statusCategory" : "UNSUCCESSFUL","statusCode" : 99999,
+        "statusCodeChangeDateTime" : "20180124064204","isAuthorized" : false,"isRefundable" :
+         false}}}/,
        headers: [
          {"Date", "Wed, 24 Jan 2018 05:42:04 GMT"},
          {"Server", "Apache/2.4.27 (Unix) OpenSSL/1.0.2l"},
