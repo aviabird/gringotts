@@ -131,7 +131,7 @@ defmodule Gringotts.Gateways.SagePay do
   a sample `card`.
 
       iex> amount = Money.new(42, :GBP)
-      iex> address = %{ street1: "407 St.", street2: "John Street", city: "London", postalCode: "EC1V 4AB", country: "GB"} 
+      iex> address = %Address{ street1: "407 St.", street2: "John Street", city: "London", postalCode: "EC1V 4AB", country: "GB"} 
       iex> card = %Gringotts.CreditCard{number: "4929000005559",month: 3,year: 20,first_name: "SAM",last_name: "JONES",verification_code: "123",brand: "VISA"}
       iex> opts = [
                   config: %{
