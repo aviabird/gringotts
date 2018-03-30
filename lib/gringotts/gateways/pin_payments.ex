@@ -12,7 +12,6 @@ defmodule Gringotts.Gateways.PinPayments do
   | Store                        | `store/2`     |
   | Refund                       | `refund/3`    |
 
-
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
@@ -26,7 +25,6 @@ defmodule Gringotts.Gateways.PinPayments do
   | `description`     | `String.t` | A description of the item purchased (e.g. 500g of single origin beans)   |
   | `ip_address`      | `String.t` | The IP address of the person submitting the payment(optional)            |
 
-
   > PinPayments supports more optional keys and you can raise [issues] if
     this is important to you.
 
@@ -38,7 +36,7 @@ defmodule Gringotts.Gateways.PinPayments do
   | -------          | ----                  |
   | `:api_key`       | `**API_SECRET_KEY**`  |
 
-  > Your Application config **must include the `:api_Key`
+  > Your Application config **must include the `:api_key`
   > fields** and would look something like this:
 
       config :gringotts, Gringotts.Gateways.Pinpay,
@@ -56,8 +54,6 @@ defmodule Gringotts.Gateways.PinPayments do
 
   ## Supported currencies
   PinPayments supports the currencies listed [here](https://pinPayments.com/developers/api-reference/currency-support)
-
-
 
   ## Following the examples
 
@@ -88,7 +84,7 @@ defmodule Gringotts.Gateways.PinPayments do
   """
 
   # The Base module has the (abstract) public API, and some utility
-  # implementations.  
+  # implementations.
   use Gringotts.Gateways.Base
 
   # The Adapter module provides the `validate_config/1`
@@ -108,7 +104,6 @@ defmodule Gringotts.Gateways.PinPayments do
 
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
-
 
   PinPayments returns a **Token Id** which can be used later to:
   * `capture/3` an amount.
@@ -202,25 +197,13 @@ defmodule Gringotts.Gateways.PinPayments do
     |> HTTPoison.post({:form, param}, headers)
     |> respond
   end
-
-  defp commit_short(method, url, opts) do
-    auth_token = encoded_credentials(opts[:config].apiKey)
-
-    headers = [
-      {"Content-Type", "application/x-www-form-urlencoded"},
-      {"Authorization", auth_token}
-    ]
-
-    HTTPoison.request(method, url, [], headers)
-    |> respond
-  end
-
+  
   defp encoded_credentials(login) do
     hash = Base.encode64("#{login}:")
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{status_code: code, token: token}}) do
+  defp extract_card_token({:ok, %{status_code: _, token: token}}) do
     token
   end
 
