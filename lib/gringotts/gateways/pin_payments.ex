@@ -126,20 +126,24 @@ defmodule Gringotts.Gateways.PinPayments do
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token =
+    card_token_response =
       :post
       |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
       |> extract_card_token
 
-    params =
+      case card_token_response do
+         {:error, error} -> {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
+         {:ok, token} -> params =
       [
         amount: value,
         capture: false,
-        card_token: card_token,
+        card_token: token,
         currency: currency
       ] ++ Keyword.delete(opts, :address)
 
     commit(:post, "charges", params)
+       end
+      
   end
 
   def authorize(amount, card_token, opts) when is_binary(card_token) do
@@ -204,7 +208,11 @@ defmodule Gringotts.Gateways.PinPayments do
   end
 
   defp extract_card_token({:ok, %{token: token}}) do
-    token
+    {:ok, token}
+  end
+
+  defp extract_card_token({:error, %HTTPoison.Error{} = error}) do
+    {:error, error}
   end
 
   # Parses PinPay's response and returns a `Gringotts.Response` struct
