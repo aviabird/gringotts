@@ -97,7 +97,6 @@ defmodule Gringotts.Gateways.PinPayments do
   alias Gringotts.{Money, CreditCard, Response}
 
   @test_url "https://test-api.pinPayments.com/1/"
-  @production_url "https://api.pinPayments.com/1/"
 
   @doc """
   Creates a new charge and returns its details.
@@ -128,7 +127,8 @@ defmodule Gringotts.Gateways.PinPayments do
     {currency, value, _} = Money.to_integer(amount)
 
     card_token =
-      commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+      :post
+      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
       |> extract_card_token
 
     params =
@@ -197,7 +197,7 @@ defmodule Gringotts.Gateways.PinPayments do
     |> HTTPoison.post({:form, param}, headers)
     |> respond
   end
-  
+
   defp encoded_credentials(login) do
     hash = Base.encode64("#{login}:")
     "Basic #{hash}"
