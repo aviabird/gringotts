@@ -131,19 +131,21 @@ defmodule Gringotts.Gateways.PinPayments do
       |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
       |> extract_card_token
 
-      case card_token_response do
-         {:error, error} -> {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
-         {:ok, token} -> params =
-      [
-        amount: value,
-        capture: false,
-        card_token: token,
-        currency: currency
-      ] ++ Keyword.delete(opts, :address)
+    case card_token_response do
+      {:error, error} ->
+        {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
 
-    commit(:post, "charges", params)
-       end
-      
+      {:ok, token} ->
+        params =
+          [
+            amount: value,
+            capture: false,
+            card_token: token,
+            currency: currency
+          ] ++ Keyword.delete(opts, :address)
+
+        commit(:post, "charges", params)
+    end
   end
 
   def authorize(amount, card_token, opts) when is_binary(card_token) do
@@ -207,8 +209,12 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{token: token}}) do
+  defp extract_card_token({:ok, %{status_code: code, token: token}}) when code in 200..299 do
     {:ok, token}
+  end
+
+  defp extract_card_token({:ok, %{body: body}}) do
+    {:error, body}
   end
 
   defp extract_card_token({:error, %HTTPoison.Error{} = error}) do
