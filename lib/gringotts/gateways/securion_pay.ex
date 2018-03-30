@@ -78,7 +78,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   ### With a `card_token` and `customer_token`
       iex> amount = Money.new(20, :USD)
       iex> opts = [customer_id: "cust_9999999999999999999999999"]
-      iex> card = "card_LqTT5tC10BQzDbwWJhFWXDoP"
+      iex> card = "card_999999999999999"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
   """
@@ -92,6 +92,28 @@ defmodule Gringotts.Gateways.SecurionPay do
   def authorize(amount, card_id, opts) when is_binary(card_id) do
     params = common_params(amount, false) ++ card_params(card_id, opts)
     commit(params, "charges", opts)
+  end
+
+  @doc """
+  Captures a pre-authorized transcation from the customer.
+
+  The complete amount present in the pre-authorization referenced by `payment_id` is transferred
+  to the merchant account by SecurionPay. The `amount` argument is ignored.
+
+  Successful request returns a charge object that was captured.
+
+  ## Note
+  Because SecurionPay **does not support partial captures**, please pass `nil` in `amount`
+
+  ## Example
+      iex> amount = nil
+      iex> payment_id = "char_9999999999999999" 
+      iex> result = Gringotts.Gateways.SecurionPay.capture(payment_id, amount, opts)     
+
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(payment_id, _amount, opts) do
+    commit([], "charges/#{payment_id}/capture", opts)
   end
 
   ##########################################################################
