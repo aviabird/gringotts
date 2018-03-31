@@ -209,23 +209,19 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{status_code: code, token: token}}) when code in 200..299 do
+  defp extract_card_token({:ok, %{ token: token}}) do
     {:ok, token}
   end
 
-  defp extract_card_token({:ok, %{body: body}}) do
-    {:error, body}
-  end
-
-  defp extract_card_token({:error, %HTTPoison.Error{} = error}) do
-    {:error, error}
+  defp extract_card_token({:error, error_response}) do
+    {:error, error_response}
   end
 
   # Parses PinPay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
 
-  defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
+  defp respond({:ok, %{status_code: code, body: body}}) when code in 200..299 do
     {:ok, parsed} = decode(body)
     token = parsed["response"]["token"]
     message = parsed["response"]["status_message"]
