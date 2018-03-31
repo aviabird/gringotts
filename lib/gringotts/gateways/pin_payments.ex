@@ -133,7 +133,7 @@ defmodule Gringotts.Gateways.PinPayments do
 
     case card_token_response do
       {:error, error} ->
-        {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}'")}
+        {:error, error}
 
       {:ok, token} ->
         params =
@@ -209,7 +209,7 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{ token: token}}) do
+  defp extract_card_token({:ok, %{token: token}}) do
     {:ok, token}
   end
 
