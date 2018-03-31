@@ -67,13 +67,14 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
   end
 
   describe "[authorize]" do
-      test "old customer with good_opts and good_card" do
-        use_cassette "mercadopago/authorize_old customer with good_opts and good_card" do
-          assert {:ok, response} = Gateway.authorize(@amount, @good_card, @good_opts)
-          assert response.success == true
-          assert response.status_code == 201
-        end
+    test "old customer with good_opts and good_card" do
+      use_cassette "mercadopago/authorize_old customer with good_opts and good_card" do
+        assert {:ok, response} = Gateway.authorize(@amount, @good_card, @good_opts)
+        assert response.success == true
+        assert response.status_code == 201
       end
+    end
+
     test "old customer with good_opts and bad_card" do
       use_cassette "mercadopago/authorize_old customer with good_opts and bad_card" do
         assert {:error, response} = Gateway.authorize(@amount, @bad_card, @good_opts)
@@ -89,6 +90,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
         assert response.status_code == 401
       end
     end
+
     test "old customer with bad_opts and bad_opts" do
       use_cassette "mercadopago/authorize_old customer with bad_opts and bad_opts" do
         assert {:error, response} = Gateway.authorize(@amount, @bad_card, @bad_opts)
@@ -123,6 +125,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
         assert response.status_code == 401
       end
     end
+
     test "new customer with bad_opts and bad_card" do
       use_cassette "mercadopago/authorize_new customer with bad_opts and bad_card" do
         opts = new_email_opts(false)
@@ -132,4 +135,6 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
       end
     end
   end
+
 end
+
