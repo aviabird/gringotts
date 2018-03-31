@@ -11,7 +11,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   alias Gringotts.Gateways.PinPayments, as: Gateway
 
-  # @moduletag :integration
+  @moduletag :integration
 
   @amount Money.new(420, :AUD)
 
