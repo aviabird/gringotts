@@ -116,6 +116,42 @@ defmodule Gringotts.Gateways.SecurionPay do
     commit([], "charges/#{payment_id}/capture", opts)
   end
 
+  @doc """
+  Transfers `amount` from the customer to the merchant.
+
+   SecurionPay attempts to process a purchase on behalf of the customer, by debiting
+  `amount` from the customer's account by charging the customer's `card`.
+
+  The second argument can be a `CreditCard` or a `card_id`. The `customer_id` of the customer who owns the card must be
+  given in optional field if `card_id` is used. 
+
+  ## Example
+  ### With a `CreditCard` struct
+      iex> amount = Money.new(20, :USD)
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> result = Gringotts.Gateways.SecurionPay.purchase(amount, card, [])
+
+  ## Example
+  ### With a `card_token` and `customer_token`
+      iex> amount = Money.new(20, :USD)
+      iex> opts = [customer_id: "cust_9999999999999999999999999"]
+      iex> card = "card_999999999999999"
+      iex> result = Gringotts.Gateways.SecurionPay.purchase(amount, card, opts)
+
+  """
+
+   @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
+
+  def purchase(amount, %CreditCard{} = card, opts) do
+    params = common_params(amount, true) ++ card_params(card)
+    commit(params, "charges", opts)
+  end
+
+  def purchase(amount, card_id, opts) when is_binary(card_id) do
+    params = common_params(amount, true) ++ card_params(card_id, opts)
+    commit(params, "charges", opts)
+  end
+
   ##########################################################################
   #                          PRIVATE METHODS                               #
   ##########################################################################
