@@ -19,16 +19,6 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
 
   @amount Money.new(100, :GBP)
 
-  @bad_card %CreditCard{
-    number: "4929000005559",
-    month: 3,
-    year: 20,
-    first_name: "SAM",
-    last_name: "JONES",
-    verification_code: "123",
-    brand: "VISA"
-  }
-
   @address %Address{
     street1: "407 St.",
     street2: "John Street",
@@ -66,14 +56,19 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
   @payment_id "T6569400-1516-0A3F-E3FA-7F222CC79221"
 
   setup do
-    random_code = Enum.random(1_000_000..10_000_000000000000) |> Integer.to_string()
+    random_number = Enum.random(1_000_000..10_000_000000000000)
+
+    random_code =
+      random_number
+      |> Integer.to_string()
+
     {:ok, opts: [vendor_tx_code: "demotransaction-" <> random_code] ++ @opts}
   end
 
   describe "authorize" do
     test "successful response with valid params", %{opts: opts} do
       use_cassette "sagepay/successful response with valid params" do
-        assert {:ok, response} = SagePay.authorize(@amount, @card, opts)
+        assert {:ok, _} = SagePay.authorize(@amount, @card, opts)
       end
     end
 
