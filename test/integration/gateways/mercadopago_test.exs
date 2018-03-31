@@ -52,9 +52,6 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
          installments: 1
        ]
 
-  
-  # Group the test cases by public api
-
   def new_email_opts(good) do
     no1 = :rand.uniform(1_000_00) |> to_string
     no2 = :rand.uniform(1_000_00) |> to_string
