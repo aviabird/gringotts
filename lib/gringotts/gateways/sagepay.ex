@@ -140,30 +140,53 @@ defmodule Gringotts.Gateways.SagePay do
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, %CreditCard{} = card, opts) do
-    with {:ok, %{body: body, status_code: 201}} <- generate_session_key(opts),
-         {:ok, %{"merchantSessionKey" => session_key} = session} <- Poison.decode(body),
-         {:ok, %{body: body, status_code: 201}} <-
-           generate_card_id(card_params(card), session_key),
-         {:ok, %{"cardIdentifier" => card_id} = card} <- Poison.decode(body) do
-      params = transaction_details(amount, session_key, card_id, opts)
+    with {:ok, session} <- generate_session_key(opts),
+         {:ok, {card_id, _} = card} <- generate_card_id(card_params(card), session) do
+      params = transaction_details(amount, session, card_id, opts)
 
       :post
       |> commit("transactions", params, headers(opts))
-      |> respond({session_key, session["expiry"]}, {card_id, card["expiry"]})
-    else
-      {:error, %HTTPoison.Error{}} = error ->
-        respond(error)
-
-      {:ok, %HTTPoison.Response{} = response} ->
-        {
-          :error,
-          %Response{
-            status_code: response.status_code,
-            raw: response.body,
-            reason: Poison.decode!(response.body)
-          }
-        }
+      |> respond(card_id: card)
     end
+  end
+
+  @doc """
+  Captures a pre-authorized `amount`.
+
+  `amount` is transferred to the merchant account by SagePay when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `payment_id`.
+
+  ## Note
+  * Multiple captures are not allowed, and the `amount` must not exceed the
+    originally authorized amount.
+  * SagePay refers to a capture as a "Release" instruction on a previous
+    authorization ("Deferred" transaction).
+  * SagePay does not return any "capture ID", the transaction is uniquely
+    determined by the `payment_id` recieved in the `authorize/3` request.
+
+  ## Example
+  The following example shows how one would capture a previously authorized
+  amount worth 100£ by referencing the obtained transaction ID (payment_id) from
+  `authorize/3` function.
+  ```
+  iex> amount = Money.new(100, :GBP)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.SagePay, auth_result.id, amount, opts)
+  ```
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
+  def capture(payment_id, amount, opts) when is_binary(payment_id) do
+    {_, value, _} = Money.to_integer(amount)
+
+    params =
+      Poison.encode!(%{
+        "instructionType" => "Release",
+        "amount" => value
+      })
+
+    :post
+    |> commit("transactions/#{payment_id}/instructions", params, headers(opts))
+    |> respond()
   end
 
   ###############################################################################
@@ -181,10 +204,33 @@ defmodule Gringotts.Gateways.SagePay do
 
   # Generates a `session_key` that will exist only for 400
   # seconds and for 3 wrong `card_ids`.
-  def generate_session_key(opts) do
+  defp generate_session_key(opts) do
     params = Poison.encode!(%{vendorName: opts[:config][:merchant_name]})
 
-    commit(:post, "merchant-session-keys", params, headers(opts))
+    case commit(:post, "merchant-session-keys", params, headers(opts)) do
+      {:ok, %{body: body, status_code: 201}} ->
+        {:ok, session} = Poison.decode(body)
+        {:ok, {session["merchantSessionKey"], session["expiry"]}}
+
+      response ->
+        respond(response)
+    end
+  end
+
+  defp generate_card_id(card, {session_key, _} = session) do
+    card_header = [
+      {"Authorization", "Bearer " <> session_key},
+      {"Content-type", "application/json"}
+    ]
+
+    case commit(:post, "card-identifiers", Poison.encode!(card), card_header) do
+      {:ok, %{body: body, status_code: 201}} ->
+        {:ok, card} = Poison.decode(body)
+        {:ok, {card["cardIdentifier"], card["expiry"]}}
+
+      response ->
+        respond(response, session_key: session)
+    end
   end
 
   # Returns credit card details of a customer from a `Gringotts.Creditcard`
@@ -204,30 +250,21 @@ defmodule Gringotts.Gateways.SagePay do
     }
   end
 
-  defp generate_card_id(card, merchant_key) do
-    card_header = [
-      {"Authorization", "Bearer " <> merchant_key},
-      {"Content-type", "application/json"}
-    ]
-
-    commit(:post, "card-identifiers", Poison.encode!(card), card_header)
-  end
-
-  defp transaction_details(amount, merchant_key, card_id, opts) do
-    {currency, value} = Money.to_string(amount)
+  defp transaction_details(amount, {session_key, _}, card_id, opts) do
+    {currency, value, _} = Money.to_integer(amount)
     full_address = "#{opts[:billing_address].street1}, #{opts[:billing_address].street2}"
 
     Poison.encode!(%{
       "transactionType" => "Deferred",
       "paymentMethod" => %{
         "card" => %{
-          "merchantSessionKey" => merchant_key,
+          "merchantSessionKey" => session_key,
           "cardIdentifier" => card_id,
           "save" => true
         }
       },
       "vendorTxCode" => opts[:vendor_tx_code],
-      "amount" => Kernel.trunc(String.to_float(value)),
+      "amount" => value,
       "currency" => currency,
       "description" => opts[:description],
       "customerFirstName" => opts[:first_name],
@@ -242,20 +279,11 @@ defmodule Gringotts.Gateways.SagePay do
     })
   end
 
-  @spec respond({:ok | :error, HTTPoison.Response.t()}, term, term) :: {:ok | :error, Response}
-  defp respond(response, session_key \\ nil, card_id \\ nil)
+  @spec respond({:ok | :error, HTTPoison.Response.t()}, tuple) :: {:ok | :error, Response}
+  defp respond(response, tokens \\ [])
 
-  defp respond({:ok, %{status_code: 201, body: body}}, session_key, card_id) do
+  defp respond({:ok, %{status_code: 201, body: body}}, tokens) do
     parsed_body = Poison.decode!(body)
-
-    tokens =
-      Enum.reject(
-        [
-          card_id: card_id,
-          session_key: session_key
-        ],
-        fn x -> is_nil(x) end
-      )
 
     avs = %{
       street: get_in(parsed_body, ~w(avsCvcCheck address)),
@@ -276,16 +304,8 @@ defmodule Gringotts.Gateways.SagePay do
      }}
   end
 
-  defp respond({:ok, %{status_code: status_code, body: body}}, session_key, _) do
+  defp respond({:ok, %{status_code: status_code, body: body}}, tokens) do
     parsed_body = Poison.decode!(body)
-
-    tokens =
-      Enum.reject(
-        [
-          session_key: session_key
-        ],
-        fn x -> is_nil(x) end
-      )
 
     {:error,
      %Response{
@@ -293,13 +313,13 @@ defmodule Gringotts.Gateways.SagePay do
        id: parsed_body["transactionId"],
        tokens: tokens,
        status_code: status_code,
-       gateway_code: parsed_body["statusCode"],
-       reason: parsed_body["statusDetail"],
+       gateway_code: parsed_body["statusCode"] || parsed_body["code"],
+       reason: parsed_body["statusDetail"] || parsed_body["errors"] || parsed_body["description"],
        raw: body
      }}
   end
 
-  defp respond({:error, %HTTPoison.Error{} = error}, _, _) do
+  defp respond({:error, %HTTPoison.Error{} = error}, _) do
     {
       :error,
       Response.error(
