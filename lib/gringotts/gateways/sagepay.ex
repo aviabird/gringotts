@@ -4,7 +4,6 @@ defmodule Gringotts.Gateways.SagePay do
 
   --------------------------------------------------------------------------------
 
-
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the gateway.
 
@@ -90,16 +89,13 @@ defmodule Gringotts.Gateways.SagePay do
   """
 
   # The Base module has the (abstract) public API, and some utility
-  # implementations.  
+  # implementations.
   use Gringotts.Gateways.Base
 
   # The Adapter module provides the `validate_config/1`
   # Add the keys that must be present in the Application config in the
   # `required_config` list
   use Gringotts.Adapter, required_config: []
-
-  import Poison, only: [decode: 1]
-
   alias Gringotts.{Money, CreditCard, Response}
   @url "https://pi-test.sagepay.com/api/v1/"
 
@@ -178,7 +174,8 @@ defmodule Gringotts.Gateways.SagePay do
   defp commit(:post, endpoint, params, opts) do
     a_url = @url <> endpoint
 
-    HTTPoison.post(a_url, params, opts)
+    a_url
+    |> HTTPoison.post(params, opts)
     |> respond
   end
 
@@ -193,8 +190,8 @@ defmodule Gringotts.Gateways.SagePay do
     end
   end
 
-  # Function `generate_merchant_key` generate a `merchant_session_key` that will exist only for 400 seconds
-  # and for 3 wrong `card_identifiers`.
+  # Function `generate_merchant_key` generate a `merchant_session_key` that will exist only for 400
+  # seconds and for 3 wrong `card_identifiers`.
 
   defp generate_merchant_key(opts) do
     merchant_body = Poison.encode!(%{vendorName: opts[:config].merchant_name})
@@ -214,12 +211,14 @@ defmodule Gringotts.Gateways.SagePay do
   # `card_params` returns credit card details of a customer from `Gringotts.Creditcard`.
 
   defp card_params(card) do
+    expiry_date = card.month * 100 + card.year
+
     %{
       "cardDetails" => %{
         "cardholderName" => CreditCard.full_name(card),
         "cardNumber" => card.number,
         "expiryDate" =>
-          (card.month * 100 + card.year)
+          expiry_date
           |> Integer.to_string()
           |> String.pad_leading(4, "0"),
         "securityCode" => card.verification_code
@@ -243,7 +242,7 @@ defmodule Gringotts.Gateways.SagePay do
     |> Map.get("cardIdentifier")
   end
 
-  # Function `transaction_details` creates the actual body (details of the customer )of the card 
+  # Function `transaction_details` creates the actual body (details of the customer )of the card
   # and with `merchant_session_key`, `card_identifiier` ,shipping address of a customer, and
   # other details and converting the map into keyword list.
 
