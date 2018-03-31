@@ -99,4 +99,41 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
       end
     end
   end
+
+  describe "[purchase]" do
+    test "with CreditCard" do
+      use_cassette "securion_pay/purchase_with_credit_card" do
+        assert {:ok, response} = Gateway.purchase(@amount, @good_card, @opts)
+        assert response.success == true
+        assert response.status_code == 200
+      end
+    end
+
+    test "with card_id and customer_id" do
+      use_cassette "securion_pay/purchase_with_card_id" do
+        assert {:ok, response} = Gateway.purchase(@amount, @card_id, @opts)
+        assert response.success == true
+        assert response.status_code == 200
+      end
+    end
+
+    test "with expired CreditCard" do
+      use_cassette "securion_pay/purchase_with_expired_card" do
+        assert {:error, response} = Gateway.purchase(@amount, @bad_card, @opts)
+        assert response.success == false
+        refute response.status_code == 200
+        assert response.message == "card_error"
+        assert response.reason == "The card has expired."
+      end
+    end
+
+    test "with card_id but no customer_id" do
+      use_cassette "securion_pay/purchase_without_customer_id" do
+        assert {:error, response} = Gateway.purchase(@amount, @card_id, @bad_opts)
+        assert response.success == false
+        refute response.status_code == 200
+        assert response.message == "invalid_request"
+      end
+    end
+  end
 end
