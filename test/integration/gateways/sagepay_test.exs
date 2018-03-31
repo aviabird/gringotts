@@ -47,8 +47,8 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
   end
 
   describe "authorize" do
-    test "with valid params", %{opts: opts} = context do
-      use_cassette "sagepay/#{context.test}" do
+    test "with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
         {:ok, response} = SagePay.authorize(@amount, @card, opts)
 
         assert response.message == "The Authorisation was Successful."
@@ -57,6 +57,15 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
         assert {session_key, _expiry_time} = response.tokens[:session_key]
         assert session_key =~ ~r/[A-Z\-0-9]{36}/
         assert response.gateway_code == "0000"
+      end
+    end
+  end
+
+  describe "capture" do
+    test "with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
+        assert {:ok, response} = SagePay.authorize(@amount, @card, opts)
+        assert {:ok, _} = SagePay.capture(response.id, @amount, config: @config)
       end
     end
   end

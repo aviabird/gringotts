@@ -166,6 +166,45 @@ defmodule Gringotts.Gateways.SagePay do
     end
   end
 
+  @doc """
+  Captures a pre-authorized `amount`.
+
+  `amount` is transferred to the merchant account by SagePay when it is smaller or
+  equal to the amount used in the pre-authorization referenced by `payment_id`.
+
+  ## Note
+  * Multiple captures are not allowed, and the `amount` must not exceed the
+    originally authorized amount.
+  * SagePay refers to a capture as a "Release" instruction on a previous
+    authorization ("Deferred" transaction).
+  * SagePay does not return any "capture ID", the transaction is uniquely
+    determined by the `payment_id` recieved in the `authorize/3` request.
+
+  ## Example
+  The following example shows how one would capture a previously authorized
+  amount worth 100£ by referencing the obtained transaction ID (payment_id) from
+  `authorize/3` function.
+  ```
+  iex> amount = Money.new(100, :GBP)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.SagePay, auth_result.id, amount, opts)
+  ```
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
+  def capture(payment_id, amount, opts) when is_binary(payment_id) do
+    {_, value, _} = Money.to_integer(amount)
+
+    params =
+      Poison.encode!(%{
+        "instructionType" => "Release",
+        "amount" => value
+      })
+
+    :post
+    |> commit("transactions/#{payment_id}/instructions", params, headers(opts))
+    |> respond()
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -214,7 +253,7 @@ defmodule Gringotts.Gateways.SagePay do
   end
 
   defp transaction_details(amount, merchant_key, card_id, opts) do
-    {currency, value} = Money.to_string(amount)
+    {currency, value, _} = Money.to_integer(amount)
     full_address = "#{opts[:billing_address].street1}, #{opts[:billing_address].street2}"
 
     Poison.encode!(%{
@@ -227,7 +266,7 @@ defmodule Gringotts.Gateways.SagePay do
         }
       },
       "vendorTxCode" => opts[:vendor_tx_code],
-      "amount" => Kernel.trunc(String.to_float(value)),
+      "amount" => value,
       "currency" => currency,
       "description" => opts[:description],
       "customerFirstName" => opts[:first_name],
@@ -254,7 +293,7 @@ defmodule Gringotts.Gateways.SagePay do
           card_id: card_id,
           session_key: session_key
         ],
-        fn x -> is_nil(x) end
+        fn {_, x} -> is_nil(x) end
       )
 
     avs = %{
@@ -284,7 +323,7 @@ defmodule Gringotts.Gateways.SagePay do
         [
           session_key: session_key
         ],
-        fn x -> is_nil(x) end
+        fn {_, x} -> is_nil(x) end
       )
 
     {:error,
@@ -293,8 +332,8 @@ defmodule Gringotts.Gateways.SagePay do
        id: parsed_body["transactionId"],
        tokens: tokens,
        status_code: status_code,
-       gateway_code: parsed_body["statusCode"],
-       reason: parsed_body["statusDetail"],
+       gateway_code: parsed_body["statusCode"] || parsed_body["code"],
+       reason: parsed_body["statusDetail"] || parsed_body["description"],
        raw: body
      }}
   end
