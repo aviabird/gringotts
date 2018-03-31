@@ -152,10 +152,10 @@ defmodule Gringotts.Gateways.Mercadopago do
   # For consistency with other gateway implementations, make your (final)
   # network request in here, and parse it using another private method called
   # `respond`.
-  #@spec commit(_, _, _, _) :: {:ok | :error, Response}
-  defp commit(method, path, body, opts) do
+  @spec commit(atom, String.t(), String.t(), keyword, keyword) :: {:ok | :error, Response.t()}
+  defp commit(method, path, body, opts, url_params) do
     headers = [{"content-type", "application/json"}, {"accept", "application/json"}]
-    HTTPoison.request(method, path, body, headers, []) |> respond(opts)
+    HTTPoison.request(method, "#{@base_url}#{path}", body, headers, url_params) |> respond(opts)
   end
 
   # Parses mercadopago's response and returns a `Gringotts.Response` struct
@@ -174,15 +174,16 @@ defmodule Gringotts.Gateways.Mercadopago do
   defp auth(amount, %CreditCard{} = card, opts, token_id, capture) do
     {_, value, _, _} = Money.to_integer_exp(amount)
     opts = opts ++ [token_id: token_id]
-    url = "#{@base_url}/v1/payments?access_token=#{opts[:config][:access_token]}"
+    url_params = [access_token: opts[:config][:access_token]]
     body = authorize_params(value, card, opts, opts[:token_id], opts[:customer_id], capture) |> Poison.encode!
-    commit(:post, url, body, opts)
+    commit(:post, "/v1/payments", body, opts, params: url_params )
   end
   
   defp create_customer(opts) do
-    url = "#{@base_url}/v1/customers?access_token=#{opts[:config][:access_token]}"
+    url_params = [access_token: opts[:config][:access_token]]
     body = %{"email": opts[:email]} |> Poison.encode!
-    {state, res} = commit(:post, url, body, opts)
+
+    {state, res} = commit(:post, "/v1/customers", body, opts, params: url_params)
     if state == :error do
       {state, res}
     else
@@ -201,9 +202,9 @@ defmodule Gringotts.Gateways.Mercadopago do
   end
 
   defp create_token(%CreditCard{} = card, opts) do
-    url = "#{@base_url}/v1/card_tokens/#{opts[:customer_id]}?public_key=#{opts[:config][:public_key]}"
+    url_params = [public_key: opts[:config][:public_key]]
     body = token_params(card) |> Poison.encode!
-    {state, res} = commit(:post, url, body, opts)
+    {state, res} = commit(:post, "/v1/card_tokens/#{opts[:customer_id]}", body, opts, params: url_params)
     case state do
        :error -> {state, res}
        _ -> {state, res.id}
@@ -257,7 +258,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     end
   end
 
-  defp respond({:error, %HTTPoison.Error{} = error}, opts) do
+  defp respond({:error, %HTTPoison.Error{} = error}, _) do
     {
       :error,
       Response.error(
