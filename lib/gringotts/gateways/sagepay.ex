@@ -233,6 +233,52 @@ defmodule Gringotts.Gateways.SagePay do
     |> respond()
   end
 
+  @doc """
+  Voids the referenced payment.
+
+  This method attempts a reversal of a previous transaction referenced by
+  transaction ID (`payment_id`).
+
+  Voiding a transaction will prevent the funds from being transferred from your
+  shopper's account into your own, or in the case of a refund, from your account
+  into your shopper's.
+  For more juicy details refer their [docs on "instructions"][instructions]
+
+  > SagePay allows you to easily void refunds!
+
+  [instructions]: https://test.sagepay.com/documentation/#instructions
+
+  ## Note
+  For payments and refunds you can only void a transaction upto the midnight of
+  day of transaction.
+
+  ## Example
+  ```
+  iex> amount = Money.new(100, :GBP)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.SagePay, amount, card, opts)
+  iex> Gringotts.void(Gringotts.Gateways.SagePay, auth_result.id, opts)
+  iex> Gringotts.void(Gringotts.Gateways.SagePay, purchase_result.id, opts)
+  """
+  @spec void(String.t(), keyword) :: {:ok | :error, Response.t()}
+  def void(payment_id, opts) do
+    with {:ok, %{"transactionType" => type}} <- get_transaction(payment_id, opts) do
+      instruction =
+        case type do
+          "Payment" -> "void"
+          "Refund" -> "void"
+          "Deferred" -> "abort"
+        end
+
+      params = Poison.encode!(%{instructionType: instruction})
+      endpoint = "transactions/#{payment_id}/instructions"
+
+      :post
+      |> commit(endpoint, params, headers(opts))
+      |> respond()
+    end
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -244,6 +290,10 @@ defmodule Gringotts.Gateways.SagePay do
 
   defp commit(:post, endpoint, params, headers) do
     HTTPoison.post(@url <> endpoint, params, headers)
+  end
+
+  defp commit(:get, endpoint, headers) do
+    HTTPoison.get(@url <> endpoint, headers)
   end
 
   # Generates a `session_key` that will exist only for 400
@@ -332,6 +382,17 @@ defmodule Gringotts.Gateways.SagePay do
       },
       "applyAvsCvcCheck" => "Force"
     })
+  end
+
+  # Fetches a transaction, to determine it's state.
+  def get_transaction(payment_id, opts) do
+    case commit(:get, "transactions/#{payment_id}", headers(opts)) do
+      {:ok, %{body: body, status_code: 200}} ->
+        Poison.decode(body)
+
+      response ->
+        respond(response)
+    end
   end
 
   @spec respond({:ok | :error, HTTPoison.Response.t()}, tuple) :: {:ok | :error, Response}
