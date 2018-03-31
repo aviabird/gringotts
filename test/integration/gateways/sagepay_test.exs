@@ -46,8 +46,7 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
     code =
       :md5
       |> :crypto.hash(Integer.to_string(System.unique_integer()))
-      |> Base.encode64()
-      |> String.trim("=")
+      |> Base.encode16()
 
     [opts: [{:vendor_tx_code, code} | @opts]]
   end
@@ -110,6 +109,30 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
         assert {:ok, authorization} = SagePay.authorize(@amount, @card, opts)
         assert {:ok, _} = SagePay.capture(authorization.id, @amount, opts)
         assert {:ok, _} = SagePay.refund(@amount, authorization.id, opts)
+      end
+    end
+  end
+
+  describe "void" do
+    test "authorize with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
+        assert {:ok, response} = SagePay.authorize(@amount, @card, opts)
+        assert {:ok, _} = SagePay.void(response.id, opts)
+      end
+    end
+
+    test "purchase with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
+        assert {:ok, response} = SagePay.purchase(@amount, @card, opts)
+        assert {:ok, _} = SagePay.void(response.id, opts)
+      end
+    end
+
+    test "refund with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
+        assert {:ok, purchase} = SagePay.purchase(@amount, @card, opts)
+        assert {:ok, refund} = SagePay.refund(@amount, purchase.id, opts)
+        assert {:ok, _} = SagePay.void(refund.id, opts)
       end
     end
   end
