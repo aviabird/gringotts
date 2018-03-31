@@ -162,6 +162,162 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "charges", params)
   end
 
+ @doc """
+  Captures a previously authorised charge and returns its details. 
+
+  `amount` is transferred to the merchant account by PinPayments used in the
+  pre-authorization referenced by `payment_id`.
+
+  Captures a previously authorised charge and returns its details. 
+  Currently, you can only capture the full amount that was originally authorised. 
+
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
+
+  ## Examples
+
+  The following example shows how one would capture a previously
+  authorized a payment worth $10 by referencing the obtained authorization `id`.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(10000, :USD)
+  iex> authorization = auth_result.authorization
+  # authorization = "some_authorization_transaction_id"
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, opts) do
+    url = @test_url <> "charges/" <> payment_id <> "/capture"
+    commit_short(:put, url, opts)
+  end
+
+  @doc """
+  Transfers `amount` from the customer to the merchant.
+
+  PinPayments attempts to process a purchase on behalf of the customer, by
+  debiting `amount` from the customer's account by charging the customer's
+  `card`.
+
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
+
+  ## Examples
+
+  The following example shows how one would process a payment worth $20 in
+  one-shot, without (pre) authorization.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
+  """
+  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, %CreditCard{} = card, opts) do
+    {currency, value, _} = Money.to_integer(amount)
+
+    card_token_response =
+      :post
+      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+      |> extract_card_token
+
+    case card_token_response do
+      {:error, error} ->
+        {:error, error}
+
+      {:ok, token} ->
+        params =
+          [
+            amount: value,
+            card_token: token,
+            currency: currency
+          ] ++ Keyword.delete(opts, :address)
+
+        commit(:post, "charges", params)
+    end
+  end
+
+  def purchase(amount, card_token, opts) when is_binary(card_token) do
+    {currency, value, _} = Money.to_integer(amount)
+
+    params =
+      [
+        amount: value,
+        card_token: card_token,
+        currency: currency
+      ] ++ Keyword.delete(opts, :address)
+
+    commit(:post, "charges", params)
+  end
+
+  @doc """
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
+
+  PinPayments processes a full refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
+
+  The end customer will usually see two bookings/records on his statement.
+
+  ## Example
+  ```
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.PinPayments, amount, payment_id, opts)
+  ```
+  """
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
+  def refund(amount, payment_id, opts) do
+    url = @test_url <> "charges/" <> payment_id <> "/refunds"
+
+    commit_short(:post, url, opts)
+  end
+
+  @doc """
+  Stores the payment-source data for later use.
+
+  PinPayments can store the payment-source details, for example card or bank details
+  which can be used to effectively process _One-Click_ and _Recurring_ payments,
+  and return a card token for reference.
+
+
+  ## Note
+
+  * _One-Click_ and _Recurring_ payments are currently not implemented.
+  * Payment details can be saved during a `purchase/3` or `capture/3`.
+
+
+  ## Example
+
+  The following example shows how one would store a card (a payment-source) for
+  future use.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> {:ok, store_result} = Gringotts.store(Gringotts.Gateways.PinPayments, card, opts)
+  ```
+  """
+
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def store(%CreditCard{} = card, opts) do
+    commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -201,6 +357,18 @@ defmodule Gringotts.Gateways.PinPayments do
 
     url
     |> HTTPoison.post({:form, param}, headers)
+    |> respond
+  end
+
+  defp commit_short(method, url, opts) do
+    auth_token = encoded_credentials(opts[:config].apiKey)
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    HTTPoison.request(method, url, [], headers)
     |> respond
   end
 
