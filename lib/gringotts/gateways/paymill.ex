@@ -45,8 +45,8 @@ defmodule Gringotts.Gateways.Paymill do
       amount = 100
 
       card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
+        first_name: "Harry",
+        last_name: "Potter",
         number: "4111111111111111",
         month: 12,
         year: 2018,
@@ -70,8 +70,8 @@ defmodule Gringotts.Gateways.Paymill do
       amount = 100
 
       card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
+        first_name: "Harry",
+        last_name: "Potter",
         number: "4111111111111111",
         month: 12,
         year: 2018,
@@ -143,8 +143,8 @@ defmodule Gringotts.Gateways.Paymill do
   Stores a card
   ### Example
       card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
+        first_name: "Harry",
+        last_name: "Potter",
         number: "4111111111111111",
         month: 12,
         year: 2018,
