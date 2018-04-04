@@ -30,6 +30,7 @@ defmodule Gringotts.Gateways.Paymill do
   alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
 
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
+  
 
   @home_page "https://paymill.com"
   @money_format :cents
@@ -44,8 +45,8 @@ defmodule Gringotts.Gateways.Paymill do
       amount = 100
 
       card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
+        first_name: "Harry",
+        last_name: "Potter",
         number: "4111111111111111",
         month: 12,
         year: 2018,
@@ -69,8 +70,8 @@ defmodule Gringotts.Gateways.Paymill do
       amount = 100
 
       card = %CreditCard{
-        first_name: "Sagar",
-        last_name: "Karwande",
+        first_name: "Harry",
+        last_name: "Potter",
         number: "4111111111111111",
         month: 12,
         year: 2018,
@@ -102,7 +103,7 @@ defmodule Gringotts.Gateways.Paymill do
   @spec capture(String.t(), number, Keyword) :: {:ok | :error, Response}
   def capture(authorization, amount, options) do
     post = add_amount([], amount, options) ++ [{"preauthorization", authorization}]
-
+    
     commit(:post, "transactions", post, options)
   end
 
@@ -119,6 +120,45 @@ defmodule Gringotts.Gateways.Paymill do
   @spec void(String.t(), Keyword) :: {:ok | :error, Response}
   def void(authorization, options) do
     commit(:delete, "preauthorizations/#{authorization}", [], options)
+  end
+
+  @doc """
+  Refunds a transaction for the amount
+
+  ### Example
+      trans_id = "tran_f09fc89c17d1e01d3b990f65edbe"
+
+      amount = 100
+
+      options = [config: [mode: <:live | :test>, private_key: <your_private_key>,
+        public_key: <your_public_key>]]
+
+      iex> Gringotts.refund(Gringotts.Gateways.Paymill, amount, trans_id, options)
+  """
+  def refund(amount, trans_id, options) do    
+    commit(:post, "refunds/#{trans_id}", [amount: amount], options)
+  end
+
+  @doc """
+  Stores a card
+  ### Example
+      card = %CreditCard{
+        first_name: "Harry",
+        last_name: "Potter",
+        number: "4111111111111111",
+        month: 12,
+        year: 2018,
+        verification_code: 123
+      }
+
+      options = [config: [mode: <:live | :test>, private_key: <your_private_key>,
+        public_key: <your_public_key>]]
+      
+      iex> Gringotts.store(Gringotts.Gateways.Paymill, card, options)
+  """
+  @spec store(CreditCard.t(), Keyword) :: Response
+  def store(card, options) do
+    save_card(card, options)
   end
 
   @doc false
@@ -161,7 +201,6 @@ defmodule Gringotts.Gateways.Paymill do
   defp action_with_token(action, amount, %CreditCard{} = card, options) do
     {:ok, response} = save_card(card, options)
     card_token = get_token(response)
-
     apply(__MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token, options])
   end
 
@@ -213,6 +252,7 @@ defmodule Gringotts.Gateways.Paymill do
     method
     |> HTTPoison.request(@live_url <> action, {:form, parameters}, get_headers(options), [])
     |> ResponseParser.parse()
+    
   end
 
   defp get_config(key, options) do
@@ -347,6 +387,14 @@ defmodule Gringotts.Gateways.Paymill do
     end
 
     defp set_success(opts, %{"transaction" => %{"response_code" => 20_000}}) do
+      opts ++ [success: true]
+    end
+
+    defp set_success(opts, %{"response_code" => 20_000}) do
+      opts ++ [success: true]
+    end
+
+    defp set_success(opts, %{"status" => "deleted"}) do
       opts ++ [success: true]
     end
 
