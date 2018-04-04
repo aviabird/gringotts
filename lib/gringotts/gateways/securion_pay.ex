@@ -9,6 +9,8 @@ defmodule Gringotts.Gateways.SecurionPay do
   | Action                                       | Method        |
   | ------                                       | ------        |
   | Authorize a Credit Card                      | `authorize/3` |
+  | Capture an authorized transaction            | `capture/3`   |
+  | Cancel an authorized transaction             | `void/2`      |
 
   [home]: https://securionpay.com/
   [docs]: https://securionpay.com/docs
@@ -68,6 +70,9 @@ defmodule Gringotts.Gateways.SecurionPay do
   * `capture/3` an authorized transaction.
   * `void/2` an authorized transaction.
 
+  ## Note
+  * A stand-alone pre-authorization expires in 5-days.
+
   ## Example
   ### With a `CreditCard` struct
       iex> amount = Money.new(20, :USD)
@@ -78,7 +83,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   ### With a `card_token` and `customer_token`
       iex> amount = Money.new(20, :USD)
       iex> opts = [customer_id: "cust_9999999999999999999999999"]
-      iex> card = "card_999999999999999"
+      iex> card = "card_xxxxxxxxxxxxxxxxxxxxxx"
       iex> result = Gringotts.Gateways.SecurionPay.authorize(amount, card, opts)
 
   """
@@ -103,7 +108,7 @@ defmodule Gringotts.Gateways.SecurionPay do
   Successful request returns a charge object that was captured.
 
   ## Note
-  Because SecurionPay **does not support partial captures**, please pass `nil` in `amount`
+  * Because SecurionPay **does not support partial captures**, please pass `nil` in `amount`
 
   ## Example
       iex> amount = nil
@@ -114,6 +119,25 @@ defmodule Gringotts.Gateways.SecurionPay do
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, _amount, opts) do
     commit([], "charges/#{payment_id}/capture", opts)
+  end
+
+  @doc """
+  Cancels an pre-authorized transaction.
+
+  This method attempts a reversal of a previous `authorize/3` referenced by `payment_id`.
+
+  ## Note
+  * SecurionPay **does not** allow partial cancellation of a non-captured(authorized) transaction.
+
+  ## Example
+
+  The following example shows how one would void a previous authorization. 
+
+      iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.SecurionPay, auth_result.id, opts)
+  """
+  @spec void(String.t(), keyword) :: {:ok | :error, Response.t()}
+  def void(payment_id, opts) do
+    commit([], "charges/#{payment_id}/refund", opts)
   end
 
   ##########################################################################
