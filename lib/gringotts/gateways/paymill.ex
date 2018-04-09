@@ -12,6 +12,7 @@ defmodule Gringotts.Gateways.Paymill do
   | Capture                      | `capture/3`   |
   | Purchase                     | `purchase/3`  |
   | Refund                       | `refund/3`    |
+  | Store                        | `store/2`     |
   | Void                         | `void/2`      |
 
   ## The `opts` argument
@@ -92,8 +93,11 @@ defmodule Gringotts.Gateways.Paymill do
   alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
 
   @live_url "https://api.paymill.com/v2.1/"
-  @save_card_url "https://test-token.paymill.com/"
+  @save_card_test_url "https://test-token.paymill.com/"
+  @save_card_live_url "https://token-v2.paymill.de/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
+  @money_format :cents
+  @default_currency "EUR"
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -153,8 +157,8 @@ defmodule Gringotts.Gateways.Paymill do
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, options) do
-    post = amount_params(amount) ++ [preauthorization: payment_id]
-
+    {currency, int_value, _} = Money.to_integer(amount)
+    post = [amount: int_value, currency: currency] ++ [preauthorization: payment_id]
     commit(:post, "transactions", post, options)
   end
 
@@ -212,6 +216,29 @@ defmodule Gringotts.Gateways.Paymill do
   end
 
   @doc """
+  Stores card details at Paymill.
+  ### Example
+
+  The following example shows how one would store any valid card details
+  at Paymill.
+  '''
+  iex> card = %CreditCard{first_name: "Harry",
+                      last_name: "Potter",
+                      number: "4111111111111111",
+                      year: 2099, month: 12,
+                      verification_code: "123",
+                      brand: "VISA"}
+  
+  iex> options = [config: [mode: <:live | :test>, private_key: <your_private_key>, public_key: <your_public_key>]]
+  iex> Gringotts.store(Gringotts.Gateways.Paymill, card, options)
+  '''
+  """
+  @spec store(CreditCard.t(), keyword) :: Response
+  def store(card, options) do
+    save_card(card, options)
+  end
+
+  @doc """
   Voids the referenced authorization.
 
   This method attempts a reversal of the a previous `authorize/3` referenced by
@@ -233,8 +260,9 @@ defmodule Gringotts.Gateways.Paymill do
     commit(:delete, "preauthorizations/#{authorization_id}", [], options)
   end
 
+  @doc false
   @spec authorize_with_token(Money.t(), String.t(), keyword) :: term
-  def authorize_with_token(money, card_token, options) do
+  defp authorize_with_token(money, card_token, options) do
     post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "preauthorizations", post, options)
@@ -242,17 +270,18 @@ defmodule Gringotts.Gateways.Paymill do
 
   @doc false
   @spec purchase_with_token(Money.t(), String.t(), keyword) :: term
-  def purchase_with_token(money, card_token, options) do
+  defp purchase_with_token(money, card_token, options) do
     post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "transactions", post, options)
   end
 
+  @doc false
   @spec save_card(CreditCard.t(), keyword) :: Response
-  def save_card(card, options) do
+  defp save_card(card, options) do
     {:ok, %HTTPoison.Response{body: response}} =
       HTTPoison.get(
-        @save_card_url,
+        get_save_card_url_by_mode(options),
         get_headers(options),
         params: get_save_card_params(card, options)
       )
@@ -260,26 +289,36 @@ defmodule Gringotts.Gateways.Paymill do
     parse_card_response(response)
   end
 
-  @spec save(CreditCard.t(), keyword) :: Response
-  defp save(card, options) do
-    save_card(card, options)
+  @doc false
+  defp get_save_card_url_by_mode(options) do
+    case get_config(:mode, options) do
+      :test -> @save_card_test_url
+      _ -> @save_card_live_url
+    end
   end
 
-  defp action_with_token(action, amount, "tok_" <> id = card_token, options) do
+  @doc false
+  defp action_with_token(action, amount, "tok_" <> _ = card_token, options) do
     apply(__MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token, options])
   end
 
+  @doc false
   defp action_with_token(action, amount, %CreditCard{} = card, options) do
-    {:ok, response} = save_card(card, options)
+    {currency, int_value, _} = Money.to_integer(amount)
+    {:ok, response} = save_card(card, [money: int_value, currency: currency] ++ options)
     card_token = get_token(response)
 
     apply(__MODULE__, String.to_atom("#{action}_with_token"), [amount, card_token, options])
   end
 
-  defp get_save_card_params(card, options) do
-    {:ok, money} = Keyword.fetch(options, :money)
-    {currency, int_value, _} = Money.to_integer(money)
+  @doc false
+  defp action_with_token(action, amount, _ = card_token, options) do
+    {:error, "Expected valid card or token, received '#{card_token}'"}
+    |> ResponseParser.parse()
+  end
 
+  @doc false
+  defp get_save_card_params(card, options) do
     [
       {"transaction.mode", "CONNECTOR_TEST"},
       {"channel.id", get_config(:public_key, options)},
@@ -289,24 +328,34 @@ defmodule Gringotts.Gateways.Paymill do
       {"account.expiry.year", card.year},
       {"account.verification", card.verification_code},
       {"account.holder", "#{card.first_name} #{card.last_name}"},
-      {"presentation.amount3D", int_value},
-      {"presentation.currency3D", currency}
+      {"presentation.amount3D", get_amount(options)},
+      {"presentation.currency3D", get_currency(options)}
     ]
   end
 
+  @doc false
+  defp get_currency(options), do: options[:currency] || @default_currency
+
+  @doc false
+  defp get_amount(options), do: options[:money]
+
+  @doc false
   defp get_headers(options) do
     @headers ++ set_username(options)
   end
 
+  @doc false
   defp amount_params(money) do
     {currency, int_value, _} = Money.to_integer(money)
     [amount: int_value, currency: currency]
   end
 
+  @doc false
   defp set_username(options) do
     [{"Authorization", "Basic #{Base.encode64(get_config(:private_key, options))}"}]
   end
 
+  @doc false
   defp parse_card_response(response) do
     response
     |> String.replace(~r/jsonPFunction\(/, "")
@@ -314,16 +363,19 @@ defmodule Gringotts.Gateways.Paymill do
     |> Poison.decode()
   end
 
+  @doc false
   defp get_token(response) do
     get_in(response, ["transaction", "identification", "uniqueId"])
   end
 
+  @doc false
   defp commit(method, action, parameters, options) do
     method
     |> HTTPoison.request(@live_url <> action, {:form, parameters}, get_headers(options))
     |> ResponseParser.parse()
   end
 
+  @doc false
   defp get_config(key, options) do
     get_in(options, [:config, key])
   end
@@ -446,13 +498,6 @@ defmodule Gringotts.Gateways.Paymill do
       |> handle_opts
     end
 
-    def parse({:ok, %HTTPoison.Response{body: body, status_code: 404}}) do
-      body = Poison.decode!(body)
-      [status_code: 404, success: false]
-      |> handle_error(body)
-      |> set_params(body)
-      |> handle_opts()
-    end
     def parse({:ok, %HTTPoison.Response{body: body, status_code: 403}}) do
       body = Poison.decode!(body)
 
@@ -464,8 +509,20 @@ defmodule Gringotts.Gateways.Paymill do
       {:error, Response.error(error_code: error.id, message: "HTTPoison says '#{error.reason}'.")}
     end
 
+    def parse({:error, rnd_error_msg}) do
+      {:error, Response.error(message: rnd_error_msg)}
+    end
+
     defp set_success(opts, %{"error" => error}) do
       opts ++ [message: error, success: false]
+    end
+
+    defp set_success(opts, %{"status" => "deleted"}) do
+      opts ++ [success: true]
+    end
+
+    defp set_success(opts, %{"status" => "failed"}) do
+      opts ++ [success: false]
     end
 
     defp set_success(opts, %{"transaction" => %{"response_code" => 20_000}}) do
