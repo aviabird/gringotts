@@ -228,7 +228,7 @@ defmodule Gringotts.Gateways.Paymill do
                       year: 2099, month: 12,
                       verification_code: "123",
                       brand: "VISA"}
-  
+
   iex> options = [config: [mode: <:live | :test>, private_key: <your_private_key>, public_key: <your_public_key>]]
   iex> Gringotts.store(Gringotts.Gateways.Paymill, card, options)
   '''
