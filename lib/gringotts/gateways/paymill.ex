@@ -262,7 +262,7 @@ defmodule Gringotts.Gateways.Paymill do
 
   @doc false
   @spec authorize_with_token(Money.t(), String.t(), keyword) :: term
-  defp authorize_with_token(money, card_token, options) do
+  def authorize_with_token(money, card_token, options) do
     post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "preauthorizations", post, options)
@@ -270,7 +270,7 @@ defmodule Gringotts.Gateways.Paymill do
 
   @doc false
   @spec purchase_with_token(Money.t(), String.t(), keyword) :: term
-  defp purchase_with_token(money, card_token, options) do
+  def purchase_with_token(money, card_token, options) do
     post = amount_params(money) ++ [token: card_token]
 
     commit(:post, "transactions", post, options)
