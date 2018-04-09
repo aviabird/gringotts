@@ -65,7 +65,7 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
 
   ## Following the examples
 
-  1. First, set up a sample application and configure it to work with MONEI.
+  1. First, set up a sample application and configure it to work with <%= gateway %>.
   - You could do that from scratch by following our [Getting Started][gs] guide.
       - To save you time, we recommend [cloning our example
       repo][example] that gives you a pre-configured sample app ready-to-go.
