@@ -186,7 +186,7 @@ defmodule Gringotts.Gateways.PinPayments do
                           month: 12,
                           verification_code: "999",
                           brand: "VISA"}
-  iex> money = Money.new(10000, :USD)
+  iex> money = Money.new(10, :USD)
   iex> authorization = auth_result.authorization
   # authorization = "some_authorization_transaction_id"
   iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.PinPayments, amount, card, opts)
@@ -194,7 +194,7 @@ defmodule Gringotts.Gateways.PinPayments do
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
-    url = @test_url <> "charges/" <> payment_id <> "/capture"
+    url = @test_url <> "charges/#{payment_id}/capture"
     commit_short(:put, url, opts)
   end
 
