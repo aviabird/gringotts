@@ -144,6 +144,39 @@ defmodule Gringotts.Gateways.Mercadopago do
     end
   end
 
+  @doc """
+  Captures a pre-authorized `amount`.
+
+  `amount` is transferred to the merchant account by mercadopago used in the
+  pre-authorization referenced by `payment_id`.
+
+  ## Note
+  mercadopago allows partial captures also. However, you can make a partial capture to a payment only **once**.
+
+  > The authorization will be valid for 7 days. If you do not capture it by that time, it will be cancelled.
+
+  > The specified amount can not exceed the originally reserved.
+
+  > If you do not specify the amount, all the reserved money is captured.
+
+  > In Argentina only available for Visa and American Express cards.
+
+  ## Example
+
+  The following example shows how one would (partially) capture a previously
+  authorized a payment worth 35 BRL by referencing the obtained authorization `id`.
+
+      iex> amount = Money.new(35, :BRL)
+      iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Mercadopago, auth_result.id, amount, opts)
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, opts) do
+    {_, value, _, _} = Money.to_integer_exp(amount)
+    url_params = [access_token: opts[:config][:access_token]]
+    body = %{capture: true, transaction_amount: value} |> Poison.encode!()
+    commit(:put, "/v1/payments/#{payment_id}", body, opts, params: url_params)
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
