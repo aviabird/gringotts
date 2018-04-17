@@ -126,24 +126,16 @@ defmodule Gringotts.Gateways.PinPayments do
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token_response =
-      :post
-      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
-      |> extract_card_token
+    
 
-    case card_token_response do
-      {:error, error} ->
-        {:error, error}
-
-      {:ok, token} ->
-        params =
-          [
-            amount: value,
-            capture: false,
-            card_token: token,
-            currency: currency
-          ] ++ Keyword.delete(opts, :address)
-
+    with {:ok, card_token_response} <- commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address)),
+      {:ok, card_token} <- extract_card_token(card_token_response) do
+        params = [
+          amount: value,
+          capture: false,
+          card_token: card_token,
+          currency: currency
+        ] ++ Keyword.delete(opts, :address)
         commit(:post, "charges", params)
     end
   end
@@ -189,7 +181,7 @@ defmodule Gringotts.Gateways.PinPayments do
 
   @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, param) do
-    auth_token = encoded_credentials(param[:config].apiKey)
+    auth_token = encoded_credentials(param[:config][:api_key])
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -209,7 +201,9 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{token: token}}) do
+  
+
+  defp extract_card_token(%{token: token}) do
     {:ok, token}
   end
 
@@ -223,12 +217,14 @@ defmodule Gringotts.Gateways.PinPayments do
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in 200..299 do
     {:ok, parsed} = decode(body)
-    token = parsed["response"]["token"]
+    #token = parsed["response"]["card"]["token"]
+    
+    id = parsed["response"]["token"]
     message = parsed["response"]["status_message"]
 
     {
       :ok,
-      Response.success(token: token, message: message, raw: parsed, status_code: code)
+      Response.success(id: id, token: id, message: message, raw: parsed, status_code: code)
     }
   end
 
