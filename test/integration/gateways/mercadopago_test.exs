@@ -50,7 +50,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
       end
     end
 
-    test "accessing amount" do
+    test "extra amount capture" do
       use_cassette "mercadopago/access_amount" do
         {:ok, response} = Gateway.authorize(@sub_amount, @good_card, @good_opts)
         {:error, response} = Gateway.capture(response.id, @amount, @good_opts)
