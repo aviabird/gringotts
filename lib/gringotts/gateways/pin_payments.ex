@@ -126,17 +126,18 @@ defmodule Gringotts.Gateways.PinPayments do
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    
-
-    with {:ok, card_token_response} <- commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address)),
-      {:ok, card_token} <- extract_card_token(card_token_response) do
-        params = [
+    with {:ok, card_token_response} <-
+           commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address)),
+         {:ok, card_token} <- extract_card_token(card_token_response) do
+      params =
+        [
           amount: value,
           capture: false,
           card_token: card_token,
           currency: currency
         ] ++ Keyword.delete(opts, :address)
-        commit(:post, "charges", params)
+
+      commit(:post, "charges", params)
     end
   end
 
@@ -201,9 +202,7 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  
-
-  defp extract_card_token(%{token: token}) do
+  defp extract_card_token(%{temp_token: token}) do
     {:ok, token}
   end
 
@@ -217,14 +216,21 @@ defmodule Gringotts.Gateways.PinPayments do
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in 200..299 do
     {:ok, parsed} = decode(body)
-    #token = parsed["response"]["card"]["token"]
-    
+
+    token = parsed["response"]["card"]["token"]
     id = parsed["response"]["token"]
     message = parsed["response"]["status_message"]
 
     {
       :ok,
-      Response.success(id: id, token: id, message: message, raw: parsed, status_code: code)
+      Response.success(
+        id: id,
+        token: token,
+        temp_token: id,
+        message: message,
+        raw: parsed,
+        status_code: code
+      )
     }
   end
 
