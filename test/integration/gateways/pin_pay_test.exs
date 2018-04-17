@@ -1,4 +1,4 @@
-defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
+defmodule Gringotts.Integration.Gateways.PinpaymentsTest do
   # Integration tests for the Pinpayments 
 
   use ExUnit.Case, async: true
@@ -9,7 +9,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   alias Gringotts.Gateways.PinPayments, as: Gateway
 
-  @moduletag :integration
+  #@moduletag :integration
 
   @amount Money.new(420, :AUD)
 
@@ -23,11 +23,21 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
     brand: "VISA"
   }
 
+  @bad_card2 %CreditCard{
+    first_name: "Harry",
+    last_name: "Potter",
+    number: "4600000000000006",
+    year: 2019,
+    month: 12,
+    verification_code: "123",
+    brand: "VISA"
+  }
+
   @good_card %CreditCard{
     first_name: "Harry",
     last_name: "Potter",
     number: "4200000000000000",
-    year: 2029,
+    year: 2019,
     month: 12,
     verification_code: "123",
     brand: "VISA"
@@ -49,7 +59,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
     description: "hello", 
     email: "hi@hello.com",
     ip_address: "1.1.1.1",
-    config: %{apiKey: "c4nxgznanW4XZUaEQhxS6g"}
+    config: %{apiKey: "c4nxgznanW4XZUaEQhxS6g", pass: ""}
 
   ] ++ [address: @add]
  
@@ -65,5 +75,10 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
     assert response.status_code == 400
   end
 
+  test "[authorize] with bad CreditCard 2" do
+    assert {:error, response} = Gateway.authorize(@amount, @bad_card2, @opts)
+    assert response.success == false
+    assert response.status_code == 400
+  end
 
 end
