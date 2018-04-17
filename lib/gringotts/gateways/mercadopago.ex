@@ -95,76 +95,70 @@ defmodule Gringotts.Gateways.Mercadopago do
   alias Gringotts.{CreditCard, Response}
 
   @doc """
-  Performs a (pre) Authorize operation.
-  The authorization validates the `card` details with the banking network,
-  places a hold on the transaction `amount` in the customer’s issuing bank.
-  mercadoapgo's `authorize` returns authorization ID(available in the `Response.id` field) :
-  * `capture/3` _an_ amount.
-  * `void/2` a pre-authorization.
-  ## Note
-  For a new customer, `customer_id` field should be ignored. Otherwise it should be provided.
-  ## Example
-  ### Authorization for new customer.
-    The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
-    Ignore `customer_id`.
-      iex> amount = Money.new(42, :BRL)
-      iex> card = %Gringotts.CreditCard{first_name: "Lord", last_name: "Voldemort", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
-      iex> opts = [email: "tommarvolo@riddle.com", order_id: 123123, payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
-      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
-      iex> auth_result.id # This is the authorization ID
-      iex> auth_result.token # This is the customer ID/token
-  ### Authorization for old customer.
-    The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
-    Mention `customer_id`.  
-      iex> amount = Money.new(42, :BRL)
-      iex> card = %Gringotts.CreditCard{first_name: "Hermione", last_name: "Granger", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
-      iex> opts = [email: "hermione@granger.com", order_id: 123125, customer_id: "308537342-HStv9cJCgK0dWU", payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
-      iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
-      iex> auth_result.id # This is the authorization ID
-      iex> auth_result.token # This is the customer ID/token
-  """
+  Transfers `amount` from the customer to the merchant.
 
-  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount, %CreditCard{} = card, opts) do
+  mercadopago attempts to process a purchase on behalf of the customer, by
+  debiting `amount` from the customer's account by charging the customer's
+  `card`.
+
+  ## Example
+
+  The following example shows how one would process a payment worth 42 BRL in
+  one-shot, without (pre) authorization.
+
+      iex> amount = Money.new(42, :BRL)
+      iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Mercadopago, amount, card, opts)
+      iex> purchase_result.token # This is the customer ID/token
+
+  """
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, %CreditCard{} = card, opts) do
     if Keyword.has_key?(opts, :customer_id) do
-      auth_token(amount, card, opts, opts[:customer_id], false)
+      auth_token(amount, card, opts, opts[:customer_id], true)
     else
-      case create_customer(opts) do
-        {:error, res} -> {:error, res}
-        {:ok, customer_id} -> auth_token(amount, card, opts, customer_id, false)
+      {state, res} = create_customer(opts)
+
+      if state == :error do
+        {state, res}
+      else
+        auth_token(amount, card, opts, res, true)
       end
     end
   end
 
   @doc """
-  Voids the referenced payment.
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
 
-  This method attempts a reversal of a previous transaction referenced by
-  `payment_id`.
-
-  > As a consequence, the customer will never see any booking on his statement.
+  mercadopago processes a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
 
   ## Note
 
-  > Only pending or in_process payments can be cancelled.
+  > You must have enough available money in your account so you can refund the payment amount successfully. Otherwise, you'll get a 400 Bad Request error.
 
-  > Cancelled coupon payments, deposits and/or transfers will be deposited in the buyer’s Mercadopago account.
+  > You can refund a payment within 90 days after it was accredited.
+
+  > You can only refund approved payments.
+
+  > You can perform up to 20 partial refunds in one payment.
 
   ## Example
 
-  The following example shows how one would void a previous (pre)
-  authorization. Remember that our `capture/3` example only did a partial
-  capture.
+  The following example shows how one would (completely) refund a previous
+  purchase (and similarily for captures).
 
-      iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Mercadopago, auth_result.id, opts)
-
+      iex> amount = Money.new(35, :BRL)
+      iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Mercadopago, purchase_result.id, amount)
   """
-  @spec void(String.t(), keyword) :: {:ok | :error, Response}
-  def void(payment_id, opts) do
-    # url = "#{@base_url}/v1/payments/#{payment_id}?access_token=#{opts[:config][:access_token]}"
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
+  def refund(payment_id, amount, opts) do
+    {_, value, _, _} = Money.to_integer_exp(amount)
+
+    # url = "#{@base_url}/v1/payments/#{payment_id}/refunds?access_token=#{opts[:config][:access_token]}"
     url_params = [access_token: opts[:config][:access_token]]
-    body = %{status: "cancelled"} |> Poison.encode!()
-    commit(:put, "/v1/payments/#{payment_id}", body, opts, params: url_params)
+    body = %{amount: value} |> Poison.encode!()
+    commit(:post, "/v1/payments/#{payment_id}/refunds", body, opts, params: url_params)
   end
 
   ###############################################################################

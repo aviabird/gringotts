@@ -30,23 +30,32 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
     installments: 1
   ]
 
-  describe "[void]" do
-    test "void success" do
-      use_cassette "mercadopago/void_success" do
-        {:ok, response} = Gateway.authorize(@sub_amount, @good_card, @good_opts)
-        {:ok, response} = Gateway.void(response.id, @good_opts)
+  describe "[refund]" do
+    test "refund success" do
+      use_cassette "mercadopago/refund_success" do
+        {:ok, response} = Gateway.purchase(@sub_amount, @good_card, @good_opts)
+        {:ok, response} = Gateway.refund(response.id, @sub_amount, @good_opts)
         assert response.success == true
-        assert response.status_code == 200
+        assert response.status_code == 201
       end
     end
 
     test "invalid payment_id" do
-      use_cassette "mercadopago/void_invalid_payment_id" do
-        {:ok, response} = Gateway.authorize(@sub_amount, @good_card, @good_opts)
+      use_cassette "mercadopago/refund_invalid_payment_id" do
+        {:ok, response} = Gateway.purchase(@sub_amount, @good_card, @good_opts)
         id = response.id + 1
-        {:error, response} = Gateway.void(id, @good_opts)
+        {:error, response} = Gateway.refund(id, @sub_amount, @good_opts)
         assert response.success == false
         assert response.status_code == 404
+      end
+    end
+
+    test "extra amount refund" do
+      use_cassette "mercadopago/extra_amount_reund" do
+        {:ok, response} = Gateway.purchase(@sub_amount, @good_card, @good_opts)
+        {:error, response} = Gateway.refund(response.id, @amount, @good_opts)
+        assert response.success == false
+        assert response.status_code == 400
       end
     end
   end
