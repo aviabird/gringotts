@@ -115,7 +115,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     Ignore `customer_id`.
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Lord", last_name: "Voldemort", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
-      iex> opts = [email: "tommarvolo@riddle.com", order_id: 123123, payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
+      iex> opts = [email: "tommarvolo@riddle.com", order_id: 123123, payment_method_id: "visa"]
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the customer ID/token
@@ -125,7 +125,7 @@ defmodule Gringotts.Gateways.Mercadopago do
     Mention `customer_id`.  
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Hermione", last_name: "Granger", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
-      iex> opts = [email: "hermione@granger.com", order_id: 123125, customer_id: "308537342-HStv9cJCgK0dWU", payment_method_id: "visa", config: %{access_token: YOUR_ACCESS_TOKEN, public_key: YOUR_PUBLIC_KEY}]
+      iex> opts = [email: "hermione@granger.com", order_id: 123125, customer_id: "308537342-HStv9cJCgK0dWU", payment_method_id: "visa"]
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the customer ID/token
