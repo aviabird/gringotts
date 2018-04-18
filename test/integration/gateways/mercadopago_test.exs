@@ -7,14 +7,14 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
   @moduletag :integration
 
   setup_all do
-    Application.put_env(:gringotts, Gringotts.Gateways.Mercadopago,
-      [ 
-        public_key: "your_secret_public_key",
-        access_token: "your_secret_access_token"
-      ]
+    Application.put_env(
+      :gringotts,
+      Gringotts.Gateways.Mercadopago,
+      public_key: "your_secret_public_key",
+      access_token: "your_secret_access_token"
     )
   end
-  
+
   # Group the test cases by public api
   describe "purchase" do
   end
@@ -22,7 +22,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
   describe "authorize" do
   end
 
-  describe "capture" do 
+  describe "capture" do
   end
 
   describe "void" do

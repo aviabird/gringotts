@@ -39,7 +39,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   | -------          | ----               |
   | `:access_token`  | **Access Token**   |
   | `:public_key`    | **Public Key**     |
-  
+
   > Your Application config **must include the `[:public_key, :access_token]` field(s)** and would look
   > something like this:
   > 
@@ -89,7 +89,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   # Add the keys that must be present in the Application config in the
   # `required_config` list
   use Gringotts.Adapter, required_config: [:public_key, :access_token]
-  
+
   import Poison, only: [decode: 1]
 
   alias Gringotts.{CreditCard, Response}
@@ -133,13 +133,13 @@ defmodule Gringotts.Gateways.Mercadopago do
   """
 
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
-  def authorize(amount , %CreditCard{} = card, opts) do
+  def authorize(amount, %CreditCard{} = card, opts) do
     if Keyword.has_key?(opts, :customer_id) do
       auth_token(amount, card, opts, opts[:customer_id], false)
     else
       case create_customer(opts) do
         {:error, res} -> {:error, res}
-        {:ok, customer_id} ->  auth_token(amount, card, opts, customer_id, false)
+        {:ok, customer_id} -> auth_token(amount, card, opts, customer_id, false)
       end
     end
   end
@@ -147,7 +147,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
-  
+
   # Makes the request to mercadopago's network.
   # For consistency with other gateway implementations, make your (final)
   # network request in here, and parse it using another private method called
@@ -164,6 +164,7 @@ defmodule Gringotts.Gateways.Mercadopago do
   defp auth_token(amount, %CreditCard{} = card, opts, customer_id, capture) do
     opts = opts ++ [customer_id: customer_id]
     {state, res} = create_token(card, opts)
+
     if state == :error do
       {state, res}
     else
@@ -175,15 +176,20 @@ defmodule Gringotts.Gateways.Mercadopago do
     {_, value, _, _} = Money.to_integer_exp(amount)
     opts = opts ++ [token_id: token_id]
     url_params = [access_token: opts[:config][:access_token]]
-    body = authorize_params(value, card, opts, opts[:token_id], opts[:customer_id], capture) |> Poison.encode!
-    commit(:post, "/v1/payments", body, opts, params: url_params )
+
+    body =
+      authorize_params(value, card, opts, opts[:token_id], opts[:customer_id], capture)
+      |> Poison.encode!()
+
+    commit(:post, "/v1/payments", body, opts, params: url_params)
   end
-  
+
   defp create_customer(opts) do
     url_params = [access_token: opts[:config][:access_token]]
-    body = %{"email": opts[:email]} |> Poison.encode!
+    body = %{email: opts[:email]} |> Poison.encode!()
 
     {state, res} = commit(:post, "/v1/customers", body, opts, params: url_params)
+
     if state == :error do
       {state, res}
     else
@@ -193,41 +199,44 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   defp token_params(%CreditCard{} = card) do
     %{
-      "expirationYear": card.year,
-      "expirationMonth": card.month,
-      "cardNumber": card.number,
-      "securityCode": card.verification_code,
-      "cardholder": %{"name": CreditCard.full_name(card)}
+      expirationYear: card.year,
+      expirationMonth: card.month,
+      cardNumber: card.number,
+      securityCode: card.verification_code,
+      cardholder: %{name: CreditCard.full_name(card)}
     }
   end
 
   defp create_token(%CreditCard{} = card, opts) do
     url_params = [public_key: opts[:config][:public_key]]
-    body = token_params(card) |> Poison.encode!
-    {state, res} = commit(:post, "/v1/card_tokens/#{opts[:customer_id]}", body, opts, params: url_params)
+    body = token_params(card) |> Poison.encode!()
+
+    {state, res} =
+      commit(:post, "/v1/card_tokens/#{opts[:customer_id]}", body, opts, params: url_params)
+
     case state do
-       :error -> {state, res}
-       _ -> {state, res.id}
+      :error -> {state, res}
+      _ -> {state, res.id}
     end
   end
 
   defp authorize_params(value, %CreditCard{} = card, opts, token_id, customer_id, capture) do
     %{
-      "payer": %{
-                "type": "customer",
-                "id": customer_id,
-                "first_name": card.first_name,
-                "last_name": card.last_name
-                },
-      "order": %{
-                "type": "mercadopago",
-                "id": opts[:order_id]
-                },
-      "installments": opts[:installments] || 1,
-      "transaction_amount": value,
-      "payment_method_id": String.downcase(card.brand), 
-      "token": token_id,
-      "capture": capture
+      payer: %{
+        type: "customer",
+        id: customer_id,
+        first_name: card.first_name,
+        last_name: card.last_name
+      },
+      order: %{
+        type: "mercadopago",
+        id: opts[:order_id]
+      },
+      installments: opts[:installments] || 1,
+      transaction_amount: value,
+      payment_method_id: String.downcase(card.brand),
+      token: token_id,
+      capture: capture
     }
   end
 
@@ -251,7 +260,8 @@ defmodule Gringotts.Gateways.Mercadopago do
   end
 
   defp respond({:ok, %HTTPoison.Response{body: body, status_code: status_code}}, opts) do
-    body = body |> Poison.decode!
+    body = body |> Poison.decode!()
+
     case body["cause"] do
       nil -> {:ok, success_body(body, status_code, opts)}
       _ -> {:error, error_body(body, status_code, opts)}
@@ -267,6 +277,4 @@ defmodule Gringotts.Gateways.Mercadopago do
       )
     }
   end
-
 end
-
