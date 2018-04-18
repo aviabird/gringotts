@@ -155,6 +155,42 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "charges", params)
   end
 
+  @doc """
+  Captures a previously authorised charge and returns its details. 
+
+  `amount` is transferred to the merchant account by PinPayments used in the
+  pre-authorization referenced by `payment_id`.
+
+  Captures a previously authorised charge and returns its details. 
+  Currently, you can only capture the full amount that was originally authorised. 
+
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
+
+  ## Examples
+
+  The following example shows how one would capture a previously
+  authorized a payment worth $10 by referencing the obtained authorization `id`.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(10, :USD)
+  iex> authorization = auth_result.authorization
+  # authorization = "some_authorization_transaction_id"
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
+  """
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
+  def capture(payment_id, amount, opts) do
+    url = @test_url <> "charges/#{payment_id}/capture"
+    commit_short(:put, url, opts)
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -194,6 +230,18 @@ defmodule Gringotts.Gateways.PinPayments do
 
     url
     |> HTTPoison.post({:form, param}, headers)
+    |> respond
+  end
+
+  defp commit_short(method, url, opts) do
+    auth_token = encoded_credentials(opts[:config].apiKey)
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    HTTPoison.request(method, url, [], headers)
     |> respond
   end
 
