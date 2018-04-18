@@ -114,16 +114,15 @@ defmodule Gringotts.Gateways.Mercadopago do
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, %CreditCard{} = card, opts) do
-    if Keyword.has_key?(opts, :customer_id) do
-      auth_token(amount, card, opts, opts[:customer_id], true)
-    else
-      {state, res} = create_customer(opts)
+    with {:ok, customer_id} <- create_customer(opts),
+         {:ok, card_token} <- create_token(card, opts) do
+      {_, value, _, _} = Money.to_integer_exp(amount)
+      url_params = [access_token: opts[:config][:access_token]]
 
-      if state == :error do
-        {state, res}
-      else
-        auth_token(amount, card, opts, res, true)
-      end
+      body =
+        authorize_params(value, card, opts, card_token, customer_id, false) |> Poison.encode!()
+
+      commit(:post, "/v1/payments", body, opts, params: url_params)
     end
   end
 
@@ -144,39 +143,19 @@ defmodule Gringotts.Gateways.Mercadopago do
   # Parses mercadopago's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
 
-  defp auth_token(amount, %CreditCard{} = card, opts, customer_id, capture) do
-    opts = opts ++ [customer_id: customer_id]
-    {state, res} = create_token(card, opts)
-
-    if state == :error do
-      {state, res}
-    else
-      auth(amount, card, opts, res, capture)
-    end
-  end
-
-  defp auth(amount, %CreditCard{} = card, opts, token_id, capture) do
-    {_, value, _, _} = Money.to_integer_exp(amount)
-    opts = opts ++ [token_id: token_id]
-    url_params = [access_token: opts[:config][:access_token]]
-
-    body =
-      authorize_params(value, card, opts, opts[:token_id], opts[:customer_id], capture)
-      |> Poison.encode!()
-
-    commit(:post, "/v1/payments", body, opts, params: url_params)
-  end
-
   defp create_customer(opts) do
-    url_params = [access_token: opts[:config][:access_token]]
-    body = %{email: opts[:email]} |> Poison.encode!()
-
-    {state, res} = commit(:post, "/v1/customers", body, opts, params: url_params)
-
-    if state == :error do
-      {state, res}
+    if Keyword.has_key?(opts, :customer_id) do
+      {:ok, opts[:customer_id]}
     else
-      {state, res.id}
+      url_params = [access_token: opts[:config][:access_token]]
+      body = %{email: opts[:email]} |> Poison.encode!()
+      {state, res} = commit(:post, "/v1/customers", body, opts, params: url_params)
+
+      if state == :error do
+        {state, res}
+      else
+        {state, res.id}
+      end
     end
   end
 

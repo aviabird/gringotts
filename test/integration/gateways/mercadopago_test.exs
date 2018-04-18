@@ -9,6 +9,10 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
 
   @amount Money.new(45, :BRL)
   @sub_amount Money.new(30, :BRL)
+  @config [
+    access_token: "TEST-2774702803649645-031303-1b9d3d63acb57cdad3458d386eee62bd-307592510",
+    public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"
+  ]
   @good_card %Gringotts.CreditCard{
     first_name: "Hermoine",
     last_name: "Granger",
@@ -33,30 +37,12 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
     email: "hermoine@granger.com",
     order_id: 123_126,
     customer_id: "311211654-YrXF6J0QikpIWX",
-    config: [
-      access_token: "TEST-2774702803649645-031303-1b9d3d63acb57cdad3458d386eee62bd-307592510",
-      public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"
-    ],
+    config: @config,
     installments: 1
   ]
   @new_cutomer_good_opts [
     order_id: 123_126,
-    config: [
-      access_token: "TEST-2774702803649645-031303-1b9d3d63acb57cdad3458d386eee62bd-307592510",
-      public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"
-    ],
-    installments: 1
-  ]
-  @new_cutomer_bad_opts [
-    order_id: 123_126,
-    config: [public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"],
-    installments: 1
-  ]
-  @bad_opts [
-    email: "hermoine@granger.com",
-    order_id: 123_126,
-    customer_id: "311211654-YrXF6J0QikpIWX",
-    config: [public_key: "TEST-911f45a1-0560-4c16-915e-a8833830b29a"],
+    config: @config,
     installments: 1
   ]
 
@@ -89,22 +75,6 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
       end
     end
 
-    test "old customer with bad_opts and good_card" do
-      use_cassette "mercadopago/purchase_old customer with bad_opts and good_card" do
-        assert {:error, response} = Gateway.purchase(@amount, @good_card, @bad_opts)
-        assert response.success == false
-        assert response.status_code == 401
-      end
-    end
-
-    test "old customer with bad_opts and bad_opts" do
-      use_cassette "mercadopago/purchase_old customer with bad_opts and bad_opts" do
-        assert {:error, response} = Gateway.purchase(@amount, @bad_card, @bad_opts)
-        assert response.success == false
-        assert response.status_code == 400
-      end
-    end
-
     test "new cutomer with good_opts and good_card" do
       use_cassette "mercadopago/purchase_new cutomer with good_opts and good_card" do
         opts = new_email_opts(true)
@@ -120,24 +90,6 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
         assert {:error, response} = Gateway.purchase(@amount, @bad_card, opts)
         assert response.success == false
         assert response.status_code == 400
-      end
-    end
-
-    test "new customer with bad_opts and good_card" do
-      use_cassette "mercadopago/purchase_new customer with bad_opts and good_card" do
-        opts = new_email_opts(false)
-        assert {:error, response} = Gateway.purchase(@amount, @good_card, opts)
-        assert response.success == false
-        assert response.status_code == 401
-      end
-    end
-
-    test "new customer with bad_opts and bad_card" do
-      use_cassette "mercadopago/purchase_new customer with bad_opts and bad_card" do
-        opts = new_email_opts(false)
-        assert {:error, response} = Gateway.purchase(@amount, @bad_card, opts)
-        assert response.success == false
-        assert response.status_code == 401
       end
     end
   end
