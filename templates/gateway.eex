@@ -258,7 +258,6 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
   # For consistency with other gateway implementations, make your (final)
   # network request in here, and parse it using another private method called
   # `respond`.
-  @spec commit(_) :: {:ok | :error, Response}
   defp commit(_) do
     # resp = HTTPoison.request(args, ...)
     # respond(resp, ...)
@@ -266,7 +265,6 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
 
   # Parses <%= gateway %>'s response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
-  @spec respond(term) :: {:ok | :error, Response}
   defp respond(<%= gateway_underscore %>_response)
   defp respond({:ok, %{status_code: 200, body: body}}), do: "something"
   defp respond({:ok, %{status_code: status_code, body: body}}), do: "something"
