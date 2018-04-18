@@ -202,7 +202,7 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token(%{temp_token: token}) do
+  defp extract_card_token(%{id: token}) do
     {:ok, token}
   end
 
@@ -226,7 +226,6 @@ defmodule Gringotts.Gateways.PinPayments do
       Response.success(
         id: id,
         token: token,
-        temp_token: id,
         message: message,
         raw: parsed,
         status_code: code
