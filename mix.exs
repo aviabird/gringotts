@@ -20,7 +20,11 @@ defmodule Gringotts.Mixfile do
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.json": :test,
-        "coveralls.html": :test
+        "coveralls.html": :test,
+        vcr: :test,
+        "vcr.delete": :test,
+        "vcr.check": :test,
+        "vcr.show": :test
       ],
       deps: deps(),
       docs: docs()
@@ -67,7 +71,8 @@ defmodule Gringotts.Mixfile do
       {:credo, "~> 0.3", only: [:dev, :test]},
       {:inch_ex, "~> 0.5", only: :docs},
       {:dialyxir, "~> 0.3", only: :dev},
-      {:timex, "~> 3.2"}
+      {:timex, "~> 3.2"},
+      {:exvcr, "~> 0.10", only: :test}
     ]
   end
 
