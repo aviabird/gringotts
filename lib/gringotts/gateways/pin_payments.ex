@@ -155,6 +155,104 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "charges", params)
   end
 
+  @doc """
+  Transfers `amount` from the customer to the merchant.
+
+  PinPayments attempts to process a purchase on behalf of the customer, by
+  debiting `amount` from the customer's account by charging the customer's
+  `card`.
+
+  PinPayments returns a **Payment Id** which can be used later to:
+  * `refund/3` the amount.
+
+  ## Examples
+
+  The following example shows how one would process a payment worth $20 in
+  one-shot, without (pre) authorization.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.PinPayments, amount, card, opts)
+  ```
+  """
+
+  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
+  def purchase(amount, %CreditCard{} = card, opts) do
+    {currency, value, _} = Money.to_integer(amount)
+
+    card_token_response =
+      :post
+      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+      |> extract_card_token
+
+    case card_token_response do
+      {:error, error} ->
+        {:error, error}
+
+      {:ok, token} ->
+        params =
+          [
+            amount: value,
+            card_token: token,
+            currency: currency
+          ] ++ Keyword.delete(opts, :address)
+
+        commit(:post, "charges", params)
+    end
+  end
+
+  def purchase(amount, card_token, opts) when is_binary(card_token) do
+    {currency, value, _} = Money.to_integer(amount)
+
+    params =
+      [
+        amount: value,
+        card_token: card_token,
+        currency: currency
+      ] ++ Keyword.delete(opts, :address)
+
+    commit(:post, "charges", params)
+  end
+
+  @doc """
+  Stores the payment-source data for later use.
+
+  PinPayments can store the payment-source details, for example card or bank details
+  which can be used to effectively process _One-Click_ and _Recurring_ payments,
+  and return a card token for reference.
+
+  ## Note
+
+  * _One-Click_ and _Recurring_ payments are currently not implemented.
+  * Payment details can be saved during a `purchase/3` or `capture/3`.
+
+  ## Example
+
+  The following example shows how one would store a card (a payment-source) for
+  future use.
+  ```
+  iex> card = %CreditCard{first_name: "Harry",
+                          last_name: "Potter",
+                          number: "4200000000000000",
+                          year: 2099,
+                          month: 12,
+                          verification_code: "999",
+                          brand: "VISA"}
+  iex> {:ok, store_result} = Gringotts.store(Gringotts.Gateways.PinPayments, card, opts)
+  ```
+  """
+
+  @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
+  def store(%CreditCard{} = card, opts) do
+    commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
