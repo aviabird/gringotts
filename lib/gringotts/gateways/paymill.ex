@@ -293,7 +293,8 @@ defmodule Gringotts.Gateways.Paymill do
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def refund(amount, id, opts) do
-    commit(:post, "refunds/#{id}", amount_params(amount), opts)
+    {_, int_value, _} = Money.to_integer(amount)
+    commit(:post, "refunds/#{id}", [amount: int_value], opts)
   end
 
   @doc """
