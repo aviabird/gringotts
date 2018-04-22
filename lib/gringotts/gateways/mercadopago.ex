@@ -52,7 +52,13 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   ## Note
 
-  mercadopago processes money with upto two decimal places.
+  * mercadopago processes money in the subdivided units (like `cents` in case of
+    US Dollar).
+  * Also, there is no way to set the currency of the transaction via the API. It
+    is automatically set from the merchant's account. Hence, if you've
+    configured your mercadopago account to work in Chilean Peso (`CLP`), make
+    sure that the `amount` argument is always a `Money.t` struct with the `:CLP`
+    as currency.
 
   ## Supported currencies and countries
 
@@ -69,20 +75,11 @@ defmodule Gringotts.Gateways.Mercadopago do
           + You could use the same config or update it the with your "secrets"
           as described [above](#module-registering-your-mercadopago-account-at-gringotts).
 
-  2. Run an `iex` session with `iex -S mix` and add some variable bindings :
-  ```
-  iex> card = %CreditCard{first_name: "John", last_name: "Doe", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
-  ```
-
-  We'll be using these in the examples below.
-
   [gs]: https://github.com/aviabird/gringotts/wiki/
   [home]: https://www.mercadopago.com
   [example]: https://github.com/aviabird/gringotts_example
   """
 
-  # The Base module has the (abstract) public API, and some utility
-  # implementations.
   @base_url "https://api.mercadopago.com"
   use Gringotts.Gateways.Base
   alias Gringotts.CreditCard
@@ -99,19 +96,26 @@ defmodule Gringotts.Gateways.Mercadopago do
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
 
-  mercadoapgo's `authorize` returns customer id(available in `Response.token`) and authorization id(available in the `Response.id` field) :
+  mercadoapgo's `authorize` returns:
+  * `customer_id`, available in `Response.token` field and
+  * `authorization_id`, available in the `Response.id` field.
 
+  The `id` can be used to
   * `capture/3` _an_ amount.
   * `void/2` a pre-authorization.
+
   ## Note
 
-  For a new customer, `customer_id` field should be ignored. Otherwise it should be provided.
+  For a new customer, `customer_id` field should be `nil`. Otherwise it should
+  be provided.
 
   ## Example
 
   ### Authorization for new customer.
-    The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
-    Ignore `customer_id`.
+
+    The following example shows how one would (pre) authorize a payment of 42
+    BRL on a sample `card`.
+
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Lord", last_name: "Voldemort", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> opts = [email: "tommarvolo@riddle.com", order_id: 123123, payment_method_id: "visa"]
@@ -120,17 +124,17 @@ defmodule Gringotts.Gateways.Mercadopago do
       iex> auth_result.token # This is the customer ID/token
 
   ### Authorization for old customer.
-    The following example shows how one would (pre) authorize a payment of 42 BRL on a sample `card`.
-    Mention `customer_id`.  
+
+    The following example shows how one would (pre) authorize a payment of 42
+    BRL on a sample `card`.
+
       iex> amount = Money.new(42, :BRL)
       iex> card = %Gringotts.CreditCard{first_name: "Hermione", last_name: "Granger", number: "4509953566233704", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> opts = [email: "hermione@granger.com", order_id: 123125, customer_id: "hermoine's customer id", payment_method_id: "visa"]
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Mercadopago, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
       iex> auth_result.token # This is the customer ID/token
-
   """
-
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
     with {:ok, customer_id} <- create_customer(opts),
