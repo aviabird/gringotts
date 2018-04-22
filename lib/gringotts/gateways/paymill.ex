@@ -40,10 +40,19 @@ defmodule Gringotts.Gateways.Paymill do
         public_key: "your_secret_public_key"
 
   ## Scope of this module
-  * PAYMILL processes money in the sub-divided unit of currency (ie, in case of USD it works in cents).
-  * PAYMILL does not offer direct API integration for [PCI DSS][pci-dss] compliant merchants, everyone must use PAYMILL as if they are not PCI compliant.
-  - To use their product, a merchant (aka user of this library) would have to use their [Bridge (js integration)](https://developers.paymill.com/guides/reference/paymill-bridge.html) (or equivalent) in your application frontend to collect Credit/Debit Card data.
-  - This would obtain a unique `card_token` at the client-side which can be used by this module for various operations like `authorize/3` and `purchase/3`.
+
+  * PAYMILL processes money in the sub-divided unit of currency (ie, in case of
+    USD it works in cents).
+  * PAYMILL does not offer direct API integration for [PCI DSS][pci-dss]
+    compliant merchants, everyone must use PAYMILL as if they are not PCI
+    compliant.
+  * To use their product, a merchant (aka user of this library) would have to
+    use their [Bridge (js integration)][bridge] (or equivalent) in your
+    application frontend to collect Credit/Debit Card data.
+  * This would obtain a unique `card_token` at the client-side which can be used
+    by this module for various operations like `authorize/3` and `purchase/3`.
+
+  [bridge]: https://developers.paymill.com/guides/reference/paymill-bridge.html
 
   ## Supported countries
   As a PAYMILL merchant you can accept payments from around the globe. For more details
@@ -75,22 +84,21 @@ defmodule Gringotts.Gateways.Paymill do
   [home]: https://paymill.com
   [docs]: https://developers.paymill.com
   [dashboard]: https://app.paymill.com/user/register
-  [all-card-list]: #
   [gs]: https://github.com/aviabird/gringotts/wiki
   [example-repo]: https://github.com/aviabird/gringotts_example
   [currency-support]: https://www.paymill.com/en/faq/in-which-currency-will-my-transactions-be-processed-and-payout-in
   [country-support]: https://www.paymill.com/en/faq/which-countries-is-paymill-available-in
   [pci-dss]: https://www.paymill.com/en/pci-dss
   """
+
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
 
-  alias Gringotts.{CreditCard, Response, Money}
-  alias Gringotts.Gateways.Paymill.ResponseHandler, as: ResponseParser
+  alias Gringotts.{Response, Money}
 
   @base_url "https://api.paymill.com/v2.1/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
-  @action %{:purchase => "transactions", :authorize => "preauthorizations", :refund => "refunds"}
+
   @response_code %{
     10_001 => "Undefined response",
     10_002 => "Waiting for something",
@@ -206,15 +214,15 @@ defmodule Gringotts.Gateways.Paymill do
   iex> amount = Money.new(4200, :EUR)
   iex> card_token = "tok_XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Paymill, amount, card_token)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Paymill, amount, card_token, opts)
   iex> auth_result.id # This is the preauth-id
   ```
   """
 
   @spec authorize(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, card_token, opts) do
-    param = amount_params(amount) ++ [token: card_token]
-    commit(:post, "preauthorizations", param, opts)
+    params = [{:token, card_token} | amount_params(amount)]
+    commit(:post, "preauthorizations", params, opts)
   end
 
   @doc """
@@ -233,19 +241,19 @@ defmodule Gringotts.Gateways.Paymill do
   ## Example
 
   The following example shows how one would (partially) capture a previously
-  authorized a payment worth €35 by referencing the obtained authorization `id`.
+  authorized a payment worth €42 by referencing the obtained authorization `id`.
 
   ```
   iex> amount = Money.new(4200, :EUR)
   iex> preauth_id = auth_result.id
   # preauth_id = "some_authorization_id"
-  iex> Gringotts.capture(Gringotts.Gateways.Paymill, preauth_id, amount)
+  iex> Gringotts.capture(Gringotts.Gateways.Paymill, preauth_id, amount, opts)
   ```
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
   def capture(id, amount, opts) do
-    param = amount_params(amount) ++ [preauthorization: id]
-    commit(:post, "transactions", param, opts)
+    params = [{:preauthorization, id} | amount_params(amount)]
+    commit(:post, "transactions", params, opts)
   end
 
   @doc """
@@ -263,13 +271,12 @@ defmodule Gringotts.Gateways.Paymill do
   iex> amount = Money.new(4200, :EUR)
   iex> token = "tok_XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Paymill, amount, token)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Paymill, amount, token, opts)
   ```
   """
-
   @spec purchase(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, card_token, opts) do
-    param = amount_params(amount) ++ [token: card_token]
+    param = [{:token, card_token} | amount_params(amount)]
     commit(:post, "transactions", param, opts)
   end
 
@@ -277,9 +284,10 @@ defmodule Gringotts.Gateways.Paymill do
   Refunds the `amount` to the customer's account with reference to a prior transfer.
 
   PAYMILL processes a full or partial refund worth `amount`, where `transaction_id`
-  references a previous `purchase/3` or `capture/3`. Multiple partial refunds
-  are allowed on the same `transaction_id` till all the captured/purchased amount
-  has been refunded.
+  references a previous `purchase/3` or `capture/3` result.
+
+  Multiple partial refunds are allowed on the same `transaction_id` till all the
+  captured/purchased amount has been refunded.
 
   ## Example
 
@@ -300,12 +308,12 @@ defmodule Gringotts.Gateways.Paymill do
   @doc """
   Voids the referenced authorization.
 
-  This method attempts a reversal of the a previous `authorize/3` referenced by
+  Attempts a reversal of the a previous `authorize/3` referenced by
   `preauth_id`.
 
   ## Example
 
-  The following example shows how one would void a previous capture.
+  The following example shows how one would void a previous authorization.
   ```
   iex> preauth_id = auth_result.id
   iex> Gringotts.void(Gringotts.Gateways.Paymill, preauth_id)
@@ -316,54 +324,80 @@ defmodule Gringotts.Gateways.Paymill do
     commit(:delete, "preauthorizations/#{id}", [], opts)
   end
 
-  defp request_maker(method, url, body \\ "", headers \\ [], options \\ []) do
-    HTTPoison.request(method, url, body, headers, options)
+  defp commit(method, endpoint, params, opts) do
+    method
+    |> HTTPoison.request(base_url(opts) <> endpoint, {:form, params}, headers(opts))
+    |> respond()
   end
 
-  defp response_matcher({:ok, %HTTPoison.Response{} = response}) do
-    response.body
+  @response_code_paths [
+    ~w[transaction response_code],
+    ~w[data response_code],
+    ~w[data transaction response_code]
+  ]
+  @token_paths [~w[id], ~w[data id]]
+  @reason_paths [~w[error], ~w[exception]]
+  @fraud_paths [
+    ~w[transaction is_fraud],
+    ~w[data transaction is_fraud],
+    ~w[data transaction is_markable_as_fraud],
+    ~w[data is_markable_as_fraud]
+  ]
+
+  defp get_either(collection, paths) do
+    paths
+    |> Stream.map(&get_in(collection, &1))
+    |> Enum.find(fn x -> x != nil end)
   end
 
-  defp response_matcher({:error, %HTTPoison.Error{} = error}) do
-    error
-    |> string_key_map
+  defp respond({:ok, %{status_code: 200, body: body}}) do
+    case Poison.decode(body) do
+      {:ok, parsed_resp} ->
+        gateway_code = get_either(parsed_resp, @response_code_paths)
+
+        status = if gateway_code in [20_000, 50_810], do: :ok, else: :error
+
+        {status,
+         %Response{
+           id: get_either(parsed_resp, @token_paths),
+           token: parsed_resp["transaction"]["identification"]["uniqueId"],
+           status_code: 200,
+           gateway_code: gateway_code,
+           reason: get_either(parsed_resp, @reason_paths),
+           message: @response_code[gateway_code],
+           raw: body,
+           fraud_review: get_either(parsed_resp, @fraud_paths)
+         }}
+
+      :error ->
+        {:error,
+         %Response{status_code: 200, raw: body, reason: "could not parse paymill response"}}
+    end
   end
 
-  defp string_key_map(map) do
-    new_map = %{}
-
-    new_map =
-      for key <- Map.keys(map), into: %{}, do: {Atom.to_string(key), to_string(Map.get(map, key))}
-
-    new_map
-  end
-
-  defp response_maker(response \\ %{}, status_code, atom) do
-    {:ok, parsed_resp} = parse_response(response)
-
-    resp_code =
-      parsed_resp["transaction"]["response_code"] ||
-        parsed_resp["data"]["transaction"]["response_code"] ||
-        parsed_resp["data"]["response_code"]
-
-    {atom,
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    {:error,
      %Response{
-       id: parsed_resp["id"] || parsed_resp["data"]["id"],
-       token: parsed_resp["transaction"]["identification"]["uniqueId"],
        status_code: status_code,
-       gateway_code: resp_code,
-       reason: parsed_resp["reason"] || parsed_resp["error"] || parsed_resp["exception"],
-       message: @response_code[resp_code],
-       raw: response,
-       fraud_review:
-         parsed_resp["transaction"]["is_fraud"] || parsed_resp["data"]["transaction"]["is_fraud"] ||
-           parsed_resp["data"]["transaction"]["is_markable_as_fraud"] ||
-           parsed_resp["data"]["is_markable_as_fraud"]
+       raw: body
      }}
   end
 
-  defp get_headers(opts) do
-    @headers ++ set_username(opts)
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    {
+      :error,
+      Response.error(
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      )
+    }
+  end
+
+  defp headers(opts) do
+    [
+      {"Authorization", "Basic #{Base.encode64(get_in(opts, [:config, :private_key]))}"}
+      | @headers
+    ]
   end
 
   defp amount_params(money) do
@@ -371,45 +405,5 @@ defmodule Gringotts.Gateways.Paymill do
     [amount: int_value, currency: currency]
   end
 
-  defp set_username(opts) do
-    [{"Authorization", "Basic #{Base.encode64(get_config(:private_key, opts))}"}]
-  end
-
-  defp parse_response(response) do
-    if is_map(response) do
-      {:ok, response}
-    else
-      response
-      |> String.replace(~r/jsonPFunction\(/, "")
-      |> String.replace(~r/\)/, "")
-      |> Poison.decode()
-    end
-  end
-
-  defp get_token(response) do
-    get_in(response, ["transaction", "identification", "uniqueId"])
-  end
-
-  defp commit(method, action, parameters, opts) do
-    response =
-      request_maker(method, base_url(opts) <> action, {:form, parameters}, get_headers(opts))
-
-    matched_response = response_matcher(response)
-    {atom, actual_response} = response
-    response_maker(matched_response, get_status_code(actual_response), atom)
-  end
-
-  defp get_status_code(response) do
-    if Map.has_key?(response, :status_code) do
-      response.status_code
-    else
-      nil
-    end
-  end
-
   defp base_url(opts), do: opts[:config][:test_url] || @base_url
-
-  defp get_config(key, opts) do
-    get_in(opts, [:config, key])
-  end
 end
