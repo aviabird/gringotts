@@ -1,16 +1,18 @@
-# [`v1.1.0`][tag-1_1_0] (2018-04-22)
+# Changelog
 
-## Added
+## [`v1.1.0`][tag-1_1_0] (2018-04-22)
 
-* **api** Introduces a `Money` protocol ([#71][pr#71])
-* **core** Introduces Response.t ([#119][pr#91])
-* **development** Adds a useful mix task gringotts.new ([#78][pr#78]) 
-* **docs** Adds changelog, contributing guide ([#117][pr#117])
+### Added
 
-## Changed
+* **api:** Introduces a `Money` protocol ([#71][pr#71])
+* **core:** Introduces Response.t ([#119][pr#91])
+* **development:** Adds a useful mix task gringotts.new ([#78][pr#78]) 
+* **docs:** Adds changelog, contributing guide ([#117][pr#117])
 
-* **api** Deprecates use of `floats` for money amounts, check issue [#62][iss#62] ([#71][pr#71])
-* **core** Removes payment worker, no application, no worker now after josevalim [pointed it][jose-feedback] ([#118][pr#118]) 
+### Changed
+
+* **api:** Deprecates use of `floats` for money amounts, check issue [#62][iss#62] ([#71][pr#71])
+* **core:** Removes payment worker, no application, no worker now after josevalim [pointed it][jose-feedback] ([#118][pr#118]) 
 
 [iss#62]: https://github.com/aviabird/gringotts/issues/62
 [pr#71]: https://github.com/aviabird/gringotts/pulls/71
@@ -21,29 +23,32 @@
 [pr#86]:https://github.com/aviabird/gringotts/pulls/86
 [jose-feedback]:https://elixirforum.com/t/gringotts-a-complete-payment-library-for-elixir-and-phoenix-framework/11054/41
 
-# [`v1.0.2`][tag-1_0_2]
 
-## Added
+## [`v1.0.2`][tag-1_0_2] (2017-12-27)
+
+### Added
 
 * New Gateway: **Trexle**
 
-## Changed
+### Changed
 
-* Reduced arity of public API calls by 1
+* **api:** Reduced arity of public API calls by 1
   - No need to pass the name of the `worker` as argument.
 
-# [`v1.0.1`][tag-1_0_1]
+## [`v1.0.1`][tag-1_0_1] (2017-12-23)
 
-## Added
+### Added
 
-* Improved documentation - made consistent accross gateways
-* Improved test coverage
+* **docs:** Improved documentation - made consistent accross gateways
+* **tests:** Improved test coverage
 
-# [`v1.0.0`][tag-1_0_0]
+## [`v1.0.0`][tag-1_0_0] (2017-12-20)
 
-* Initial public API release.
-* Single worker architecture, config fetched from `config.exs`
-* Supported Gateways:
+### Added
+
+* **api:** Initial public API release.
+* **core:** Single worker architecture, config fetched from `config.exs`
+* **api:** Supported Gateways:
   - Stripe
   - MONEI
   - Paymill
