@@ -1,4 +1,5 @@
 defmodule Gringotts.Gateways.CamsMock do
+  @moduledoc false
   def successful_purchase do
     {:ok,
      %HTTPoison.Response{

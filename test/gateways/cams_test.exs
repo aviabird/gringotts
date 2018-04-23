@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.CamsTest do
-  Code.require_file("../mocks/cams_mock.exs", __DIR__)
   use ExUnit.Case, async: false
 
   alias Gringotts.{
@@ -103,13 +102,19 @@ defmodule Gringotts.Gateways.CamsTest do
 
   describe "capture" do
     test "with full amount" do
-      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
+      with_mock HTTPoison,
+        post: fn _url, _body, _headers ->
+          MockResponse.successful_capture()
+        end do
         assert {:ok, %Response{}} = Gateway.capture(@money, @id, @options)
       end
     end
 
     test "with partial amount" do
-      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
+      with_mock HTTPoison,
+        post: fn _url, _body, _headers ->
+          MockResponse.successful_capture()
+        end do
         assert {:ok, %Response{}} = Gateway.capture(@money_less, @id, @options)
       end
     end

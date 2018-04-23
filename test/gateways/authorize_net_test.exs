@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.AuthorizeNetTest do
-  Code.require_file("../mocks/authorize_net_mock.exs", __DIR__)
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.AuthorizeNetMock, as: MockResponse
   alias Gringotts.CreditCard

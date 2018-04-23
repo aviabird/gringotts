@@ -16,6 +16,7 @@ defmodule Gringotts.Mixfile do
       test_coverage: [
         tool: ExCoveralls
       ],
+      elixirc_paths: elixirc_paths(Mix.env()),
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
@@ -39,6 +40,10 @@ defmodule Gringotts.Mixfile do
       applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex]
     ]
   end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/mocks"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Dependencies can be hex.pm packages:
   #
