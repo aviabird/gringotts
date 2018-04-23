@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.TrexleTest do
-  Code.require_file("../mocks/trexle_mock.exs", __DIR__)
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.TrexleMock, as: MockResponse
   alias Gringotts.Gateways.Trexle

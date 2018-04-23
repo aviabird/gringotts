@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.GlobalCollectTest do
-  Code.require_file("../mocks/global_collect_mock.exs", __DIR__)
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.GlobalCollectMock, as: MockResponse
   alias Gringotts.Gateways.GlobalCollect
