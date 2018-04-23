@@ -1,7 +1,6 @@
 defmodule Gringotts.Gateways.PaymillTest do
   use ExUnit.Case, async: true
 
-  alias Gringotts.{CreditCard, Response}
   alias Gringotts.Gateways.Paymill, as: Gateway
   alias Plug.{Conn, Parsers}
 
@@ -18,16 +17,12 @@ defmodule Gringotts.Gateways.PaymillTest do
     {:ok, bypass: bypass, opts: opts}
   end
 
-  @amount Money.new(10, :USD)
   @amount_4200 Money.new(4200, :EUR)
-  @big_amount Money.new(100, :USD)
   @valid_token "tok_d26e611c47d64693a281e8411934"
   @invalid_token "tok_d26e611c47d64693a281e841193"
   @refn_tran_id "tran_de77d38b85d6eee2984accc8b2cc"
   @refn_tran_id_invalid "tran_023d3b5769321c649435"
   @capt_preauth_id "preauth_d654694c8116109af903"
-  @capt_preauth_invalid_id "preauth_d654694c8116109af90"
-  @capt_preauth_used_id "preauth_d654694c8116109af903"
   @void_success_id "preauth_0bfc975c2858980a6023"
 
   @auth_success ~s/{ "data":{ "id":"preauth_7f0a5b2787d0acb96db5", "amount":"4200", "currency":"EUR", "description":"description example", "status":"closed", "livemode":false, "created_at":1523890381, "updated_at":1523890383, "app_id":null, "payment":{ "id":"pay_abdd833557398641e9dfcc47", "type":"creditcard", "client":"client_d8b9c9a37b0ecb1bbd83", "card_type":"mastercard", "country":"DE", "expire_month":"12", "expire_year":"2018", "card_holder":"Harry Potter", "last4":"0004", "updated_at":1522922164, "created_at":1522922164, "app_id":null, "is_recurring":true, "is_usable_for_preauthorization":true }, "client":{ "id":"client_d8b9c9a37b0ecb1bbd83", "email":null, "description":null, "app_id":null, "updated_at":1522922164, "created_at":1522922164, "payment":[ "pay_abdd833557398641e9dfcc47" ], "subscription":null }, "transaction":{ "id":"tran_7341c475993e3ddbbff801c47597", "amount":4200, "origin_amount":4200, "status":"preauth", "description":"description example", "livemode":false, "refunds":null, "client":"client_d8b9c9a37b0ecb1bbd83", "currency":"EUR", "created_at":1523890381, "updated_at":1523890383, "response_code":20000, "short_id":null, "is_fraud":false, "invoices":[ ], "app_id":null, "preauthorization":"preauth_7f0a5b2787d0acb96db5", "fees":[ ], "payment":"pay_abdd833557398641e9dfcc47", "mandate_reference":null, "is_refundable":false, "is_markable_as_fraud":true } }, "mode":"test" }/
@@ -227,8 +222,6 @@ defmodule Gringotts.Gateways.PaymillTest do
   describe "void" do
     test "when preauthorization is valid", %{bypass: bypass, opts: opts} do
       Bypass.expect(bypass, "DELETE", "/preauthorizations/#{@void_success_id}", fn conn ->
-        p_conn = parse(conn)
-        params = p_conn.body_params
         Conn.resp(conn, 200, @void_success)
       end)
 
@@ -245,8 +238,6 @@ defmodule Gringotts.Gateways.PaymillTest do
 
     test "when preauthorization used before", %{bypass: bypass, opts: opts} do
       Bypass.expect(bypass, "DELETE", "/preauthorizations/#{@void_success_id}", fn conn ->
-        p_conn = parse(conn)
-        params = p_conn.body_params
         Conn.resp(conn, 200, @void_done_before)
       end)
 
