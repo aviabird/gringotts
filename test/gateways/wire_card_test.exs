@@ -8,8 +8,6 @@ defmodule Gringotts.Gateways.WireCardTest do
     # TEST_PURCHASE_GUWID =      'C865402121385575982910'
     # TEST_CAPTURE_GUWID =       'C833707121385268439116'
 
-    # credit_card =  %CreditCard{name: "Longbob", number: "4200000000000000", cvc: "123", expiration: {2015, 11}}
-
     # config = %{credentails: {'user', 'pass'}, default_currency: "EUR"}
     :ok
   end
