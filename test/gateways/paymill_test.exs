@@ -60,7 +60,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
       Bypass.down(bypass)
       {:error, response} = Gateway.authorize(@amount_4200, @valid_token, config: opts)
-      assert response.reason == "econnrefused"
+      assert response.reason == "network related failure"
       Bypass.up(bypass)
     end
 
@@ -74,7 +74,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 400, @auth_or_purch_invlid_token)
       end)
 
-      {:ok, response} = Gateway.authorize(@amount_4200, @invalid_token, config: opts)
+      {:error, response} = Gateway.authorize(@amount_4200, @invalid_token, config: opts)
       assert response.status_code == 400
     end
   end
@@ -97,7 +97,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
       Bypass.down(bypass)
       {:error, response} = Gateway.capture(@capt_preauth_id, @amount_4200, config: opts)
-      assert response.reason == "econnrefused"
+      assert response.reason == "network related failure"
       Bypass.up(bypass)
     end
 
@@ -111,7 +111,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @capt_preauth_not_found)
       end)
 
-      {:ok, response} = Gateway.capture(@capt_preauth_id, @amount_4200, config: opts)
+      {:error, response} = Gateway.capture(@capt_preauth_id, @amount_4200, config: opts)
       assert response.status_code == 200
       assert response.reason == "Preauthorize not found"
     end
@@ -126,7 +126,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @capt_preauth_done_before)
       end)
 
-      {:ok, response} = Gateway.capture(@capt_preauth_id, @amount_4200, config: opts)
+      {:error, response} = Gateway.capture(@capt_preauth_id, @amount_4200, config: opts)
       assert response.status_code == 200
       assert response.reason == "Preauthorization has already been used"
     end
@@ -152,7 +152,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
       Bypass.down(bypass)
       {:error, response} = Gateway.purchase(@amount_4200, @invalid_token, config: opts)
-      assert response.reason == "econnrefused"
+      assert response.reason == "network related failure"
       Bypass.up(bypass)
     end
 
@@ -166,7 +166,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @auth_or_purch_invlid_token)
       end)
 
-      {:ok, response} = Gateway.purchase(@amount_4200, @invalid_token, config: opts)
+      {:error, response} = Gateway.purchase(@amount_4200, @invalid_token, config: opts)
       assert response.reason["field"] == "token"
 
       assert response.reason["messages"]["regexNotMatch"] ==
@@ -193,7 +193,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
       Bypass.down(bypass)
       {:error, response} = Gateway.refund(@amount_4200, @refn_tran_id, config: opts)
-      assert response.reason == "econnrefused"
+      assert response.reason == "network related failure"
       Bypass.up(bypass)
     end
 
@@ -205,7 +205,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @refn_again)
       end)
 
-      {:ok, response} = Gateway.refund(@amount_4200, @refn_tran_id, config: opts)
+      {:error, response} = Gateway.refund(@amount_4200, @refn_tran_id, config: opts)
       assert response.reason == "Amount to high"
       assert response.status_code == 200
     end
@@ -218,7 +218,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @refn_trans_not_found)
       end)
 
-      {:ok, response} = Gateway.refund(@amount_4200, @refn_tran_id_invalid, config: opts)
+      {:error, response} = Gateway.refund(@amount_4200, @refn_tran_id_invalid, config: opts)
       assert response.reason == "Transaction not found"
       assert response.status_code == 200
     end
@@ -239,7 +239,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
       Bypass.down(bypass)
       {:error, response} = Gateway.void(@void_success_id, config: opts)
-      assert response.reason == "econnrefused"
+      assert response.reason == "network related failure"
       Bypass.up(bypass)
     end
 
@@ -250,7 +250,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         Conn.resp(conn, 200, @void_done_before)
       end)
 
-      {:ok, response} = Gateway.void(@void_success_id, config: opts)
+      {:error, response} = Gateway.void(@void_success_id, config: opts)
       assert response.reason == "Preauthorization was not found"
       assert response.status_code == 200
     end
