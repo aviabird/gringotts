@@ -15,7 +15,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
   ]
   @good_card %Gringotts.CreditCard{
     first_name: "Hermoine",
-    last_name: "Grangerr",
+    last_name: "Granger",
     number: "4509953566233704",
     year: 2030,
     month: 07,
@@ -25,7 +25,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
 
   @bad_card %Gringotts.CreditCard{
     first_name: "Hermoine",
-    last_name: "Grangerr",
+    last_name: "Granger",
     number: "4509953566233704",
     year: 2000,
     month: 07,
