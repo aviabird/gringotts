@@ -235,7 +235,10 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   defp create_token(%CreditCard{} = card, opts) do
     url_params = [public_key: opts[:config][:public_key]]
-    body = Poison.encode!(token_params(card))
+    body =
+      card
+      |> token_params()
+      |> Poison.encode!()
 
     {state, res} =
       commit(:post, "/v1/card_tokens/#{opts[:customer_id]}", body, opts, params: url_params)
