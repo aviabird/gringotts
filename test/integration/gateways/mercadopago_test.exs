@@ -1,5 +1,5 @@
 defmodule Gringotts.Integration.Gateways.MercadopagoTest do
-  # Integration tests for the Mercadopago 
+  # Integration tests for the Mercadopago
 
   use ExUnit.Case, async: false
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
@@ -28,6 +28,7 @@ defmodule Gringotts.Integration.Gateways.MercadopagoTest do
     order_id: 123_126,
     customer_id: "311211654-YrXF6J0QikpIWX",
     config: @config,
+    order_type: "mercadopago",
     installments: 1
   ]
 

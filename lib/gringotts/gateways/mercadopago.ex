@@ -235,6 +235,7 @@ defmodule Gringotts.Gateways.Mercadopago do
 
   defp create_token(%CreditCard{} = card, opts) do
     url_params = [public_key: opts[:config][:public_key]]
+
     body =
       card
       |> token_params()
