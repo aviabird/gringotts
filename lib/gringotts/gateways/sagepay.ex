@@ -140,14 +140,7 @@ defmodule Gringotts.Gateways.SagePay do
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, %CreditCard{} = card, opts) do
-    with {:ok, session} <- generate_session_key(opts),
-         {:ok, {card_id, _} = card} <- generate_card_id(card_params(card), session) do
-      params = transaction_details(amount, session, card_id, opts)
-
-      :post
-      |> commit("transactions", params, headers(opts))
-      |> respond(card_id: card)
-    end
+    do_transaction(amount, card, opts, "Deferred")
   end
 
   @doc """
@@ -187,6 +180,24 @@ defmodule Gringotts.Gateways.SagePay do
     :post
     |> commit("transactions/#{payment_id}/instructions", params, headers(opts))
     |> respond()
+  end
+
+  @doc """
+  Transfers `amount` from the customer to the merchant.
+
+  SagePay attempts to process a purchase on behalf of the customer, by
+  debiting `amount` from the customer's account by charging the customer's
+  `card`.
+
+  ## Example
+  ```
+  iex> amount = Money.new(100, :GBP)
+  iex> Gringotts.purchase(Gringotts.Gateways.SagePay, amount, card, opts)
+  ```
+  """
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
+  def purchase(amount, card, opts) do
+    do_transaction(amount, card, opts, "Payment")
   end
 
   ###############################################################################
@@ -250,12 +261,23 @@ defmodule Gringotts.Gateways.SagePay do
     }
   end
 
-  defp transaction_details(amount, {session_key, _}, card_id, opts) do
+  defp do_transaction(amount, card, opts, type) do
+    with {:ok, session} <- generate_session_key(opts),
+         {:ok, {card_id, _} = card} <- generate_card_id(card_params(card), session) do
+      params = build_transaction(amount, session, card_id, opts, type)
+
+      :post
+      |> commit("transactions", params, headers(opts))
+      |> respond(card_id: card)
+    end
+  end
+
+  defp build_transaction(amount, {session_key, _}, card_id, opts, type) do
     {currency, value, _} = Money.to_integer(amount)
     full_address = "#{opts[:billing_address].street1}, #{opts[:billing_address].street2}"
 
     Poison.encode!(%{
-      "transactionType" => "Deferred",
+      "transactionType" => type,
       "paymentMethod" => %{
         "card" => %{
           "merchantSessionKey" => session_key,
@@ -319,11 +341,12 @@ defmodule Gringotts.Gateways.SagePay do
      }}
   end
 
-  defp respond({:error, %HTTPoison.Error{} = error}, _) do
+  defp respond({:error, %HTTPoison.Error{} = error}, tokens) do
     {
       :error,
       Response.error(
         success: false,
+        tokens: tokens,
         reason: "network related failure",
         message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
       )
