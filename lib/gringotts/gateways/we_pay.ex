@@ -42,9 +42,9 @@ defmodule Gringotts.Gateways.WePay do
 
   > Here's how the secrets map to the required configuration parameters for wepay:
   > 
-  > | Config parameter | wepay secret   |
-  > | -------          | ----           |
-  > | `:access_token`     | **AccessToken**  |
+  > | Config parameter   | wepay secret   |
+  > | -------            | ----           |
+  > | `:access_token`    | **AccessToken**|
 
   > Your Application config **must include the `[:access_token]` field(s)** and would look
   > something like this:
