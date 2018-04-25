@@ -200,6 +200,39 @@ defmodule Gringotts.Gateways.SagePay do
     do_transaction(amount, card, opts, "Payment")
   end
 
+  @doc """
+  Refunds the `amount` to the customer's account with reference to a prior
+  `payment_id`.
+
+  SagePay processes a full or partial refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
+
+  ## Example
+  ```
+  iex> amount = Money.new(100, :GBP)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.SagePay, amount, card, opts)
+  iex> Gringotts.capture(Gringotts.Gateways.SagePay, amount, auth_result.id, opts)
+  iex> Gringotts.refund(Gringotts.Gateways.SagePay, amount, auth_result.id, opts)
+  ```
+  """
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
+  def refund(amount, payment_id, opts) do
+    {_, value, _} = Money.to_integer(amount)
+
+    params =
+      Poison.encode!(%{
+        "transactionType" => "Refund",
+        "referenceTransactionId" => payment_id,
+        "vendorTxCode" => opts[:vendor_tx_code],
+        "amount" => value,
+        "description" => opts[:description]
+      })
+
+    :post
+    |> commit("transactions", params, headers(opts))
+    |> respond()
+  end
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
