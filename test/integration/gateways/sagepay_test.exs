@@ -43,7 +43,13 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
   ]
 
   setup do
-    [opts: [{:vendor_tx_code, "#{System.unique_integer()}"} | @opts]]
+    code =
+      :md5
+      |> :crypto.hash(Integer.to_string(System.unique_integer()))
+      |> Base.encode64()
+      |> String.trim("=")
+
+    [opts: [{:vendor_tx_code, code} | @opts]]
   end
 
   describe "authorize" do
@@ -94,6 +100,16 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
         {:error, response} = SagePay.purchase(@amount, %{@card | number: "0"}, opts)
         assert {session_key, _expiry_time} = response.tokens[:session_key]
         assert session_key =~ ~r/[A-Z\-0-9]{36}/
+      end
+    end
+  end
+
+  describe "refund" do
+    test "with valid params", %{opts: opts, test: name} do
+      use_cassette "sagepay/#{name}" do
+        assert {:ok, authorization} = SagePay.authorize(@amount, @card, opts)
+        assert {:ok, _} = SagePay.capture(authorization.id, @amount, opts)
+        assert {:ok, _} = SagePay.refund(@amount, authorization.id, opts)
       end
     end
   end
