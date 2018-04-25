@@ -1,32 +1,64 @@
 defmodule Gringotts.Gateways.<%= gateway_module <> "Test" %> do
-  # The file contains mocked tests for <%= gateway_module%>
+  # The file contains mock tests for <%= gateway_module%>
   
-  # We recommend using [mock][1] for this, you can place the mock responses from
-  # the Gateway in `test/mocks/<%= mock_response_filename %>` file, which has also been
-  # generated for you.
-  #
-  # [1]: https://github.com/jjh42/mock
+  # We recommend using [`Bypass`][bypass] for this as it allows us to inspect
+  # the request body that is sent to the gateway.
+
+  # After all, the only thing Gringotts does, is building HTTPoison requests
+  # from arguments. Thus by validating that a request has been properly
+  # constructed from the given arguments we accurately cover the behaviour of
+  # the module.
+
+  # For inspiration and guidance to writing mock tests, please refer the mock
+  # tests of the MONEI gateway. Bypass has excellent documentation and there are
+  # numerous blog posts detailing good practices.
   
-  # Load the mock response file before running the tests.
-  Code.require_file "../mocks/<%= mock_response_filename %>", __DIR__
+  # [bypass]: https://github.com/pspdfkit-labs/bypass
   
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+
+  import Bypass  
+
   alias Gringotts.Gateways.<%= gateway_module%>
-  import Mock
+  alias Plug.{Conn, Parsers}
 
-  # Group the test cases by public api
-  describe "purchase" do
+  # A new Bypass instance is needed per test, so that we can do parallel tests
+  setup do
+    bypass = Bypass.open()
+    {:ok, bypass: bypass}
   end
 
-  describe "authorize" do
-  end
+  @doc """
+  Parses the body of the `Plug.Conn.t`.
 
-  describe "capture" do 
-  end
+  This is very useful when testing with `Bypass` to parse body of the request
+  built in the test. This makes it dead-simple to write asserts on the request
+  body!
+  
+  ## Example
+  ```
+  test "something", %{bypass: bypass} do
+    Bypass.expect(bypass, "POST", "some/endpoint/", fn conn ->
+      p_conn = parse(conn)
+      params = p_conn.body_params
+      assert params["amount"] == "42.00"
+      assert params["currency"] == "USD"
+      Conn.resp(conn, 200, "the_mocked_reponse_body")
+    end)
 
-  describe "void" do
+    {:ok, response} = Gateway.authorize(@amount42, @card, @opts)
+    assert "something about the mocked response if necessary"
   end
+  ```
+  """
+  @spec parse(Plug.Conn.t(), keyword) :: Plug.Conn.t()
+  def parse(conn, opts \\ []) do
+    opts = Keyword.put_new(opts, :parsers, [Parsers.URLENCODED])
 
-  describe "refund" do
+    # if your gateway returns JSON instead of URL Encoded responses, use the
+    # JSON parser
+    
+    # opts = Keyword.put_new(opts, :parsers, [Parsers.JSON])
+    Parsers.call(conn, Parsers.init(opts))
   end
 end

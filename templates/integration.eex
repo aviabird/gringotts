@@ -1,7 +1,10 @@
-defmodule Gringotts.Integration.Gateways.<%= gateway_module <> "Test"%> do
-  # Integration tests for the <%= gateway_module%> 
+defmodule Gringotts.Integration.Gateways.<%= gateway_module <> "Test" %> do
+  # Integration tests for the <%= gateway_module %> 
+  #
+  # Note that your tests SHOULD NOT directly call the <%= gateway_module %>, but
+  # all calls must be via Gringotts' public API as defined in `lib`gringotts.ex`
 
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Gringotts.Gateways.<%= gateway_module%>
 
   @moduletag :integration
@@ -15,6 +18,7 @@ defmodule Gringotts.Integration.Gateways.<%= gateway_module <> "Test"%> do
   end
   
   # Group the test cases by public api
+
   describe "purchase" do
   end
 

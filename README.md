@@ -122,8 +122,11 @@ We wanted to "supervise" our payments, and power utilities to process recurring
 payments, subscriptions with it. But yes, as of now, it is a bottle neck and
 unnecessary.
 
-It's slated to be removed in [`v2.0.0`][milestone-2_0_0_alpha] and any supervised / async /
-parallel work can be explicitly managed via native elixir constructs.
+It's slated to be removed in [`v2.0.0`][milestone-2_0_0_alpha] and any
+supervised/async/parallel work can be explicitly managed via native elixir
+constructs.
+
+**In fact, it's already been removed from our [dev](#) branch.**
 
 [milestone-2_0_0_alpha]: https://github.com/aviabird/gringotts/milestone/3
 [reason]: http://harrypotter.wikia.com/wiki/Gringotts
