@@ -8,7 +8,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
 
   alias Gringotts.Gateways.SecurionPay, as: Gateway
 
-  @moduletag integration: true
+  @moduletag integration: false
 
   @amount Money.new(42, :EUR)
 
@@ -35,6 +35,11 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   @opts [
     config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"],
     customer_id: "cust_NxPh6PUq9KWUW8tZKkUnV2Nt"
+  ]
+
+  @email_opts [
+    config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"],
+    email: "customer@example.com"
   ]
 
   @bad_opts [config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"]]
@@ -96,6 +101,34 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
         refute response.status_code == 200
         assert response.message == "invalid_request"
         assert response.reason == "Charge '#{@bad_charge_id}' does not exist"
+      end
+    end
+  end
+
+  describe "[store]" do
+    test "with_customer_id" do
+      use_cassette "securion_pay/with_customer_id" do
+        {:ok, response} = Gateway.store(@good_card, @opts)
+        assert response.success == true
+        assert response.status_code == 200
+      end
+    end
+
+    test "with expired CreditCard" do
+      use_cassette "securion_pay/store_with_expired_card" do
+        assert {:error, response} = Gateway.store(@bad_card, @opts)
+        assert response.success == false
+        refute response.status_code == 200
+        assert response.message == "card_error"
+        assert response.reason == "The card has expired."
+      end
+    end
+
+    test "without_customer_id" do
+      use_cassette "securion_pay/without_customer_id" do
+        {:ok, response} = Gateway.store(@good_card, @email_opts)
+        assert response.success == true
+        assert response.status_code == 200
       end
     end
   end

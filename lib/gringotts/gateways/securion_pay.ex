@@ -116,9 +116,84 @@ defmodule Gringotts.Gateways.SecurionPay do
     commit([], "charges/#{payment_id}/capture", opts)
   end
 
-  ##########################################################################
-  #                          PRIVATE METHODS                               #
-  ##########################################################################
+  @doc """
+  Stores the customer's card details for later use.
+
+  SecurionPay can store the payment-source details, for example card  details
+  which can be used to effectively process _One-Click_ payments, and returns a 
+  card id which can be used for `purchase/3`, `authorize/3` and `unstore/2`.
+
+  The card id is available in the `Response.id` field.
+
+  It is **mandatory** to pass either `:email` or `:customer_id` in the opts field.
+
+  Here `store/2` is implemented in two ways:
+  * `:customer_id` is available in the opts field
+  * `:email` is available in the opts field(`:customer_id` not available)
+
+  ## Example
+  ### With the `:customer_id` available in the opts field
+      iex> opts = [config: [secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"], customer_id: "cust_zpYEBK396q3rvIBZYc3PIDwT"]
+      iex> card = %CreditCard{
+           first_name: "Harry",
+           last_name: "Potter",
+           number: "4200000000000000",
+           year: 2027,
+           month: 12,
+           verification_code: "123",
+           brand: "VISA"
+          }	
+      iex> result = Gringotts.Gateways.SecurionPay.store(card, opts)
+  ## Example
+  ### With `:email` in the opts field
+      iex> opts = [config: [secret_key: "c2tfdGVzdF9GZjJKcHE1OXNTV1Q3cW1JOWF0aWk1elI6"], email: "customer@example.com"]
+      iex> card = %CreditCard{
+           first_name: "Harry",
+           last_name: "Potter",
+           number: "4200000000000000",
+           year: 2027,
+           month: 12,
+           verification_code: "123",
+           brand: "VISA"
+          }	
+      iex> result = Gringotts.Gateways.SecurionPay.store(card, opts)
+           
+  """
+  @spec store(CreditCard.t(), Keyword.t()) :: {:ok | :error, Response.t()}
+  def store(card, opts) do
+    if Keyword.has_key?(opts, :customer_id) do
+      card |> create_card(opts)
+    else
+      card |> create_customer(opts)
+    end
+  end
+
+  ###############################################################################
+  #                                PRIVATE METHODS                              #
+  ###############################################################################
+
+  # Creates the parameters for authorise function when 
+  # card_id and customerId is provided.
+
+  # @spec create_card()
+  defp create_card(card, opts) do
+    [
+      {"number", card.number},
+      {"expMonth", card.month},
+      {"expYear", card.year},
+      {"cvc", card.verification_code}
+    ]
+    |> commit("customers/#{opts[:customer_id]}/cards", opts)
+  end
+
+  # @spec create_customer()
+  defp create_customer(card, opts) do
+    {_, res} =
+      [{"email", opts[:email]}]
+      |> commit("customers", opts)
+
+    create_card(card, opts ++ [customer_id: res.id])
+  end
 
   # Creates the common parameters for authorize function
   @spec common_params(String.t(), String.t()) :: keyword
