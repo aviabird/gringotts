@@ -8,7 +8,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
 
   alias Gringotts.Gateways.SecurionPay, as: Gateway
 
-  @moduletag integration: false
+  @moduletag integration: true
 
   @amount Money.new(42, :EUR)
 
