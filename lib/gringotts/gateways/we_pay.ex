@@ -359,7 +359,7 @@ defmodule Gringotts.Gateways.WePay do
   @spec commit(atom, String.t(), String.t(), keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, body, opts) do
     url = @test_url <> "#{endpoint}"
-    
+
     headers = [
       {"Content-Type", "application/json"},
       {"Authorization", "Bearer " <> opts[:config][:access_token]}
