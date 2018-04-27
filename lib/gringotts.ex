@@ -295,7 +295,6 @@ defmodule Gringotts do
   end
 
   defp get_and_validate_config(gateway) do
-    # Keep the key name and adapter the same in the config in application
     config = Application.get_env(:gringotts, gateway)
     # The following call to validate_config might raise an error
     gateway.validate_config(config)
