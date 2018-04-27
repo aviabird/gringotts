@@ -32,7 +32,7 @@ defmodule Gringotts.Gateways.WePay do
   ## Supported currencies and countries
 
   WePay supports the countries listed [here][all-country-list]
-  
+
   [all-country-list]: [https://support.wepay.com/hc/en-us/articles/203611643-Is-WePay-International-]
 
   ## Following the examples
@@ -352,7 +352,7 @@ defmodule Gringotts.Gateways.WePay do
   Removes card or payment info that was previously `store/2`d
 
   Deletes previously stored payment-source data.
-  
+
   ## Example
   ```
   iex> {:ok, store_result} = Gringotts.unstore(Gringotts.Gateways.WePay, store_result.token, opts)

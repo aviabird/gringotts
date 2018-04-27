@@ -2,6 +2,7 @@ defmodule Gringotts.Integration.Gateways.WePayTest do
   # Integration tests for the WePay 
 
   use ExUnit.Case, async: false
+  use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   alias Gringotts.Gateways.WePay
 
   alias Gringotts.{
