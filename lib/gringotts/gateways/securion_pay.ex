@@ -116,6 +116,33 @@ defmodule Gringotts.Gateways.SecurionPay do
     commit([], "charges/#{payment_id}/capture", opts)
   end
 
+   @doc """
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
+
+  > Refunds are allowed on which kinds of "prior" transactions?
+
+  ## Note
+
+  > The end customer will usually see two bookings/records on his statement. Is
+  > that true for SecurionPay?
+  > Is there a limited time window within which a void can be perfomed?
+
+  ## Example
+
+  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  """
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
+  def refund(amount, payment_id, opts) do
+    {currency, value, _, _} = Money.to_integer_exp(amount)
+    url = "charges/#{payment_id}/refund"
+    
+    [amount: value]
+    |>commit(url, opts)
+
+
+  end
+
+
   ##########################################################################
   #                          PRIVATE METHODS                               #
   ##########################################################################

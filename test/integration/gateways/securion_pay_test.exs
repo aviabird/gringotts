@@ -32,6 +32,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
     brand: "VISA"
   }
 
+
   @opts [
     config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"],
     customer_id: "cust_NxPh6PUq9KWUW8tZKkUnV2Nt"
@@ -40,6 +41,7 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
   @bad_opts [config: [secret_key: "pr_test_tXHm9qV9qV9bjIRHcQr9PLPa"]]
 
   @card_id "card_wVuO1a5BGM12UV10FwpkK9YW"
+  @charge_id "char_kA8MOArQQUMtYki0XHybr9fb"
   @bad_charge_id "char_wVuO1a5BGM12UV10FwpkK9YW"
 
   describe "[authorize]" do
@@ -96,6 +98,24 @@ defmodule Gringotts.Integration.Gateways.SecurionPayTest do
         refute response.status_code == 200
         assert response.message == "invalid_request"
         assert response.reason == "Charge '#{@bad_charge_id}' does not exist"
+      end
+    end
+  end
+
+    describe "[refund]" do
+    test "with_authorized_payment_id" do
+      use_cassette "securion_pay/valid_refund" do
+        assert {:ok, response} = Gateway.refund(@amount, @charge_id, @opts)
+        assert response.success == true
+        assert response.status_code == 200
+      end
+    end
+
+    test "with_invalid_payment_id" do
+      use_cassette "securion_pay/invalid_refund" do
+        assert {:error, response} = Gateway.refund(@amount, @bad_charge_id, @opts)
+        assert response.success == false
+        refute response.status_code == 200
       end
     end
   end
