@@ -11,7 +11,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   alias Gringotts.Gateways.PinPayments, as: Gateway
 
-  #@moduletag :integration
+  # @moduletag :integration
 
   @amount Money.new(420, :AUD)
 
@@ -119,15 +119,15 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   describe "Refunds" do
     test "[Refunds]" do
-       use_cassette "pin_pay/refunds" do
-      assert {:ok, response} = Gateway.purchase(@amount, @good_card, @opts)
-      assert response.success == true
-      assert response.status_code == 201
-      payment_id = response.id
-      assert {:ok, response} = Gateway.refund(payment_id, @opts)
-      assert response.success == true
-      assert response.status_code == 201
-       end
+      use_cassette "pin_pay/refunds" do
+        assert {:ok, response} = Gateway.purchase(@amount, @good_card, @opts)
+        assert response.success == true
+        assert response.status_code == 201
+        payment_id = response.id
+        assert {:ok, response} = Gateway.refund(payment_id, @opts)
+        assert response.success == true
+        assert response.status_code == 201
+      end
     end
   end
 end

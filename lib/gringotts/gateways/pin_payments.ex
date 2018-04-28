@@ -122,7 +122,7 @@ defmodule Gringotts.Gateways.PinPayments do
   ```
   """
 
- @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
@@ -213,7 +213,7 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "charges", params)
   end
 
-   @doc """
+  @doc """
   Refunds the `amount` to the customer's account with reference to a prior transfer.
 
   PinPayments processes a full refund worth `amount`, referencing a
@@ -227,7 +227,7 @@ defmodule Gringotts.Gateways.PinPayments do
   iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.PinPayments, payment_id, opts)
   ```
   """
-  @spec refund( String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(String.t(), keyword) :: {:ok | :error, Response}
   def refund(payment_id, opts) do
     url = @test_url <> "charges/#{payment_id}/refunds"
 
@@ -267,7 +267,6 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
   end
 
-
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -305,7 +304,7 @@ defmodule Gringotts.Gateways.PinPayments do
     |> respond
   end
 
-   @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
+  @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, param) do
     auth_token = encoded_credentials(param[:config][:api_key])
 
