@@ -122,29 +122,22 @@ defmodule Gringotts.Gateways.PinPayments do
   ```
   """
 
-  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
+ @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token_response =
-      :post
-      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
-      |> extract_card_token
+    with {:ok, card_token_response} <-
+           commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address)),
+         {:ok, card_token} <- extract_card_token(card_token_response) do
+      params =
+        [
+          amount: value,
+          capture: false,
+          card_token: card_token,
+          currency: currency
+        ] ++ Keyword.delete(opts, :address)
 
-    case card_token_response do
-      {:error, error} ->
-        {:error, error}
-
-      {:ok, token} ->
-        params =
-          [
-            amount: value,
-            capture: false,
-            card_token: token,
-            currency: currency
-          ] ++ Keyword.delete(opts, :address)
-
-        commit(:post, "charges", params)
+      commit(:post, "charges", params)
     end
   end
 
@@ -193,24 +186,17 @@ defmodule Gringotts.Gateways.PinPayments do
   def purchase(amount, %CreditCard{} = card, opts) do
     {currency, value, _} = Money.to_integer(amount)
 
-    card_token_response =
-      :post
-      |> commit("cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
-      |> extract_card_token
+    with {:ok, card_token_response} <-
+           commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address)),
+         {:ok, card_token} <- extract_card_token(card_token_response) do
+      params =
+        [
+          amount: value,
+          card_token: card_token,
+          currency: currency
+        ] ++ Keyword.delete(opts, :address)
 
-    case card_token_response do
-      {:error, error} ->
-        {:error, error}
-
-      {:ok, token} ->
-        params =
-          [
-            amount: value,
-            card_token: token,
-            currency: currency
-          ] ++ Keyword.delete(opts, :address)
-
-        commit(:post, "charges", params)
+      commit(:post, "charges", params)
     end
   end
 
@@ -225,6 +211,27 @@ defmodule Gringotts.Gateways.PinPayments do
       ] ++ Keyword.delete(opts, :address)
 
     commit(:post, "charges", params)
+  end
+
+   @doc """
+  Refunds the `amount` to the customer's account with reference to a prior transfer.
+
+  PinPayments processes a full refund worth `amount`, referencing a
+  previous `purchase/3` or `capture/3`.
+
+  The end customer will usually see two bookings/records on his statement.
+
+  ## Example
+  ```
+  iex> money = Money.new(20, :USD)
+  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.PinPayments, payment_id, opts)
+  ```
+  """
+  @spec refund( String.t(), keyword) :: {:ok | :error, Response}
+  def refund(payment_id, opts) do
+    url = @test_url <> "charges/#{payment_id}/refunds"
+
+    commit_short(:post, url, opts)
   end
 
   @doc """
@@ -299,6 +306,18 @@ defmodule Gringotts.Gateways.PinPayments do
 
     url
     |> HTTPoison.post({:form, param}, headers)
+    #|> respond
+  end
+
+  defp commit_short(method, url, opts) do
+    auth_token = encoded_credentials(opts[:config].apiKey)
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    HTTPoison.request(method, url, [], headers)
     |> respond
   end
 
@@ -307,7 +326,7 @@ defmodule Gringotts.Gateways.PinPayments do
     "Basic #{hash}"
   end
 
-  defp extract_card_token({:ok, %{token: token}}) do
+  defp extract_card_token(%{id: token}) do
     {:ok, token}
   end
 
@@ -321,12 +340,20 @@ defmodule Gringotts.Gateways.PinPayments do
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in 200..299 do
     {:ok, parsed} = decode(body)
-    token = parsed["response"]["token"]
+
+    token = parsed["response"]["card"]["token"]
+    id = parsed["response"]["token"]
     message = parsed["response"]["status_message"]
 
     {
       :ok,
-      Response.success(token: token, message: message, raw: parsed, status_code: code)
+      Response.success(
+        id: id,
+        token: token,
+        message: message,
+        raw: parsed,
+        status_code: code
+      )
     }
   end
 
