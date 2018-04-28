@@ -69,7 +69,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
           description: "hello",
           email: "hi@hello.com",
           ip_address: "1.1.1.1",
-          config: %{apiKey: "c4nxgznanW4XZUaEQhxS6g", pass: ""}
+          config: [api_key: "c4nxgznanW4XZUaEQhxS6g"]
         ] ++ [address: @add]
 
   # Group the test cases by public api
@@ -119,7 +119,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   describe "Refunds" do
     test "[Refunds]" do
-      # use_cassette "pin_pay/refunds" do
+       use_cassette "pin_pay/refunds" do
       assert {:ok, response} = Gateway.purchase(@amount, @good_card, @opts)
       assert response.success == true
       assert response.status_code == 201
@@ -127,7 +127,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
       assert {:ok, response} = Gateway.refund(payment_id, @opts)
       assert response.success == true
       assert response.status_code == 201
-      # end
+       end
     end
   end
 end

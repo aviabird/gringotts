@@ -267,6 +267,7 @@ defmodule Gringotts.Gateways.PinPayments do
     commit(:post, "cards", card_for_token(card, opts) ++ Keyword.delete(opts, :address))
   end
 
+
   ###############################################################################
   #                                PRIVATE METHODS                              #
   ###############################################################################
@@ -292,9 +293,21 @@ defmodule Gringotts.Gateways.PinPayments do
     ]
   end
 
-  @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
+  defp commit_short(method, url, opts) do
+    auth_token = encoded_credentials(opts[:config][:api_key])
+
+    headers = [
+      {"Content-Type", "application/x-www-form-urlencoded"},
+      {"Authorization", auth_token}
+    ]
+
+    HTTPoison.request(method, url, [], headers)
+    |> respond
+  end
+
+   @spec commit(atom, String.t(), keyword) :: {:ok | :error, Response}
   defp commit(:post, endpoint, param) do
-    auth_token = encoded_credentials(param[:config].apiKey)
+    auth_token = encoded_credentials(param[:config][:api_key])
 
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"},
@@ -306,18 +319,6 @@ defmodule Gringotts.Gateways.PinPayments do
 
     url
     |> HTTPoison.post({:form, param}, headers)
-    #|> respond
-  end
-
-  defp commit_short(method, url, opts) do
-    auth_token = encoded_credentials(opts[:config].apiKey)
-
-    headers = [
-      {"Content-Type", "application/x-www-form-urlencoded"},
-      {"Authorization", auth_token}
-    ]
-
-    HTTPoison.request(method, url, [], headers)
     |> respond
   end
 
