@@ -13,7 +13,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
 
   # @moduletag :integration
 
-  @amount Money.new(420, :AUD)
+  @amount Money.new(4, :AUD)
 
   @bad_card1 %CreditCard{
     first_name: "Harry",
@@ -111,7 +111,7 @@ defmodule Gringotts.Integration.Gateways.PinPaymentsTest do
         assert {:ok, response} = Gateway.store(@good_card, @opts)
         assert response.success == true
         assert response.status_code == 201
-        card_token = response.token
+        card_token = response.id
         assert {:ok, response} = Gateway.purchase(@amount, card_token, @opts)
       end
     end
