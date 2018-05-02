@@ -16,7 +16,6 @@ defmodule Gringotts.Gateways.Checkout do
   | Refund a transaction                         | `refund/3`    |
   | Void a transaction                           | `void/2`      |
 
-
   ## Optional or extra parameters
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
@@ -26,10 +25,8 @@ defmodule Gringotts.Gateways.Checkout do
 
   [req-resp]: https://beta.docs.checkout.com/docs/payments-quickstart
 
+   ## Registering your checkout account at `Gringotts`
 
-  ## Registering your checkout account at `Gringotts`
-
-  
   > Here's how the secrets map to the required configuration parameters for checkout:
   > 
   > | Config parameter | checkout secret   |
@@ -42,7 +39,6 @@ defmodule Gringotts.Gateways.Checkout do
   >     config :gringotts, Gringotts.Gateways.Checkout,
   >         secret_key: "your_secret_secret_key"
 
-  
   ## Supported currencies and countries
 
   > * Europe
@@ -69,7 +65,6 @@ defmodule Gringotts.Gateways.Checkout do
                           verification_code: "123", brand: "VISA"}
   ```
 
- 
   We'll be using these in the examples below.
 
   [docs]: https://beta.docs.checkout.com/docs
@@ -251,7 +246,7 @@ defmodule Gringotts.Gateways.Checkout do
   Voids the referenced payment.
   This method attempts a reversal of a previous transaction referenced by
   `charge_id`.
-  
+
   ## Note
   > As a consequence, the customer will never see any booking on his statement.
   > Checkout must be in authorized state and **not** in  captured state.
@@ -271,7 +266,7 @@ defmodule Gringotts.Gateways.Checkout do
     commit(:post, "charges/#{payment_id}/void", body, opts)
   end
 
-    @doc """
+  @doc """
   Refunds the `amount` to the customer's account with reference to a prior transfer.
   > Refunds are allowed on Captured / purchased transraction.
   ## Note
