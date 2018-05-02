@@ -2,49 +2,39 @@ defmodule Gringotts.Gateways.Checkout do
   @moduledoc """
   [checkout][home] gateway implementation.
 
-  ## Instructions!
+  A module for working with the checkout payment gateway.
 
-  ***This is an example `moduledoc`, and suggests some items that should be
-  documented in here.***
+  Refer the official Checkout [API docs][docs].
 
-  The quotation boxes like the one below will guide you in writing excellent
-  documentation for your gateway. All our gateways are documented in this manner
-  and we aim to keep our docs as consistent with each other as possible.
-  **Please read them and do as they suggest**. Feel free to add or skip sections
-  though.
+  The following set of functions for Checkout have been implemented:
 
-  If you'd like to make edits to the template docs, they exist at
-  `templates/gateway.eex`. We encourage you to make corrections and open a PR
-  and tag it with the label `template`.
+  | Action                                       | Method        |
+  | ------                                       | ------        |
+  | Authorize a Credit Card                      | `authorize/3` |
+  | Capture a previously authorized amount       | `capture/3`   |
+  | Charge a Credit Card                         | `purchase/3`  |
+  | Refund a transaction                         | `refund/3`    |
+  | Void a transaction                           | `void/2`      |
 
-  ***Actual docs begin below this line!***
-
-  --------------------------------------------------------------------------------
-
-  > List features that have been implemented, and what "actions" they map to as
-  > per the checkout gateway docs.
-  > A table suits really well for this.
 
   ## Optional or extra parameters
 
   Most `Gringotts` API calls accept an optional `Keyword` list `opts` to supply
   optional arguments for transactions with the gateway.
+  To know more about these keywords visit [Request and Response][req-resp] tabs for each
+  API method.
 
-  > List all available (ie, those that will be supported by this module) keys, a
-  > description of their function/role and whether they have been implemented
-  > and tested.
-  > A table suits really well for this.
+  [req-resp]: https://beta.docs.checkout.com/docs/payments-quickstart
+
 
   ## Registering your checkout account at `Gringotts`
 
-  Explain how to make an account with the gateway and show how to put the
-  `required_keys` (like authentication info) to the configuration.
-
+  
   > Here's how the secrets map to the required configuration parameters for checkout:
   > 
   > | Config parameter | checkout secret   |
-  > | -------          | ----           |
-  > | `:secret_key`     | **SecretKey**  |
+  > | --------------   | -----------       |
+  > | `:secret_key`    | **SecretKey**     |
 
   > Your Application config **must include the `[:secret_key]` field(s)** and would look
   > something like this:
@@ -52,15 +42,11 @@ defmodule Gringotts.Gateways.Checkout do
   >     config :gringotts, Gringotts.Gateways.Checkout,
   >         secret_key: "your_secret_secret_key"
 
-  ## Scope of this module
-
-  > It's unlikely that your first iteration will support all features of the
-  > gateway, so list down those items that are missing.
-
+  
   ## Supported currencies and countries
 
-  > It's enough if you just add a link to the gateway's docs or FAQ that provide
-  > info about this.
+  > * Europe
+  > * North America
 
   ## Following the examples
 
@@ -73,6 +59,7 @@ defmodule Gringotts.Gateways.Checkout do
 
   2. Run an `iex` session with `iex -S mix` and add some variable bindings and
   aliases to it (to save some time):
+  We'll be using these in the examples below.
   ```
   iex> alias Gringotts.{Response, CreditCard, Gateways.Checkout}
   iex> card = %CreditCard{first_name: "Jo",
@@ -82,10 +69,10 @@ defmodule Gringotts.Gateways.Checkout do
                           verification_code: "123", brand: "VISA"}
   ```
 
-  > Add any other frequently used bindings up here.
-
+ 
   We'll be using these in the examples below.
 
+  [docs]: https://beta.docs.checkout.com/docs
   [gs]: https://github.com/aviabird/gringotts/wiki/
   [home]: https://www.checkout.com
   [example]: https://github.com/aviabird/gringotts_example
@@ -107,22 +94,17 @@ defmodule Gringotts.Gateways.Checkout do
   @test_url "https://sandbox.checkout.com/api2/v2/"
   @doc """
   Performs a (pre) Authorize operation.
-
   The authorization validates the `card` details with the banking network,
   places a hold on the transaction `amount` in the customer’s issuing bank.
-
-  > ** You could perhaps:**
-  > 1. describe what are the important fields in the Response struct
-  > 2. mention what a merchant can do with these important fields (ex:
-  > `capture/3`, etc.)
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
+  Checkout returns an ID string which can be used to:
+  * `capture/3` _an_ amount.
+  * `void/2` an amount
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> amount = Money.new(42, :USD)
+  iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Checkout, amount, card, opts)
+  iex> auth_result.id # This is the charge ID
+  ```
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
@@ -179,18 +161,14 @@ defmodule Gringotts.Gateways.Checkout do
 
   @doc """
   Captures a pre-authorized `amount`.
-
-  `amount` is transferred to the merchant account by checkout used in the
-  pre-authorization referenced by `payment_id`.
-
+  `amount` is transferred to the merchant account by Checkout used in the
+  pre-authorization referenced by `charge_id`.
   ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-  > For example, does the gateway support partial, multiple captures?
-
+  > Checkout **do** support partial captures, but only once per authorized payment.
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Checkout, amount, auth_result.id, opts)
+  ```
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
@@ -208,18 +186,14 @@ defmodule Gringotts.Gateways.Checkout do
 
   @doc """
   Transfers `amount` from the customer to the merchant.
-
-  checkout attempts to process a purchase on behalf of the customer, by
+  Checkout attempts to process a purchase on behalf of the customer, by
   debiting `amount` from the customer's account by charging the customer's
   `card`.
-
-  ## Note
-
-  > If there's anything noteworthy about this operation, it comes here.
-
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> amount = Money.new(42, :USD)
+  iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Checkout, amount, card, opts)
+  iex> purchase_result.id # This is the charge ID
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
@@ -275,20 +249,16 @@ defmodule Gringotts.Gateways.Checkout do
 
   @doc """
   Voids the referenced payment.
-
   This method attempts a reversal of a previous transaction referenced by
-  `payment_id`.
-
-  > As a consequence, the customer will never see any booking on his statement.
-
+  `charge_id`.
+  
   ## Note
-
-  > Which transactions can be voided?
-  > Is there a limited time window within which a void can be perfomed?
-
+  > As a consequence, the customer will never see any booking on his statement.
+  > Checkout must be in authorized state and **not** in  captured state.
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> {:ok, void_result} = Gringotts.capture(Gringotts.Gateways.Checkout, purchase_result.id, opts)
+  ```
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(payment_id, opts) do
@@ -301,20 +271,15 @@ defmodule Gringotts.Gateways.Checkout do
     commit(:post, "charges/#{payment_id}/void", body, opts)
   end
 
-  @doc """
+    @doc """
   Refunds the `amount` to the customer's account with reference to a prior transfer.
-
-  > Refunds are allowed on which kinds of "prior" transactions?
-
+  > Refunds are allowed on Captured / purchased transraction.
   ## Note
-
-  > The end customer will usually see two bookings/records on his statement. Is
-  > that true for checkout?
-  > Is there a limited time window within which a void can be perfomed?
-
+  * Checkout does support partial refunds, but only once per captured payment.
   ## Example
-
-  > A barebones example using the bindings you've suggested in the `moduledoc`.
+  ```
+  iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Checkout, purchase_result.id, amount)
+  ```
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
