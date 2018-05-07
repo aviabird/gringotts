@@ -9,7 +9,9 @@ defmodule Gringotts.Integration.Gateways.AdyenTest do
 
   @amount Money.new(4200, :EUR)
 
-  @reference "payment-#{DateTime.utc_now |> DateTime.to_string |> String.replace([" ", ":", "."], "-")}"
+  @reference "payment-#{
+               DateTime.utc_now() |> DateTime.to_string() |> String.replace([" ", ":", "."], "-")
+             }"
 
   @card %CreditCard{
     brand: "VISA",
@@ -35,7 +37,7 @@ defmodule Gringotts.Integration.Gateways.AdyenTest do
       Application.delete_env(:gringotts, Gateway)
     end)
   end
-  
+
   setup do
     [opts: [requestParameters: %{"reference" => @reference}]]
   end

@@ -8,7 +8,7 @@ defmodule Gringotts.Gateways.Adyen do
 
   | Action                       | Method        |
   | ------                       | ------        |
-  
+
 
   ## The `opts` argument
 
@@ -24,7 +24,7 @@ defmodule Gringotts.Gateways.Adyen do
 
   | Config parameter | ADYEN secret    |
   | -------          | ----            |
-  
+
 
   [home]: https://www.adyen.com/
   [docs]: https://docs.adyen.com/developers
@@ -59,6 +59,7 @@ defmodule Gringotts.Gateways.Adyen do
   @spec purchase(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, card, opts) do
     {auth_atom, auth_response} = authorize(amount, card, opts)
+
     case auth_atom do
       :ok -> capture(auth_response.id, amount, opts)
       _ -> {auth_atom, auth_response}
@@ -81,10 +82,11 @@ defmodule Gringotts.Gateways.Adyen do
     case Keyword.get(opts, :requestParameters) do
       nil ->
         body = get_authorize_params(rec_card, amount, opts)
+
       _ ->
         body = Enum.into(opts[:requestParameters], get_authorize_params(rec_card, amount, opts))
     end
-    
+
     Poison.encode!(body)
   end
 
@@ -93,24 +95,27 @@ defmodule Gringotts.Gateways.Adyen do
       card: card_map(rec_card),
       amount: amount_map(amount),
       merchantAccount: opts[:config][:account]
-      }
+    }
   end
 
   defp capture_and_refund_params(id, amount, opts) do
     case Keyword.get(opts, :requestParameters) do
-      nil -> 
+      nil ->
         body = get_capture_and_refund_params(id, amount, opts)
-      _ -> 
-        body = Enum.into(opts[:requestParameters], get_capture_and_refund_params(id, amount, opts))
+
+      _ ->
+        body =
+          Enum.into(opts[:requestParameters], get_capture_and_refund_params(id, amount, opts))
     end
+
     Poison.encode!(body)
   end
 
   defp get_capture_and_refund_params(id, amount, opts) do
     %{
-      "originalReference": id,
-      "modificationAmount": amount_map(amount),
-      "merchantAccount": opts[:config][:account]
+      originalReference: id,
+      modificationAmount: amount_map(amount),
+      merchantAccount: opts[:config][:account]
     }
   end
 
@@ -118,20 +123,21 @@ defmodule Gringotts.Gateways.Adyen do
     case Keyword.get(opts, :requestParameters) do
       nil ->
         body = get_void_params(id, opts)
+
       _ ->
         body = Enum.into(opts[:requestParameters], get_void_params(id, opts))
     end
-    
+
     Poison.encode!(body)
   end
 
   defp get_void_params(id, opts) do
     %{
-      "originalReference": id,
-      "merchantAccount": opts[:config][:account]
+      originalReference: id,
+      merchantAccount: opts[:config][:account]
     }
   end
-  
+
   defp card_map(%CreditCard{} = rec_card) do
     %{
       number: rec_card.number,
@@ -144,6 +150,7 @@ defmodule Gringotts.Gateways.Adyen do
 
   defp amount_map(amount) do
     {currency, int_value, _} = Money.to_integer(amount)
+
     %{
       value: int_value,
       currency: currency
@@ -152,6 +159,7 @@ defmodule Gringotts.Gateways.Adyen do
 
   defp commit(method, endpoint, params, opts) do
     head = headers(opts)
+
     method
     |> HTTPoison.request(base_url(opts) <> endpoint, params, headers(opts))
     |> respond(opts)
@@ -163,19 +171,20 @@ defmodule Gringotts.Gateways.Adyen do
         gateway_code = parsed_resp["status"]
 
         status = if gateway_code == 200 || response.status_code == 200, do: :ok, else: :error
+
         {status,
-          %Response{
-            id: parsed_resp["pspReference"],
-            status_code: response.status_code,
-            gateway_code: gateway_code,
-            reason: parsed_resp["errorType"],
-            message: parsed_resp["message"] || parsed_resp["resultCode"] || parsed_resp["response"],
-            raw: response.body
-          }}
+         %Response{
+           id: parsed_resp["pspReference"],
+           status_code: response.status_code,
+           gateway_code: gateway_code,
+           reason: parsed_resp["errorType"],
+           message:
+             parsed_resp["message"] || parsed_resp["resultCode"] || parsed_resp["response"],
+           raw: response.body
+         }}
 
       :error ->
-        {:error,
-          %Response{raw: response.body, reason: "could not parse ADYEN response"}}
+        {:error, %Response{raw: response.body, reason: "could not parse ADYEN response"}}
     end
   end
 
@@ -191,6 +200,7 @@ defmodule Gringotts.Gateways.Adyen do
 
   defp headers(opts) do
     arg = get_in(opts, [:config, :username]) <> ":" <> get_in(opts, [:config, :password])
+
     [
       {"Authorization", "Basic #{Base.encode64(arg)}"}
       | @headers
