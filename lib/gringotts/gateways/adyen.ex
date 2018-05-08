@@ -9,7 +9,6 @@ defmodule Gringotts.Gateways.Adyen do
   | Action                       | Method        |
   | ------                       | ------        |
 
-
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
@@ -24,7 +23,6 @@ defmodule Gringotts.Gateways.Adyen do
 
   | Config parameter | ADYEN secret    |
   | -------          | ----            |
-
 
   [home]: https://www.adyen.com/
   [docs]: https://docs.adyen.com/developers
