@@ -5,9 +5,7 @@ defmodule Gringotts.Gateways.AdyenTest do
   alias Plug.{Conn, Parsers}
 
   @amount Money.new(100, :EUR)
-  @reference "payment-#{
-               DateTime.utc_now() |> DateTime.to_string() |> String.replace([" ", ":", "."], "-")
-             }"
+
   @card %Gringotts.CreditCard{
     brand: "VISA",
     first_name: "John",
@@ -47,8 +45,7 @@ defmodule Gringotts.Gateways.AdyenTest do
       username: "your user name",
       password: "your password",
       account: "your account",
-      url: "http://localhost:#{bypass.port}/",
-      requestParameters: %{"reference" => @reference}
+      url: "http://localhost:#{bypass.port}/"
     }
 
     {:ok, bypass: bypass, opts: opts}

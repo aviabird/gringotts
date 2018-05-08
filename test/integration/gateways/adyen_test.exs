@@ -30,7 +30,9 @@ defmodule Gringotts.Integration.Gateways.AdyenTest do
       username: "ws@Company.Aviabird",
       password: "R+F#@D38SI2+DEy5vTDs?IFwN",
       account: "AviabirdCOM",
-      mode: :test
+      mode: :test,
+      url: "your live url",
+      reference: @reference
     )
 
     on_exit(fn ->
@@ -39,7 +41,7 @@ defmodule Gringotts.Integration.Gateways.AdyenTest do
   end
 
   setup do
-    [opts: [requestParameters: %{"reference" => @reference}]]
+    [opts: [reference: @reference]]
   end
 
   describe "authorize" do
@@ -57,7 +59,7 @@ defmodule Gringotts.Integration.Gateways.AdyenTest do
       use_cassette "adyen/capture with valid card currency" do
         {:ok, response} = Gringotts.authorize(Gateway, @amount, @card, context.opts)
         payment_id = response.id
-        {:ok, response_cap} = Gringotts.capture(Gateway, payment_id, @amount, context.opts)
+        {:ok, response_cap} = Gringotts.capture(Gateway, payment_id, @amount)
         assert response_cap.message == "[capture-received]"
         assert response_cap.status_code == 200
       end

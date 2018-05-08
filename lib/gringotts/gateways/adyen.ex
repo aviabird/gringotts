@@ -35,14 +35,14 @@ defmodule Gringotts.Gateways.Adyen do
   """
 
   use Gringotts.Gateways.Base
-  use Gringotts.Adapter, required_config: [:username, :password, :account, :mode]
+  use Gringotts.Adapter, required_config: [:username, :password, :account, :mode, :url]
 
   alias Gringotts.{Response, Money, CreditCard}
 
   @base_url "https://pal-test.adyen.com/pal/servlet/Payment/v30/"
   @headers [{"Content-Type", "application/json"}]
 
-  @spec authorize(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, card, opts) do
     params = authorize_params(card, amount, opts)
     commit(:post, "authorise", params, opts)
@@ -54,7 +54,7 @@ defmodule Gringotts.Gateways.Adyen do
     commit(:post, "capture", params, opts)
   end
 
-  @spec purchase(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, card, opts) do
     {auth_atom, auth_response} = authorize(amount, card, opts)
 
@@ -66,45 +66,40 @@ defmodule Gringotts.Gateways.Adyen do
 
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def refund(amount, id, opts) do
-    param = capture_and_refund_params(id, amount, opts)
-    commit(:post, "refund", param, opts)
+    params = capture_and_refund_params(id, amount, opts)
+    commit(:post, "refund", params, opts)
   end
 
   @spec void(String.t(), keyword) :: {:ok | :error, Response.t()}
   def void(id, opts) do
-    param = void_params(id, opts)
-    commit(:post, "cancel", param, opts)
+    params = void_params(id, opts)
+    commit(:post, "cancel", params, opts)
   end
 
-  defp authorize_params(%CreditCard{} = rec_card, amount, opts) do
-    case Keyword.get(opts, :requestParameters) do
-      nil ->
-        body = get_authorize_params(rec_card, amount, opts)
+  defp merge_keyword_list_to_map(exclude_keys, keyword_list, map) do
+    keyword_list
+    |> Keyword.drop(exclude_keys)
+    |> Map.new()
+    |> Map.merge(map)
+  end
 
-      _ ->
-        body = Enum.into(opts[:requestParameters], get_authorize_params(rec_card, amount, opts))
-    end
+  defp authorize_params(%CreditCard{} = card, amount, opts) do
+    body = merge_keyword_list_to_map([:config], opts, get_authorize_params(card, amount, opts))
 
     Poison.encode!(body)
   end
 
-  defp get_authorize_params(rec_card, amount, opts) do
+  defp get_authorize_params(card, amount, opts) do
     %{
-      card: card_map(rec_card),
-      amount: amount_map(amount),
+      card: card_params(card),
+      amount: amount_params(amount),
       merchantAccount: opts[:config][:account]
     }
   end
 
   defp capture_and_refund_params(id, amount, opts) do
-    case Keyword.get(opts, :requestParameters) do
-      nil ->
-        body = get_capture_and_refund_params(id, amount, opts)
-
-      _ ->
-        body =
-          Enum.into(opts[:requestParameters], get_capture_and_refund_params(id, amount, opts))
-    end
+    body =
+      merge_keyword_list_to_map([:config], opts, get_capture_and_refund_params(id, amount, opts))
 
     Poison.encode!(body)
   end
@@ -112,19 +107,13 @@ defmodule Gringotts.Gateways.Adyen do
   defp get_capture_and_refund_params(id, amount, opts) do
     %{
       originalReference: id,
-      modificationAmount: amount_map(amount),
+      modificationAmount: amount_params(amount),
       merchantAccount: opts[:config][:account]
     }
   end
 
   defp void_params(id, opts) do
-    case Keyword.get(opts, :requestParameters) do
-      nil ->
-        body = get_void_params(id, opts)
-
-      _ ->
-        body = Enum.into(opts[:requestParameters], get_void_params(id, opts))
-    end
+    body = merge_keyword_list_to_map([:config], opts, get_void_params(id, opts))
 
     Poison.encode!(body)
   end
@@ -136,17 +125,17 @@ defmodule Gringotts.Gateways.Adyen do
     }
   end
 
-  defp card_map(%CreditCard{} = rec_card) do
+  defp card_params(%CreditCard{} = card) do
     %{
-      number: rec_card.number,
-      expiryMonth: rec_card.month,
-      expiryYear: rec_card.year,
-      cvc: rec_card.verification_code,
-      holderName: CreditCard.full_name(rec_card)
+      number: card.number,
+      expiryMonth: card.month,
+      expiryYear: card.year,
+      cvc: card.verification_code,
+      holderName: CreditCard.full_name(card)
     }
   end
 
-  defp amount_map(amount) do
+  defp amount_params(amount) do
     {currency, int_value, _} = Money.to_integer(amount)
 
     %{
@@ -156,14 +145,12 @@ defmodule Gringotts.Gateways.Adyen do
   end
 
   defp commit(method, endpoint, params, opts) do
-    head = headers(opts)
-
     method
     |> HTTPoison.request(base_url(opts) <> endpoint, params, headers(opts))
-    |> respond(opts)
+    |> respond
   end
 
-  defp respond({:ok, response}, opts) do
+  defp respond({:ok, response}) do
     case Poison.decode(response.body) do
       {:ok, parsed_resp} ->
         gateway_code = parsed_resp["status"]
@@ -186,7 +173,7 @@ defmodule Gringotts.Gateways.Adyen do
     end
   end
 
-  defp respond({:error, %HTTPoison.Error{} = response}, opts) do
+  defp respond({:error, %HTTPoison.Error{} = response}) do
     {
       :error,
       Response.error(
@@ -205,5 +192,11 @@ defmodule Gringotts.Gateways.Adyen do
     ]
   end
 
-  defp base_url(opts), do: opts[:config][:url] || @base_url
+  defp base_url(opts) do
+    if opts[:config][:mode] == :test do
+      @base_url
+    else
+      opts[:config][:url]
+    end
+  end
 end
