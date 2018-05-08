@@ -276,7 +276,8 @@ defmodule Gringotts.Gateways.WePay do
     body =
       Poison.encode!(%{
         checkout_id: payment_id,
-        cancel_reason: opts[:cancel_reason]
+        #cancel_reason: opts[:cancel_reason] || nil
+        cancel_reason: "defective"
       })
 
     commit(:post, "/checkout/cancel/", body, opts)
