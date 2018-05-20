@@ -14,6 +14,11 @@ defmodule Gringotts.Gateways.Trexle do
   | Refund                       | `refund/3`    |
   | Store                        | `store/2`     |
 
+  ## PCI compliance is mandatory!
+
+  _You, the merchant needs to be PCI-DSS Compliant if you wish to use this
+  module! Your server will recieve sensitive card and customer information._
+
   ## The `opts` argument
 
   Most `Gringotts` API calls accept an optional `keyword` list `opts` to supply
@@ -32,7 +37,7 @@ defmodule Gringotts.Gateways.Trexle do
   After [creating your account][dashboard] successfully on Trexle, head to the dashboard and find
   your account "secrets" in the [`API keys`][keys] section.
 
-  Here's how the secrets map to the required configuration parameters for MONEI:
+  Here's how the secrets map to the required configuration parameters for Trexle:
 
   | Config parameter | Trexle secret   |
   | -------          | ----            |
@@ -83,7 +88,7 @@ defmodule Gringotts.Gateways.Trexle do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key]
   import Poison, only: [decode: 1]
-  alias Gringotts.{Response, CreditCard, Address, Money}
+  alias Gringotts.{Address, CreditCard, Money, Response}
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -92,7 +97,7 @@ defmodule Gringotts.Gateways.Trexle do
   places a hold on the transaction `amount` in the customer’s issuing bank and
   also triggers risk management. Funds are not transferred.
 
-  Trexle returns a "charge token", avaliable in the `Response.authorization`
+  Trexle returns a "charge token", avaliable in the `Response.id`
   field, which can be used in future to perform a `capture/3`.
 
   ### Example
@@ -133,10 +138,10 @@ defmodule Gringotts.Gateways.Trexle do
   @doc """
   Captures a pre-authorized `amount`.
 
-  `amount` is transferred to the merchant account by MONEI when it is smaller or
+  `amount` is transferred to the merchant account by Trexle when it is smaller or
   equal to the amount used in the pre-authorization referenced by `charge_token`.
 
-  Trexle returns a "charge token", avaliable in the `Response.authorization`
+  Trexle returns a "charge token", avaliable in the `Response.id`
   field, which can be used in future to perform a `refund/2`.
 
   ## Note
@@ -210,7 +215,7 @@ defmodule Gringotts.Gateways.Trexle do
   Trexle processes a full or partial refund worth `amount`, referencing a
   previous `purchase/3` or `capture/3`.
 
-  Trexle returns a "refund token", avaliable in the `Response.authorization`
+  Trexle returns a "refund token", avaliable in the `Response.id`
   field.
 
   Multiple, partial refunds can be performed on the same "charge token"
