@@ -8,11 +8,11 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
     CreditCard
   }
 
-  @moduletag integration: false
+  @moduletag integration: true
 
   @amount Money.new(4, :MXN)
 
-  @goodcard %CreditCard{
+  @goodcard %Gringotts.CreditCard{
     first_name: "Aashish",
     last_name: "singh",
     number: "4111111111111111",
@@ -64,7 +64,7 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
     end
      test "bad card authorize" do
        use_cassette "openpay/authorize bad_card" do
-         assert {:error, response} = Gateway.authorize(@amount, @bad_card, @opts)
+         assert {:error, response} = Gateway.authorize(@amount, @badcard, @opts)
          assert response.success == false
          assert response.status_code == 400
        end
@@ -74,7 +74,7 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
    describe "capture" do
      test "capture" do
        use_cassette "openpay/authorize good_card" do
-         assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
+         assert {:ok, response} = Gateway.authorize(@amount, @goodcard, @opts)
          assert response.success == true
          assert response.status_code == 200
          assert {:ok, response} = Gateway.capture(response.id, @amount, @opts)
@@ -87,14 +87,14 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
    describe "purchase" do
      test "good card purchase" do
        use_cassette "openpay/purchase good_card" do
-         assert {:ok, response} = Gateway.purchase(@amount, @good_card, @opts)
+         assert {:ok, response} = Gateway.purchase(@amount, @goodcard, @opts)
          assert response.success == true
          assert response.status_code == 200
        end
      end
      test "bad card purchase" do
        use_cassette "openpay/purchase bad_card" do
-         assert {:error, response} = Gateway.purchase(@amount, @bad_card, @opts)
+         assert {:error, response} = Gateway.purchase(@amount, @badcard, @opts)
          assert response.success == false
          assert response.status_code == 400
        end
@@ -104,7 +104,7 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
    describe "void" do
      test "Void" do
        use_cassette "openpay/void" do
-         assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
+         assert {:ok, response} = Gateway.authorize(@amount, @goodcard, @opts)
          assert response.success == true
          assert response.status_code == 200
          payment_id = response.id
@@ -117,8 +117,8 @@ defmodule Gringotts.Integration.Gateways.OpenpayTest do
 
    describe "refund" do
      test "[Refund]" do
-       use_cassette "Checkout/Refund" do
-         assert {:ok, response} = Gateway.authorize(@amount, @good_card, @opts)
+       use_cassette "openpay/Refund" do
+         assert {:ok, response} = Gateway.authorize(@amount, @goodcard, @opts)
          assert response.success == true
          assert response.status_code == 200
          payment_id = response.id
