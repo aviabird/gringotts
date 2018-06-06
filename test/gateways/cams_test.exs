@@ -1,10 +1,7 @@
 defmodule Gringotts.Gateways.CamsTest do
   use ExUnit.Case, async: false
 
-  alias Gringotts.{
-    CreditCard,
-    Response
-  }
+  alias Gringotts.{CreditCard, Response}
 
   alias Gringotts.Gateways.CamsMock, as: MockResponse
   alias Gringotts.Gateways.Cams, as: Gateway
@@ -48,10 +45,10 @@ defmodule Gringotts.Gateways.CamsTest do
     config: @auth
   ]
 
-  @money Money.new(:USD, 100)
-  @money_more Money.new(:USD, 101)
-  @money_less Money.new(:USD, 99)
-  @bad_currency Money.new(:INR, 100)
+  @money Gringotts.FakeMoney.new(100, :USD)
+  @money_more Gringotts.FakeMoney.new(101, :USD)
+  @money_less Gringotts.FakeMoney.new(99, :USD)
+  @bad_currency Gringotts.FakeMoney.new(100, :INR)
 
   @id "some_transaction_id"
   @bad_id "some_fake_transaction_id"

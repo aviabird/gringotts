@@ -2,15 +2,16 @@ defmodule Gringotts.Gateways.MoneiTest do
   use ExUnit.Case, async: true
 
   alias Gringotts.{
-    CreditCard
+    CreditCard,
+    FakeMoney
   }
 
   alias Gringotts.Gateways.Monei, as: Gateway
   alias Plug.{Conn, Parsers}
 
-  @amount42 Money.new(42, :USD)
-  @amount3 Money.new(3, :USD)
-  @bad_currency Money.new(42, :INR)
+  @amount42 FakeMoney.new(42, :USD)
+  @amount3 FakeMoney.new(3, :USD)
+  @bad_currency FakeMoney.new(42, :INR)
 
   @card %CreditCard{
     first_name: "Harry",

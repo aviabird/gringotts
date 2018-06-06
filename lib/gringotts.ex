@@ -9,9 +9,6 @@ defmodule Gringotts do
 
   ## Standard API arguments
 
-  All requests to Gringotts are served by a supervised worker, this might be
-  made optional in future releases.
-
   ### `gateway` (Module) Name
 
   The `gateway` to which this request is made. This is required in all API calls
@@ -29,24 +26,24 @@ defmodule Gringotts do
   the transaction. `amount` is polymorphic thanks to the `Gringotts.Money`
   protocol which can even be implemented by your very own custom Money type!
 
+  > Currently, we support only [`ex_money`][ex_money]'s `Money` type. Please
+    don't forget to add the `ex_money` lib to your deps!
+
   #### Note
 
   Gringotts supports [`ex_money`][ex_money] out of the box, just drop `ex_money`
   types in this argument and everything will work as expected.
 
-  > Support for [`monetized`][monetized] and [`money`][money] is on the
-  > way, track it [here][iss-money-lib-support]!
-
-  Otherwise, just wrap your `amount` with the `currency` together in a `Map` like so,
-      money = %{value: Decimal.new("100.50"), currency: "USD"}
+  > Support for [`monetized`][monetized] and [`money`][money] would be nice, but
+    is currently not planned.
 
   > When this highly precise `amount` is serialized into the network request, we
   > use a potentially lossy `Gringotts.Money.to_string/1` or
   > `Gringotts.Money.to_integer/1` to perform rounding (if required) using the
   > [`half-even`][wiki-half-even] strategy.
   >
-  > **Hence, to ensure transparency, protect sanity and save _real_ money, we
-  > STRONGLY RECOMMEND that merchants perform any required rounding and handle
+  > **Hence, to protect your interests, and save _real_ money, we STRONGLY
+  > RECOMMEND that (you) merchants perform any required rounding and handle
   > remainders in their application logic -- before passing the `amount` to
   > Gringotts's API.**
 
@@ -63,14 +60,23 @@ defmodule Gringotts do
   [ex_money]: https://hexdocs.pm/ex_money/readme.html
   [monetized]: https://hexdocs.pm/monetized/
   [money]: https://hexdocs.pm/money/Money.html
-  [iss-money-lib-support]: https://github.com/aviabird/gringotts/projects/3#card-6801146
   [wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
 
   ### `card`, a payment source
 
-  Gringotts provides a `Gringotts.CreditCard` type to hold card parameters
-  which merchants fetch from their clients. The same type can also hold Debit
-  card details.
+  Gringotts provides a `Gringotts.CreditCard` type to hold card parameters which
+  merchants fetch from their clients. You (the merchant) needs to be PCI-DSS
+  compliant to be able to use this.
+
+  > The same type can also hold Debit card details.
+
+  Some gateways do not provide direct API integrations even for PCI compliant
+  merchants, and force every merchant to use their client-side integration to
+  generate a card token.
+
+  Thus for such gateways, Gringotts accepts a `string` card-token instead of (or
+  in addition to) a `CreditCard.t` struct. Please refer the "Notes" section of
+  your chosen gateway to find what the card argument accepts.
 
   #### Note
 
@@ -153,9 +159,14 @@ defmodule Gringotts do
   gateway,
 
       amount = Money.new("4.2", :USD)
-      # IF YOU DON'T USE ex_money
-      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
-      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
+      card = %Gringotts.CreditCard{
+        first_name: "Harry",
+        last_name: "Potter",
+        number: "4200000000000000",
+        year: 2099, month: 12,
+        verification_code: "123",
+        brand: "VISA"
+      }
       {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.XYZ, amount, card, opts)
   """
   def authorize(gateway, amount, card, opts \\ []) do
@@ -175,10 +186,8 @@ defmodule Gringotts do
   To capture $4.20 on a previously authorized payment worth $4.20 by referencing
   the obtained authorization `id` with the `XYZ` gateway,
 
+      auth_result # The result of an `authorize/3` request.
       amount = Money.new("4.2", :USD)
-      # IF YOU DON'T USE ex_money
-      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
-      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       Gringotts.capture(Gringotts.Gateways.XYZ, amount, auth_result.id, opts)
   """
   def capture(gateway, id, amount, opts \\ []) do
@@ -204,9 +213,14 @@ defmodule Gringotts do
   To process a purchase worth $4.2, with the `XYZ` gateway,
 
       amount = Money.new("4.2", :USD)
-      # IF YOU DON'T USE ex_money
-      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
-      card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
+      card = %Gringotts.CreditCard{
+        first_name: "Harry",
+        last_name: "Potter",
+        number: "4200000000000000",
+        year: 2099, month: 12,
+        verification_code: "123",
+        brand: "VISA"
+      }
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, card, opts)
   """
   def purchase(gateway, amount, card, opts \\ []) do
@@ -225,8 +239,6 @@ defmodule Gringotts do
   gateway,
 
       amount = Money.new("4.2", :USD)
-      # IF YOU DON'T USE ex_money
-      # amount = %{value: Decimal.new("4.2"), currency: "EUR"}
       Gringotts.purchase(Gringotts.Gateways.XYZ, amount, id, opts)
   """
   def refund(gateway, amount, id, opts \\ []) do
@@ -237,7 +249,7 @@ defmodule Gringotts do
   @doc """
   Stores the payment-source data for later use, returns a `token`.
 
-  > The token must be returned in the `Response.authorization` field.
+  > The token must be returned in the `Response.token` field.
 
   ## Note
 
@@ -247,7 +259,14 @@ defmodule Gringotts do
 
   To store a card (a payment-source) for future use, with the `XYZ` gateway,
 
-      card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      card = %Gringotts.CreditCard{
+        first_name: "Harry",
+        last_name: "Potter",
+        number: "4200000000000000",
+        year: 2099, month: 12,
+        verification_code: "123",
+        brand: "VISA"
+      }
       Gringotts.store(Gringotts.Gateways.XYZ, card, opts)
   """
   def store(gateway, card, opts \\ []) do

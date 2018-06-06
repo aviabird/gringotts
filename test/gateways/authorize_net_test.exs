@@ -1,7 +1,7 @@
 defmodule Gringotts.Gateways.AuthorizeNetTest do
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.AuthorizeNetMock, as: MockResponse
-  alias Gringotts.CreditCard
+  alias Gringotts.{CreditCard, FakeMoney}
   alias Gringotts.Gateways.AuthorizeNet, as: ANet
 
   import Mock
@@ -21,7 +21,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     verification_code: 123
   }
 
-  @amount Money.new("2.99", :USD)
+  @amount FakeMoney.new("2.99", :USD)
 
   @opts [
     config: @auth,
@@ -32,17 +32,17 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       name: "vase",
       description: "Cannes logo",
       quantity: 18,
-      unit_price: Money.mult!(@amount, 18)
+      unit_price: FakeMoney.new("53.82", :USD)
     },
-    tax: %{name: "VAT", amount: Money.new("0.1", :EUR), description: "Value Added Tax"},
+    tax: %{name: "VAT", amount: FakeMoney.new("0.1", :EUR), description: "Value Added Tax"},
     shipping: %{
       name: "SAME-DAY-DELIVERY",
-      amount: Money.new("0.56", :EUR),
+      amount: FakeMoney.new("0.56", :EUR),
       description: "Zen Logistics"
     },
     duty: %{
       name: "import_duty",
-      amount: Money.new("0.25", :EUR),
+      amount: FakeMoney.new("0.25", :EUR),
       description: "Upon import of goods"
     }
   ]
@@ -132,7 +132,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.bad_card_purchase_response()
         end do
-        assert {:error, response} = ANet.purchase(@amount, @bad_card, @opts)
+        assert {:error, _response} = ANet.purchase(@amount, @bad_card, @opts)
       end
     end
   end
@@ -152,7 +152,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.bad_card_purchase_response()
         end do
-        assert {:error, response} = ANet.authorize(@amount, @bad_card, @opts)
+        assert {:error, _response} = ANet.authorize(@amount, @bad_card, @opts)
       end
     end
   end
@@ -169,7 +169,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
 
     test "with bad transaction id" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.bad_id_capture() end do
-        assert {:error, response} = ANet.capture(@capture_invalid_id, @amount, @opts)
+        assert {:error, _response} = ANet.capture(@capture_invalid_id, @amount, @opts)
       end
     end
   end
@@ -186,14 +186,14 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
 
     test "bad payment params" do
       with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.bad_card_refund() end do
-        assert {:error, response} = ANet.refund(@amount, @refund_id, @opts_refund_bad_payment)
+        assert {:error, _response} = ANet.refund(@amount, @refund_id, @opts_refund_bad_payment)
       end
     end
 
     test "debit less than refund amount" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.debit_less_than_refund() end do
-        assert {:error, response} = ANet.refund(@amount, @refund_id, @opts_refund)
+        assert {:error, _response} = ANet.refund(@amount, @refund_id, @opts_refund)
       end
     end
   end
@@ -208,7 +208,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     test "with bad transaction id" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers -> MockResponse.void_non_existent_id() end do
-        assert {:error, response} = ANet.void(@void_invalid_id, @opts)
+        assert {:error, _response} = ANet.void(@void_invalid_id, @opts)
       end
     end
   end
@@ -233,7 +233,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
         post: fn _url, _body, _headers ->
           MockResponse.store_without_profile_fields()
         end do
-        assert {:error, response} = ANet.store(@card, @opts_store_no_profile)
+        assert {:error, _response} = ANet.store(@card, @opts_store_no_profile)
 
         "Error"
       end

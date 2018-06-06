@@ -20,10 +20,9 @@ matrix:
   - elixir: "1.5.3"
     script:
       - mix coveralls.json
-  - elixir: "1.6.2"
+  - elixir: "1.6.5"
 
 notifications:
   email:
     recipients:
-      - ananya95+travis@gmail.com
       - ashish+travis@aviabird.com

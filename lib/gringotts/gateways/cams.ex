@@ -120,7 +120,7 @@ defmodule Gringotts.Gateways.Cams do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:username, :password]
 
-  alias Gringotts.{CreditCard, Response, Money}
+  alias Gringotts.{CreditCard, Money, Response}
   alias Gringotts.Gateways.Cams.ResponseHandler, as: ResponseParser
 
   @live_url "https://secure.centralams.com/gw/api/transact.php"

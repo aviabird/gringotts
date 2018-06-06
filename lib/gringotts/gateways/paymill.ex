@@ -43,9 +43,9 @@ defmodule Gringotts.Gateways.Paymill do
 
   * PAYMILL processes money in the sub-divided unit of currency (ie, in case of
     USD it works in cents).
-  * PAYMILL does not offer direct API integration for [PCI DSS][pci-dss]
-    compliant merchants, everyone must use PAYMILL as if they are not PCI
-    compliant.
+  * This module does not offer direct API integration for [PCI DSS][pci-dss]
+    compliant merchants. Hence, you can use this module even if your
+    infrastructure (servers) are not PCI-DSS compliant!
   * To use their product, a merchant (aka user of this library) would have to
     use their [Bridge (js integration)][bridge] (or equivalent) in your
     application frontend to collect Credit/Debit Card data.
@@ -94,7 +94,7 @@ defmodule Gringotts.Gateways.Paymill do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:private_key, :public_key]
 
-  alias Gringotts.{Response, Money}
+  alias Gringotts.{Money, Response}
 
   @base_url "https://api.paymill.com/v2.1/"
   @headers [{"Content-Type", "application/x-www-form-urlencoded"}]
