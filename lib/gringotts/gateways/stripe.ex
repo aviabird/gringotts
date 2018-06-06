@@ -18,27 +18,48 @@ defmodule Gringotts.Gateways.Stripe do
   optional arguments for transactions with the Stripe gateway. The following keys
   are supported:
 
-  | Key                    | Remark | Status           |
-  | ----                   | ---    | ----             |
-  | `currency`             |        | **Implemented**  |  
-  | `capture`              |        | **Implemented**  |
-  | `description`          |        | **Implemented**  |
-  | `metadata`             |        | **Implemented**  |
-  | `receipt_email`        |        | **Implemented**  |
-  | `shipping`             |        | **Implemented**  |
-  | `customer`             |        | **Implemented**  |
-  | `source`               |        | **Implemented**  |
-  | `statement_descriptor` |        | **Implemented**  |
-  | `charge`               |        | **Implemented**  |
-  | `reason`               |        | **Implemented**  |
-  | `account_balance`      |        | Not implemented  |
-  | `business_vat_id`      |        | Not implemented  |
-  | `coupon`               |        | Not implemented  |
-  | `default_source`       |        | Not implemented  |
-  | `email`                |        | Not implemented  |
-  | `shipping`             |        | Not implemented  |
+  | Key                    | Status           |
+  | ----                   | ----             |
+  | `currency`             | **Implemented**  |  
+  | `capture`              | **Implemented**  |
+  | `description`          | **Implemented**  |
+  | `metadata`             | **Implemented**  |
+  | `receipt_email`        | **Implemented**  |
+  | `shipping`             | **Implemented**  |
+  | `customer`             | **Implemented**  |
+  | `source`               | **Implemented**  |
+  | `statement_descriptor` | **Implemented**  |
+  | `charge`               | **Implemented**  |
+  | `reason`               | **Implemented**  |
+  | `account_balance`      | Not implemented  |
+  | `business_vat_id`      | Not implemented  |
+  | `coupon`               | Not implemented  |
+  | `default_source`       | Not implemented  |
+  | `email`                | Not implemented  |
+  | `shipping`             | Not implemented  |
+
+  ## Note
+
+  _This module can be used by both PCI-DSS compliant as well as non-compliant
+  merchants!_
+
+  ### I'm not PCI-DSS compliant
+
+  No worries, both `authorize/3` and `purchase/3` accept a
+  "payment-source-identifier" (a `string`) instead of a `CreditCard.t`
+  struct. You'll have to generate this identifier using [Stripe.js and
+  Elements][stripe-js] client-side.
+
+  ### I'm PCI-DSS compliant
+
+  In that case, you need not use [Stripe.js or Elements][stripe-js] and can
+  directly accept the client's card info and pass the `CreditCard.t` struct to
+  this module's functions.
+
+  [stripe-js]: https://stripe.com/docs/sources/cards
 
   ## Registering your Stripe account at `Gringotts`
+
   After [making an account on Stripe](https://stripe.com/), head
   to the dashboard and find your account `secrets` in the `API` section.
 
@@ -59,11 +80,7 @@ defmodule Gringotts.Gateways.Stripe do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:secret_key]
 
-  alias Gringotts.{
-    CreditCard,
-    Address,
-    Money
-  }
+  alias Gringotts.{Address, CreditCard, Money}
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -72,15 +89,19 @@ defmodule Gringotts.Gateways.Stripe do
   places a hold on the transaction amount in the customer’s issuing bank and
   also triggers risk management. Funds are not transferred.
 
-  Stripe returns an `charge_id` which should be stored at your side and can be used later to:
+  Stripe returns an `charge_id` which should be stored at your side and can be
+  used later to:
   * `capture/3` an amount.
   * `void/2` a pre-authorization.
 
   ## Note
-  Uncaptured charges expire in 7 days. For more information, [see authorizing charges and settling later](https://support.stripe.com/questions/can-i-authorize-a-charge-and-then-wait-to-settle-it-later).
+  Uncaptured charges expire in 7 days. For more information, [see authorizing
+  charges and settling
+  later](https://support.stripe.com/questions/can-i-authorize-a-charge-and-then-wait-to-settle-it-later).
 
   ## Example
-  The following session shows how one would (pre) authorize a payment of $10 on a sample `card`.
+  The following session shows how one would (pre) authorize a payment of $10 on
+  a sample `card`.
 
       iex> card = %CreditCard{
             first_name: "John",
@@ -105,7 +126,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
   @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: map
-  def authorize(amount, payment, opts \\ []) do
+  def authorize(amount, payment, opts) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
     commit(:post, "charges", params, opts)
   end
@@ -143,7 +164,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
   @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: map
-  def purchase(amount, payment, opts \\ []) do
+  def purchase(amount, payment, opts) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "charges", params, opts)
   end
@@ -155,8 +176,9 @@ defmodule Gringotts.Gateways.Stripe do
   equal to the amount used in the pre-authorization referenced by `charge_id`.
 
   ## Note
-  Stripe allows partial captures and release the remaining amount back to the payment source. Thus, the same
-  pre-authorisation `charge_id` cannot be used to perform multiple captures.
+  Stripe allows partial captures and release the remaining amount back to the
+  payment source. Thus, the same pre-authorisation `charge_id` cannot be used to
+  perform multiple captures.
 
   ## Example
   The following session shows how one would (partially) capture a previously
@@ -169,7 +191,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
   @spec capture(String.t(), Money.t(), keyword) :: map
-  def capture(id, amount, opts \\ []) do
+  def capture(id, amount, opts) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/capture", params, opts)
   end
@@ -202,7 +224,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
   @spec void(String.t(), keyword) :: map
-  def void(id, opts \\ []) do
+  def void(id, opts) do
     params = optional_params(opts)
     commit(:post, "charges/#{id}/refund", params, opts)
   end
@@ -224,7 +246,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
   @spec refund(Money.t(), String.t(), keyword) :: map
-  def refund(amount, id, opts \\ []) do
+  def refund(amount, id, opts) do
     params = optional_params(opts) ++ amount_params(amount)
     commit(:post, "charges/#{id}/refund", params, opts)
   end
@@ -232,8 +254,9 @@ defmodule Gringotts.Gateways.Stripe do
   @doc """
   Stores the payment-source data for later use.
 
-  Stripe can store the payment-source details, for example card which can be used to effectively 
-  to process One-Click and Recurring_ payments, and return a `customer_id` for reference.
+  Stripe can store the payment-source details, for example card which can be
+  used to effectively to process One-Click and Recurring_ payments, and return a
+  `customer_id` for reference.
 
   ## Example
   The following session shows how one would store a card (a payment-source) for
@@ -261,7 +284,7 @@ defmodule Gringotts.Gateways.Stripe do
       iex> Gringotts.store(Gringotts.Gateways.Stripe, card, opts)
   """
   @spec store(CreditCard.t() | String.t(), keyword) :: map
-  def store(payment, opts \\ []) do
+  def store(payment, opts) do
     params = optional_params(opts) ++ source_params(payment, opts)
     commit(:post, "customers", params, opts)
   end
@@ -269,18 +292,19 @@ defmodule Gringotts.Gateways.Stripe do
   @doc """
   Deletes previously stored payment-source data.
 
-  Deletes the already stored payment source,
-  so that it cannot be used again for capturing
-  payments.
+  Deletes the already stored payment source, so that it cannot be used again for
+  capturing payments.
 
   ## Examples
-  The following session shows how one would unstore a already stored payment source.
+  The following session shows how one would unstore a already stored payment
+  source.
+
       iex> id = "cus_BwpLX2x4ecEUgD"
 
       iex> Gringotts.unstore(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec unstore(String.t()) :: map
-  def unstore(id, opts \\ []), do: commit(:delete, "customers/#{id}", [], opts)
+  @spec unstore(String.t(), keyword) :: map
+  def unstore(id, opts), do: commit(:delete, "customers/#{id}", [], opts)
 
   # Private methods
 

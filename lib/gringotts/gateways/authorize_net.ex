@@ -21,25 +21,25 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   optional arguments for transactions with the Authorize.Net gateway. The
   following keys are supported:
 
-  | Key                   | Remarks |
-  | ----                  | ------- |
-  | `customer`            |         |
-  | `invoice`             |         |
-  | `bill_to`             |         |
-  | `ship_to`             |         |
-  | `customer_ip`         |         |
-  | `order`               |         |
-  | `lineitems`           |         |
-  | `ref_id`              |         |
-  | `tax`                 |         |
-  | `duty`                |         |
-  | `shipping`            |         |
-  | `po_number`           |         |
-  | `customer_type`       |         |
-  | `customer_profile_id` |         |
-  | `profile`             |         |
+  | Key                   |
+  | ----                  |
+  | `customer`            |
+  | `invoice`             |
+  | `bill_to`             |
+  | `ship_to`             |
+  | `customer_ip`         |
+  | `order`               |
+  | `lineitems`           |
+  | `ref_id`              |
+  | `tax`                 |
+  | `duty`                |
+  | `shipping`            |
+  | `po_number`           |
+  | `customer_type`       |
+  | `customer_profile_id` |
+  | `profile`             |
 
-  To know more about these keywords visit [Request and Response][req-resp] tabs for each
+  To know more about these keywords check the [Request and Response][req-resp] tabs for each
   API method.
 
   [docs]: https://developer.authorize.net/api/reference/index.html
@@ -48,10 +48,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   ## Notes
 
   1. Though Authorize.Net supports [multiple currencies][currencies] however,
-     multiple currencies in one account are not supported in _this_ module. A
-     merchant would need multiple Authorize.Net accounts, one for each chosen
-     currency.
-  2. The responses of this module include a non-standard field: `:cavv_result`.
+     multiple currencies in one account is not supported. A merchant would need
+     multiple Authorize.Net accounts, one for each chosen currency. Please refer
+     the section on "Supported acquirers and currencies" [here][currencies].
+  2. _You, the merchant needs to be PCI-DSS Compliant if you wish to use this
+     module. Your server will recieve sensitive card and customer information._
+  3. The responses of this module include a non-standard field: `:cavv_result`.
      - `:cavv_result` is the "cardholder authentication verification response
        code". In case of Mastercard transactions, this field will always be
        `nil`. Please refer the "Response Format" section in the [docs][docs] for
@@ -122,11 +124,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
 
   @aut_net_namespace "AnetApi/xml/v1/schema/AnetApiSchema.xsd"
 
-  alias Gringotts.{
-    CreditCard,
-    Response,
-    Money
-  }
+  alias Gringotts.{CreditCard, Money, Response}
 
   @doc """
   Transfers `amount` from the customer to the merchant.

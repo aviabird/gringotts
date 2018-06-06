@@ -17,7 +17,7 @@ defmodule Gringotts.Gateways.PaymillTest do
     {:ok, bypass: bypass, opts: opts}
   end
 
-  @amount_42 Money.new(42, :EUR)
+  @amount_42 Gringotts.FakeMoney.new(42, :EUR)
   @valid_token "tok_d26e611c47d64693a281e8411934"
   @invalid_token "tok_d26e611c47d64693a281e841193"
 
@@ -38,7 +38,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       end)
 
       {:ok, response} = Gateway.authorize(@amount_42, @valid_token, config: opts)
-      assert response.gateway_code == 20000
+      assert response.gateway_code == 20_000
     end
 
     test "when paymill is down or unreachable", %{bypass: bypass, opts: opts} do
@@ -75,7 +75,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       end)
 
       {:ok, response} = Gateway.capture(@capture_preauth_id, @amount_42, config: opts)
-      assert response.gateway_code == 20000
+      assert response.gateway_code == 20_000
     end
 
     test "when preauthorization not found", %{bypass: bypass, opts: opts} do
@@ -121,7 +121,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       end)
 
       {:ok, response} = Gateway.purchase(@amount_42, @invalid_token, config: opts)
-      assert response.gateway_code == 20000
+      assert response.gateway_code == 20_000
       assert response.fraud_review == true
       assert response.status_code == 200
     end
@@ -156,7 +156,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       end)
 
       {:ok, response} = Gateway.refund(@amount_42, @transaction_id, config: opts)
-      assert response.gateway_code == 20000
+      assert response.gateway_code == 20_000
       assert response.status_code == 200
     end
 
@@ -194,7 +194,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       end)
 
       {:ok, response} = Gateway.void(@void_id, config: opts)
-      assert response.gateway_code == 50810
+      assert response.gateway_code == 50_810
     end
 
     test "when preauthorization used before", %{bypass: bypass, opts: opts} do
