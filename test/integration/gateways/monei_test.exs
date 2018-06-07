@@ -101,9 +101,9 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   test "[authorize -> capture] with tokenisation", %{opts: opts} do
     with {:ok, auth_result} <- Gateway.authorize(@amount, @card, opts ++ [register: true]),
-         {:ok, _registration_token} <- Map.fetch(auth_result, :token),
+         {:ok, tokens} <- Map.fetch(auth_result, :tokens),
          {:ok, _capture_result} <- Gateway.capture(auth_result.id, @amount, opts) do
-      "yay!"
+      assert tokens[:registration] =~ ~r/[a-z0-9]{32}/
     else
       {:error, _err} ->
         flunk()

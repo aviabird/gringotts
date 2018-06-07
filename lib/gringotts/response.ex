@@ -10,7 +10,7 @@ defmodule Gringotts.Response do
   defstruct [
     :success,
     :id,
-    :token,
+    :tokens,
     :status_code,
     :gateway_code,
     :reason,
@@ -24,26 +24,26 @@ defmodule Gringotts.Response do
   @typedoc """
   The standard Response from `Gringotts`.
 
-  | Field          | Type              | Description                           |
-  |----------------|-------------------|---------------------------------------|
-  | `success`      | `boolean`         | Indicates the status of the\
-                                         transaction.                          |
-  | `id`           | `String.t`        | Gateway supplied identifier of the\
-                                         transaction.                          |
-  | `token`        | `String.t`        | Gateway supplied `token`. _This is\
-                                         different from `Response.id`_.        |
-  | `status_code`  | `non_neg_integer` | `HTTP` response code.                 |
-  | `gateway_code` | `String.t`        | Gateway's response code "as-is".      |
-  | `message`      | `String.t`        | String describing the response status.|
-  | `avs_result`   | `map`             | Address Verification Result.\
-                                         Schema: `%{street: String.t,\
-                                         zip_code: String.t}`                  |
-  | `cvc_result`   | `String.t`        | Result of the [CVC][cvc] validation.  |
-  | `reason`       | `String.t`        | Explain the `reason` of error, in\
-                                         case of error. `nil` otherwise.       |
-  | `raw`          | `String.t`        | Raw response from the gateway.        |
-  | `fraud_review` | `term`            | Gateway's risk assessment of the\
-                                         transaction.                          |
+  | Field          | Type               | Description                           |
+  |----------------|--------------------|---------------------------------------|
+  | `success`      | `boolean`          | Indicates the status of the\
+                                          transaction.                          |
+  | `id`           | `String.t`         | Gateway supplied identifier of the\
+                                          transaction.                          |
+  | `tokens`       | `[atom: String.t`  | Gateway supplied tokens. _This is\
+                                          different from `Response.id`_.        |
+  | `status_code`  | `non_neg_integer`  | `HTTP` response code.                 |
+  | `gateway_code` | `String.t`         | Gateway's response code "as-is".      |
+  | `message`      | `String.t`         | String describing the response status.|
+  | `avs_result`   | `map`              | Address Verification Result.\
+                                          Schema: `%{street: String.t,\
+                                          postal_code: String.t}`               |
+  | `cvc_result`   | `String.t`         | Result of the [CVC][cvc] validation.  |
+  | `reason`       | `String.t` | `map` | Explain the `reason` of error, in\
+                                          case of error. `nil` otherwise.       |
+  | `raw`          | `String.t`         | Raw response from the gateway.        |
+  | `fraud_review` | `term`             | Gateway's risk assessment of the\
+                                          transaction.                          |
 
   ## Notes
 
@@ -66,12 +66,12 @@ defmodule Gringotts.Response do
   @type t :: %__MODULE__{
           success: boolean,
           id: String.t(),
-          token: String.t(),
+          tokens: [atom: String.t()],
           status_code: non_neg_integer,
           gateway_code: String.t(),
           reason: String.t(),
           message: String.t(),
-          avs_result: %{street: String.t(), zip_code: String.t()},
+          avs_result: %{street: String.t(), postal_code: String.t()},
           cvc_result: String.t(),
           raw: String.t(),
           fraud_review: term
