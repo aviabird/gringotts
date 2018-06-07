@@ -37,7 +37,7 @@ defmodule Gringotts.Response do
   | `message`      | `String.t`         | String describing the response status.|
   | `avs_result`   | `map`              | Address Verification Result.\
                                           Schema: `%{street: String.t,\
-                                          zip_code: String.t}`                  |
+                                          postal_code: String.t}`               |
   | `cvc_result`   | `String.t`         | Result of the [CVC][cvc] validation.  |
   | `reason`       | `String.t` | `map` | Explain the `reason` of error, in\
                                           case of error. `nil` otherwise.       |
@@ -71,7 +71,7 @@ defmodule Gringotts.Response do
           gateway_code: String.t(),
           reason: String.t(),
           message: String.t(),
-          avs_result: %{street: String.t(), zip_code: String.t()},
+          avs_result: %{street: String.t(), postal_code: String.t()},
           cvc_result: String.t(),
           raw: String.t(),
           fraud_review: term

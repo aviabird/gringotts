@@ -499,7 +499,7 @@ defmodule Gringotts.Gateways.Monei do
   end
 
   defp parse_response(%{"result" => result} = data) do
-    {address, zip_code} = @avs_code_translator[result["avsResponse"]]
+    {address, postal_code} = @avs_code_translator[result["avsResponse"]]
 
     results = [
       id: data["id"],
@@ -508,7 +508,7 @@ defmodule Gringotts.Gateways.Monei do
       message: result["description"],
       fraud_review: data["risk"],
       cvc_result: @cvc_code_translator[result["cvvResponse"]],
-      avs_result: %{address: address, zip_code: zip_code}
+      avs_result: %{address: address, postal_code: postal_code}
     ]
 
     non_nil_params = Enum.filter(results, fn {_, v} -> v != nil end)
