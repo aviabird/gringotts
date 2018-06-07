@@ -152,7 +152,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money, CreditCard, Response}
+  alias Gringotts.{CreditCard, Money, Response}
 
   @brand_map %{
     VISA: "1",

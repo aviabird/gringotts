@@ -126,39 +126,6 @@ defprotocol Gringotts.Money do
   def to_string(money)
 end
 
-# this implementation is used for dispatch on ex_money (and will also fire for
-# money)
-if Code.ensure_compiled?(Money) do
-  defimpl Gringotts.Money, for: Money do
-    def currency(money), do: money.currency |> Atom.to_string()
-    def value(money), do: money.amount
-
-    def to_integer(money) do
-      {_, int_value, exponent, _} = Money.to_integer_exp(money)
-      {currency(money), int_value, exponent}
-    end
-
-    def to_string(money) do
-      {:ok, currency_data} = Cldr.Currency.currency_for_code(currency(money))
-      reduced = Money.reduce(money)
-
-      {
-        currency(reduced),
-        value(reduced)
-        |> Decimal.round(currency_data.digits)
-        |> Decimal.to_string()
-      }
-    end
-  end
-end
-
-if Code.ensure_compiled?(Monetized.Money) do
-  defimpl Gringotts.Money, for: Monetized.Money do
-    def currency(money), do: money.currency
-    def value(money), do: money.amount
-  end
-end
-
 # Assumes that the currency is subdivided into 100 units
 defimpl Gringotts.Money, for: Any do
   def currency(%{currency: currency}), do: currency

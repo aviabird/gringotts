@@ -1,18 +1,16 @@
 defmodule Gringotts.Gateways.GlobalCollectTest do
-  Code.require_file("../mocks/global_collect_mock.exs", __DIR__)
   use ExUnit.Case, async: false
   alias Gringotts.Gateways.GlobalCollectMock, as: MockResponse
   alias Gringotts.Gateways.GlobalCollect
 
-  alias Gringotts.{
-    CreditCard
-  }
+  alias Gringotts.CreditCard
+  alias Gringotts.FakeMoney
 
   import Mock
 
-  @amount Money.new("500", :USD)
+  @amount FakeMoney.new("500", :USD)
 
-  @bad_amount Money.new("50.3", :USD)
+  @bad_amount FakeMoney.new("50.3", :USD)
 
   @shipping_address %{
     street: "Desertroad",
@@ -68,13 +66,6 @@ defmodule Gringotts.Gateways.GlobalCollectTest do
   @valid_token "charge_cb17a0c34e870a479dfa13bd873e7ce7e090ec9b"
 
   @invalid_token 30
-
-  @invalid_config [
-    config: %{
-      secret_api_key: "some_secret_api_key",
-      api_key_id: "some_api_key_id"
-    }
-  ]
 
   @options [
     config: %{

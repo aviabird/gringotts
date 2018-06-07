@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Gringotts is a payment processing library in Elixir integrating various payment gateways, drawing motivation for Shopify's <a href="https://github.com/activemerchant/active_merchant"><code>activemerchant</code></a> gem. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">Demo</a> here.
+  Gringotts is a payment processing library in Elixir integrating various payment gateways, drawing motivation for Shopify's <a href="https://github.com/activemerchant/active_merchant"><code>activemerchant</code></a> gem. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">demo here</a>.
 </p>
 <p align="center">
  <a href="https://travis-ci.org/aviabird/gringotts"><img src="https://travis-ci.org/aviabird/gringotts.svg?branch=master"  alt='Build Status' /></a>  <a href='https://coveralls.io/github/aviabird/gringotts?branch=master'><img src='https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master' alt='Coverage Status' /></a> <a href=""><img src="https://img.shields.io/hexpm/v/gringotts.svg"/></a> <a href="https://inch-ci.org/github/aviabird/gringotts"><img src="http://inch-ci.org/github/aviabird/gringotts.svg?branch=master" alt="Docs coverage"></img></a> <a href="https://gitter.im/aviabird/gringotts"><img src="https://badges.gitter.im/aviabird/gringotts.svg"/></a>
@@ -25,10 +25,10 @@ Add `gringotts` to the list of dependencies of your application.
 
 def deps do
   [
-    {:gringotts, "~> 1.0"},
+    {:gringotts, "~> 1.1"},
     # ex_money provides an excellent Money library, and integrates
     # out-of-the-box with Gringotts
-    {:ex_money, "~> 1.1.0"}
+    {:ex_money, ">= 2.6.0"}
   ]
 end
 ```
@@ -51,11 +51,12 @@ config :gringotts, Gringotts.Gateways.Monei,
     entityId: "your_secret_channel_id"
 ```
 
-Copy and paste this code in a module or an `IEx` session
+Copy and paste this code in a module or an `IEx` session, or use this handy
+[`.iex.exs`][monei-bindings] for all the bindings.
 
 ```elixir
 alias Gringotts.Gateways.Monei
-alias Gringotts.{CreditCard}
+alias Gringotts.CreditCard
 
 # a fake sample card that will work now because the Gateway is by default
 # in "test" mode.
@@ -83,18 +84,51 @@ end
 
 [hexpm]: https://hex.pm/packages/gringotts
 [monei]: http://www.monei.net
+[monei-bindings]: https://gist.github.com/oyeb/a2e2ac5986cc90a12a6136f6bf1357e5
+
+## On the `Gringotts.Money` protocol and money representation
+
+All financial applications must take proper care when representing money in
+their system. Using simple `float`ing values might lead to losses in the real
+world due to [various reasons][floating-issues].
+
+Most payment gateways are strict about the formatting of the `amount` in the
+request, hence we cannot render arbitrary floating amounts like
+`$4.99999`. Moreover, such amounts might mean something to your application but
+they don't have any value in the real world (since you can't charge someone for
+a fraction of a US cent).
+
+Your application **must round** such amounts before invoking Gringotts **and manage
+any remainders sensibly** yourself.
+
+> Gringotts may perform rounding using the [`half-even`][wiki-half-even]
+strategy, but it will discard remainders if any.
+
+### Supported "Money" libraries
+
+Gringotts does not ship with any library to work with monies. You are free to
+choose any monie library you wish, as long as they implement the
+[`Gringotts.Money`][protocol] for their type!
+
+That said, we recommend [`ex_money`][ex_money] (above [`v2.6.0`][2_6_0]) to
+represent monies. You just have to add it in your `deps()`.
+
+[protocol]: https://github.com/aviabird/gringotts/blob/dev/lib/gringotts/money.ex
+[floating-issues]: https://elixirforum.com/t/comparison-of-decimals-not-logical/770/21
+[wiki-half-even]: https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
+[ex-money]: https://github.com/kipcole9/money
+[2_6_0]: https://github.com/kipcole9/money/releases/tag/v2.6.0
 
 ## Supported Gateways
 
-| Gateway               | Supported countries                                                                                                                                                                                                                                                        |
-| ------                | -----                                                                                                                                                                                                                                                                      |
-| [Authorize.Net][anet] | AD, AT, AU, BE, BG, CA, CH, CY, CZ, DE, DK, ES, FI, FR, GB, GB, GI, GR, HU, IE, IT, LI, LU, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, US, VA                                                                                                                         |
-| [CAMS][cams]          | AU, US                                                                                                                                                                                                                                                                     |
-| [MONEI][monei]         | DE, EE, ES, FR, IT, US                                                                                                                                                                                                                                                     |
-| [PAYMILL][paymill]    | AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FO, FR, GB, GI, GR, HU, IE, IL, IS, IT, LI, LT, LU, LV, MT, NL, NO, PL, PT, RO, SE, SI, SK, TR, VA                                                                                                                         |
-| [Stripe][stripe]      | AT, AU, BE, CA, CH, DE, DK, ES, FI, FR, GB, IE, IN, IT, LU, NL, NO, SE, SG, US                                                                                                                                                                                             |
-| [TREXLE][trexle]      | AD, AE, AT, AU, BD, BE, BG, BN, CA, CH, CY, CZ, DE, DK, EE, EG, ES, FI, FR, GB, GI, GR, HK, HU, ID, IE, IL, IM, IN, IS, IT, JO, KW, LB, LI, LK, LT, LU, LV, MC, MT, MU, MV, MX, MY, NL, NO, NZ, OM, PH, PL, PT, QA, RO, SA, SE, SG, SI, SK, SM, TR, TT, UM, US, VA, VN, ZA |
-| [Wirecard][wirecard]  | AD, AT, BE, BG, CH, CY, CZ, DE, DK, EE, ES, FI, FR, GB, GI, GR, HU, IE, IL, IM, IS, IT, LI, LT, LU, LV, MC, MT, NL, NO, PL, PT, RO, SE, SI, SK, SM, TR, VA                                                                                                                 |
+| Gateway               | PCI compliance | `purchase` | `authorize` | `capture` | `void`   | `refund` | (card) `store` | (card) `unstore` |
+|-----------------------|----------------|------------|-------------|-----------|----------|----------|----------------|------------------|
+| [Authorize.Net][anet] | mandatory      | &#9989;    | &#9989;     | &#9989;   | &#9989;  | &#9989;  | &#9989;        | &#9989;          |
+| [CAMS][cams]          | mandatory      | &#9989;    | &#9989;     | &#9989;   | &#9989;  | &#9989;  | &#10060;       | &#10060;         |
+| [MONEI][monei]        | mandatory      | &#9989;    | &#9989;     | &#9989;   | &#9989;  | &#9989;  | &#9989;        | &#10060;         |
+| [PAYMILL][paymill]    | optional       | &#9989;    | &#9989;     | &#9989;   | &#9989;  | &#9989;  | &#10060;       | &#10060;         |
+| [Stripe][stripe]      | optional       | &#9989;    | &#9989;     | &#9989;   | &#9989;  | &#9989;  | &#9989;        | &#9989;          |
+| [TREXLE][trexle]      | mandatory      | &#9989;    | &#9989;     | &#9989;   | &#10060; | &#9989;  | &#9989;        | &#10060;         |
 
 [anet]: http://www.authorize.net/
 [cams]: https://www.centralams.com/
@@ -105,7 +139,7 @@ end
 [wirecard]: http://www.wirecard.com
 [demo]: https://gringottspay.herokuapp.com/
 
-## Road Map
+## [Road Map][roadmap]
 
 Apart from supporting more and more gateways, we also keep a somewhat detailed
 plan for the future on our [wiki][roadmap].
@@ -116,16 +150,6 @@ plan for the future on our [wiki][roadmap].
 
 Gringotts has a nice ring to it. Also [this][reason].
 
-#### 2. What is the worker doing in the middle?
-
-We wanted to "supervise" our payments, and power utilities to process recurring
-payments, subscriptions with it. But yes, as of now, it is a bottle neck and
-unnecessary.
-
-It's slated to be removed in [`v2.0.0`][milestone-2_0_0_alpha] and any supervised / async /
-parallel work can be explicitly managed via native elixir constructs.
-
-[milestone-2_0_0_alpha]: https://github.com/aviabird/gringotts/milestone/3
 [reason]: http://harrypotter.wikia.com/wiki/Gringotts
 
 ## License
