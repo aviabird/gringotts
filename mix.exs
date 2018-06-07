@@ -43,6 +43,7 @@ defmodule Gringotts.Mixfile do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support/fake_money.ex"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Dependencies can be hex.pm packages:

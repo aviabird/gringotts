@@ -335,7 +335,7 @@ defmodule Gringotts.Gateways.Paymill do
     ~w[data response_code],
     ~w[data transaction response_code]
   ]
-  @token_paths [~w[id], ~w[data id]]
+  @id_paths [~w[id], ~w[data id]]
   @reason_paths [~w[error], ~w[exception]]
   @fraud_paths [
     ~w[transaction is_fraud],
@@ -359,8 +359,7 @@ defmodule Gringotts.Gateways.Paymill do
 
         {status,
          %Response{
-           id: get_either(parsed_resp, @token_paths),
-           token: parsed_resp["transaction"]["identification"]["uniqueId"],
+           id: get_either(parsed_resp, @id_paths),
            status_code: 200,
            gateway_code: gateway_code,
            reason: get_either(parsed_resp, @reason_paths),

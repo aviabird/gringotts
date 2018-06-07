@@ -209,7 +209,7 @@ defmodule Gringotts.Gateways.Monei do
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, auth_result} = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
-      iex> auth_result.token # This is the registration ID/token
+      iex> auth_result.tokens[:registration] # This is the registration ID/token
   """
   @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, %CreditCard{} = card, opts) do
@@ -245,6 +245,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> amount = Money.new(35, :USD)
       iex> {:ok, capture_result} = Gringotts.capture(Gringotts.Gateways.Monei, amount, auth_result.id, opts)
+      iex> capture_result.id # This is the capture ID
   """
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
   def capture(payment_id, amount, opts)
@@ -280,7 +281,8 @@ defmodule Gringotts.Gateways.Monei do
       iex> amount = Money.new(42, :USD)
       iex> card = %Gringotts.CreditCard{first_name: "Harry", last_name: "Potter", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
       iex> {:ok, purchase_result} = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
-      iex> purchase_result.token # This is the registration ID/token
+      iex> purchase_result.id # This is the purchase ID
+      iex> purchase_result.tokens[:registration] # This is the (user) registration token
   """
   @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, %CreditCard{} = card, opts) do
@@ -313,6 +315,7 @@ defmodule Gringotts.Gateways.Monei do
 
       iex> amount = Money.new(42, :USD)
       iex> {:ok, refund_result} = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
+      iex> refund_result.id # This is the refund ID
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
@@ -402,6 +405,7 @@ defmodule Gringotts.Gateways.Monei do
   capture.
 
       iex> {:ok, void_result} = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
+      iex> void_result.id # This is the void ID
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response.t()}
   def void(payment_id, opts)
@@ -499,7 +503,7 @@ defmodule Gringotts.Gateways.Monei do
 
     results = [
       id: data["id"],
-      token: data["registrationId"],
+      tokens: [registration: data["registrationId"]],
       gateway_code: result["code"],
       message: result["description"],
       fraud_review: data["risk"],

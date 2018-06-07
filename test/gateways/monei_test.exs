@@ -172,7 +172,7 @@ defmodule Gringotts.Gateways.MoneiTest do
       opts = randoms ++ @extra_opts ++ [config: auth]
       {:ok, response} = Gateway.purchase(@amount42, @card, opts)
       assert response.gateway_code == "000.100.110"
-      assert response.token == "8a82944a60e09c550160e92da144491e"
+      assert response.tokens == [registration: "8a82944a60e09c550160e92da144491e"]
     end
 
     test "when we get non-json.", %{bypass: bypass, auth: auth} do
@@ -225,7 +225,7 @@ defmodule Gringotts.Gateways.MoneiTest do
 
       {:ok, response} = Gateway.purchase(@amount42, @card, register: true, config: auth)
       assert response.gateway_code == "000.100.110"
-      assert response.token == "8a82944a60e09c550160e92da144491e"
+      assert response.tokens == [registration: "8a82944a60e09c550160e92da144491e"]
     end
   end
 
