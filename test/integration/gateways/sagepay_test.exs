@@ -1,10 +1,11 @@
 defmodule Gringotts.Integration.Gateways.SagePayTest do
   use ExUnit.Case, async: true
+  use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
+
+  alias Gringotts.{Address, CreditCard}
 
   alias Gringotts.Gateways.SagePay
-  alias Gringotts.{CreditCard, Response, Address}
 
-  use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   @moduletag integration: true
 
   @card %CreditCard{
@@ -17,7 +18,7 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
     brand: "VISA"
   }
 
-  @amount Money.new(100, :GBP)
+  @amount Gringotts.FakeMoney.new(100, :GBP)
 
   @address %Address{
     street1: "407 St.",
@@ -27,103 +28,35 @@ defmodule Gringotts.Integration.Gateways.SagePayTest do
     country: "GB"
   }
 
+  @config [
+    auth_id:
+      "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
+    merchant_name: "sandbox"
+  ]
+
   @opts [
-    config: %{
-      auth_id:
-        "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
-      merchant_name: "sandbox"
-    },
+    config: @config,
     description: "Demo Payment",
-    customer_first_name: "Sam",
-    customer_last_name: "Jones",
+    first_name: "Sam",
+    last_name: "Jones",
     billing_address: @address
   ]
-
-  @opts1 [
-    config: %{
-      auth_id:
-        "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
-      merchant_name: "sandbox"
-    },
-    transaction_type: "release"
-  ]
-
-  @opts2 [
-    config: %{
-      auth_id:
-        "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
-      merchant_name: "sandbox"
-    },
-    transaction_type: "Refund",
-    description: "Demo Payment"
-  ]
-
-  @bad_opts [
-    config: %{
-      auth_id:
-        "aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU=",
-      merchant_name: "sandbox"
-    },
-    transaction_type: "Deferred",
-    description: "Demo Payment",
-    customer_first_name: "Sam",
-    customer_last_name: "Jones",
-    billing_address: @address
-  ]
-
-  @payment_id "T6569400-1516-0A3F-E3FA-7F222CC79221"
 
   setup do
-    random_number1 = Enum.random(1_000_000..10_000_000000000000)
-
-    random_code1 =
-      random_number1
-      |> Integer.to_string()
-
-    opts_authoriize = [vendor_tx_code: "demoo-" <> random_code1] ++ @opts
-
-    random_number2 = Enum.random(1_000_000..10_000_000000000000)
-
-    random_code2 =
-      random_number2
-      |> Integer.to_string()
-
-    opts_refund = [vendor_tx_code: "demoo-" <> random_code2] ++ @opts2
-
-    {:ok, opts: [opts_authoriize: opts_authoriize, opts_refund: opts_refund]}
+    [opts: [{:vendor_tx_code, "demo#{System.unique_integer()}"} | @opts]]
   end
 
   describe "authorize" do
-    test "successful response with valid params", %{opts: opts} do
-      use_cassette "sagepay/successful response with valid params" do
-        opts_authoriize = opts[:opts_authoriize] ++ [transaction_type: "Deferred"]
-        assert {:ok, _} = SagePay.authorize(@amount, @card, opts_authoriize)
-      end
-    end
-
-    test "successful response message from authorize function", %{opts: opts} do
-      use_cassette "sagepay/successful response message from authorize function" do
-        opts_authoriize = opts[:opts_authoriize] ++ [transaction_type: "Payment"]
-        {:ok, response} = SagePay.authorize(@amount, @card, opts_authoriize)
+    test "with valid params", %{opts: opts} = context do
+      use_cassette "sagepay/#{context.test}" do
+        {:ok, response} = SagePay.authorize(@amount, @card, opts)
 
         assert response.message == "The Authorisation was Successful."
-      end
-    end
-
-    test "unsuccessful response with invalid params" do
-      use_cassette "sagepay/unsuccessful response with invalid params" do
-        {:error, response} = SagePay.authorize(@amount, @card, @bad_opts)
-
-        refute response.message == "The Authorisation was Successful."
-      end
-    end
-
-    test "merchant_session_key", %{opts: opts} do
-      use_cassette "sagepay/merchant_session_key" do
-        opts_authoriize = opts[:opts_authoriize] ++ [transaction_type: "Payment"]
-        {:ok, response} = SagePay.authorize(@amount, @card, opts_authoriize)
-
-        assert is_binary(response.id)
+        assert {card_id, _expiry_time} = response.tokens[:card_id]
+        assert card_id =~ ~r/[A-Z\-0-9]{36}/
+        assert {session_key, _expiry_time} = response.tokens[:session_key]
+        assert session_key =~ ~r/[A-Z\-0-9]{36}/
+        assert response.gateway_code == "0000"
       end
     end
   end
