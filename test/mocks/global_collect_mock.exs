@@ -1,6 +1,4 @@
 defmodule Gringotts.Gateways.GlobalCollectMock do
-  @moduledoc false
-
   def test_for_purchase_with_valid_card do
     {:ok,
      %HTTPoison.Response{

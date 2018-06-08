@@ -1,7 +1,11 @@
 defmodule Gringotts.Gateways.CamsTest do
+  Code.require_file("../mocks/cams_mock.exs", __DIR__)
   use ExUnit.Case, async: false
 
-  alias Gringotts.{CreditCard, Response}
+  alias Gringotts.{
+    CreditCard,
+    Response
+  }
 
   alias Gringotts.Gateways.CamsMock, as: MockResponse
   alias Gringotts.Gateways.Cams, as: Gateway
@@ -45,10 +49,10 @@ defmodule Gringotts.Gateways.CamsTest do
     config: @auth
   ]
 
-  @money Gringotts.FakeMoney.new(100, :USD)
-  @money_more Gringotts.FakeMoney.new(101, :USD)
-  @money_less Gringotts.FakeMoney.new(99, :USD)
-  @bad_currency Gringotts.FakeMoney.new(100, :INR)
+  @money Money.new(:USD, 100)
+  @money_more Money.new(:USD, 101)
+  @money_less Money.new(:USD, 99)
+  @bad_currency Money.new(:INR, 100)
 
   @id "some_transaction_id"
   @bad_id "some_fake_transaction_id"
@@ -99,19 +103,13 @@ defmodule Gringotts.Gateways.CamsTest do
 
   describe "capture" do
     test "with full amount" do
-      with_mock HTTPoison,
-        post: fn _url, _body, _headers ->
-          MockResponse.successful_capture()
-        end do
+      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
         assert {:ok, %Response{}} = Gateway.capture(@money, @id, @options)
       end
     end
 
     test "with partial amount" do
-      with_mock HTTPoison,
-        post: fn _url, _body, _headers ->
-          MockResponse.successful_capture()
-        end do
+      with_mock HTTPoison, post: fn _url, _body, _headers -> MockResponse.successful_capture() end do
         assert {:ok, %Response{}} = Gateway.capture(@money_less, @id, @options)
       end
     end

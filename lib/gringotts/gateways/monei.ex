@@ -43,6 +43,8 @@ defmodule Gringotts.Gateways.Monei do
   | [`shipping`][sa]         | Location of recipient of goods, for logistics.                                                |
   | [`shipping_customer`][c] | Recipient details, could be different from `customer`.                                        |
 
+  > These keys are being implemented, track progress in [issue #36][iss36]!
+
   [extra-arg-docs]: https://docs.monei.net/reference/parameters
   [ba]: https://docs.monei.net/reference/parameters#billing-address
   [cart]: https://docs.monei.net/reference/parameters#cart
@@ -52,6 +54,7 @@ defmodule Gringotts.Gateways.Monei do
   [m]: https://docs.monei.net/reference/parameters#merchant
   [t]: https://docs.monei.net/reference/parameters#tokenization
   [sa]: https://docs.monei.net/reference/parameters#shipping-address
+  [iss36]: https://github.com/aviabird/gringotts/issues/36
 
   ## Registering your MONEI account at `Gringotts`
 
@@ -78,8 +81,6 @@ defmodule Gringotts.Gateways.Monei do
 
   ## Scope of this module
 
-  * _You, the merchant needs to be PCI-DSS Compliant if you wish to use this
-    module. Your server will recieve sensitive card and customer information._
   * MONEI does not process money in cents, and the `amount` is rounded to 2
     decimal places.
   * Although MONEI supports payments from [various][all-card-list]
@@ -147,7 +148,7 @@ defmodule Gringotts.Gateways.Monei do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:userId, :entityId, :password]
   import Poison, only: [decode: 1]
-  alias Gringotts.{CreditCard, Money, Response}
+  alias Gringotts.{CreditCard, Response, Money}
 
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]

@@ -1,9 +1,13 @@
 defmodule Gringotts.Gateways.TrexleTest do
+  Code.require_file("../mocks/trexle_mock.exs", __DIR__)
   use ExUnit.Case, async: false
-
-  alias Gringotts.{Address, CreditCard, FakeMoney}
   alias Gringotts.Gateways.TrexleMock, as: MockResponse
   alias Gringotts.Gateways.Trexle
+
+  alias Gringotts.{
+    CreditCard,
+    Address
+  }
 
   import Mock
 
@@ -38,9 +42,9 @@ defmodule Gringotts.Gateways.TrexleTest do
   }
 
   # $2.99
-  @amount FakeMoney.new("2.99", :USD)
+  @amount Money.new("2.99", :USD)
   # 50 US cents, trexle does not work with amount smaller than 50 cents.
-  @bad_amount FakeMoney.new("0.49", :USD)
+  @bad_amount Money.new("0.49", :USD)
 
   @valid_token "some_valid_token"
   @invalid_token "some_invalid_token"
@@ -60,7 +64,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         request: fn _method, _url, _body, _headers, _options ->
           MockResponse.test_for_purchase_with_valid_card()
         end do
-        assert {:ok, _response} = Trexle.purchase(@amount, @valid_card, @opts)
+        assert {:ok, response} = Trexle.purchase(@amount, @valid_card, @opts)
       end
     end
 

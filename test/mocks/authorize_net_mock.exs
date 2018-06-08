@@ -1,5 +1,4 @@
 defmodule Gringotts.Gateways.AuthorizeNetMock do
-  @moduledoc false
   # purchase mock response
   def successful_purchase_response do
     {:ok,
