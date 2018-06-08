@@ -9,8 +9,8 @@ defmodule Gringotts.Integration.Gateways.MoneiTest do
 
   @moduletag :integration
 
-  @amount Gringotts.FakeMoney.new(42, :EUR)
-  @sub_amount Gringotts.FakeMoney.new(21, :EUR)
+  @amount Money.new(42, :EUR)
+  @sub_amount Money.new(21, :EUR)
 
   @card %CreditCard{
     first_name: "Harry",

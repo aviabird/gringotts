@@ -5,7 +5,7 @@ defmodule Gringotts.Gateways.BogusTest do
   alias Gringotts.Gateways.Bogus, as: Gateway
 
   @some_id "some_arbitrary_id"
-  @amount Gringotts.FakeMoney.new(5, :USD)
+  @amount Money.new(5, :USD)
 
   test "authorize" do
     {:ok, %Response{id: id, success: success}} = Gateway.authorize(@amount, :card, [])

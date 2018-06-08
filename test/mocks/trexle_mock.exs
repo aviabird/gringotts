@@ -1,6 +1,4 @@
 defmodule Gringotts.Gateways.TrexleMock do
-  @moduledoc false
-
   def test_for_purchase_with_valid_card do
     {:ok,
      %HTTPoison.Response{
@@ -196,13 +194,8 @@ defmodule Gringotts.Gateways.TrexleMock do
   def test_for_store_with_valid_card do
     {:ok,
      %HTTPoison.Response{
-       body: ~s/{"response":{"token":"token_94e333959850270460e89a86bad2246613528cbb",
-       "card":{"token":"token_2a1ba29522e4a377fafa62e8e204f76ad8ba8f1e",
-       "scheme":"master","display_number":"XXXX-XXXX-XXXX-8210","expiry_year":2018,"expiry_month":1,
-       "cvc":123,"name":"John Doe","address_line1":"456 My Street",
-       "address_line2":null, "address_city":"Ottawa",
-       "address_state":"ON","address_postcode":"K1C2N6",
-       "address_country":"CA","primary":true}}}/,
+       body:
+         ~s/{"response":{"token":"token_94e333959850270460e89a86bad2246613528cbb","card":{"token":"token_2a1ba29522e4a377fafa62e8e204f76ad8ba8f1e","scheme":"master","display_number":"XXXX-XXXX-XXXX-8210","expiry_year":2018,"expiry_month":1,"cvc":123,"name":"John Doe","address_line1":"456 My Street","address_line2":null,"address_city":"Ottawa","address_state":"ON","address_postcode":"K1C2N6","address_country":"CA","primary":true}}}/,
        headers: [
          {"Date", "Sat, 23 Dec 2017 19:32:58 GMT"},
          {"Content-Type", "application/json; charset=UTF-8"},
