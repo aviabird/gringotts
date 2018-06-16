@@ -73,7 +73,7 @@ defmodule Gringotts.Gateways.WePay do
 
   import Poison, only: [decode: 1]
 
-  alias Gringotts.{Money, CreditCard, Response}
+  alias Gringotts.{CreditCard, Money, Response}
 
   @test_url "https://stage.wepayapi.com/v2"
 
@@ -102,18 +102,8 @@ defmodule Gringotts.Gateways.WePay do
     with {:ok, card_token_response} <- store(card, opts),
          {:ok, card_token} <- extract_card_token(card_token_response) do
       body =
-        Poison.encode!(%{
-          account_id: opts[:account_id],
-          short_description: opts[:short_description],
-          type: opts[:type],
-          amount: value,
-          currency: currency,
-          long_description: opts[:long_description],
-          callback_uri: opts[:callback_uri],
-          auto_release: true,
-          unique_id: opts[:unique_id],
-          reference_id: opts[:reference_id],
-          delivery_type: opts[:delivery_type],
+        build(value, currency, opts)
+        |> Map.merge(%{
           payment_method: %{
             type: "credit_card",
             credit_card: %{
@@ -122,6 +112,7 @@ defmodule Gringotts.Gateways.WePay do
             }
           }
         })
+        |> Poison.encode!()
 
       commit(:post, "/checkout/create/", body, opts)
     end
@@ -132,18 +123,8 @@ defmodule Gringotts.Gateways.WePay do
     {currency, value, _} = Money.to_integer(amount)
 
     body =
-      Poison.encode!(%{
-        account_id: opts[:account_id],
-        short_description: opts[:short_description],
-        type: opts[:type],
-        amount: value,
-        currency: currency,
-        long_description: opts[:long_description],
-        callback_uri: opts[:callback_uri],
-        auto_release: true,
-        unique_id: opts[:unique_id],
-        reference_id: opts[:reference_id],
-        delivery_type: opts[:delivery_type],
+      build(value, currency, opts)
+      |> Map.merge(%{
         payment_method: %{
           type: "credit_card",
           credit_card: %{
@@ -152,6 +133,7 @@ defmodule Gringotts.Gateways.WePay do
           }
         }
       })
+      |> Poison.encode!()
 
     commit(:post, "/checkout/create/", body, opts)
   end
@@ -202,18 +184,8 @@ defmodule Gringotts.Gateways.WePay do
     with {:ok, card_token_response} <- store(card, opts),
          {:ok, card_token} <- extract_card_token(card_token_response) do
       body =
-        Poison.encode!(%{
-          account_id: opts[:account_id],
-          short_description: opts[:short_description],
-          type: opts[:type],
-          amount: value,
-          currency: currency,
-          long_description: opts[:long_description],
-          callback_uri: opts[:callback_uri],
-          auto_release: true,
-          unique_id: opts[:unique_id],
-          reference_id: opts[:reference_id],
-          delivery_type: opts[:delivery_type],
+        build(value, currency, opts)
+        |> Map.merge(%{
           payment_method: %{
             type: "credit_card",
             credit_card: %{
@@ -221,6 +193,7 @@ defmodule Gringotts.Gateways.WePay do
             }
           }
         })
+        |> Poison.encode!()
 
       commit(:post, "/checkout/create/", body, opts)
     end
@@ -231,18 +204,8 @@ defmodule Gringotts.Gateways.WePay do
     {currency, value, _} = Money.to_integer(amount)
 
     body =
-      Poison.encode!(%{
-        account_id: opts[:account_id],
-        short_description: opts[:short_description],
-        type: opts[:type],
-        amount: value,
-        currency: currency,
-        long_description: opts[:long_description],
-        callback_uri: opts[:callback_uri],
-        auto_release: true,
-        unique_id: opts[:unique_id],
-        reference_id: opts[:reference_id],
-        delivery_type: opts[:delivery_type],
+      build(value, currency, opts)
+      |> Map.merge(%{
         payment_method: %{
           type: "credit_card",
           credit_card: %{
@@ -250,6 +213,7 @@ defmodule Gringotts.Gateways.WePay do
           }
         }
       })
+      |> Poison.encode!()
 
     commit(:post, "/checkout/create/", body, opts)
   end
@@ -299,9 +263,12 @@ defmodule Gringotts.Gateways.WePay do
   """
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
+    {currency, value, _} = Money.to_integer(amount)
+
     body =
       Poison.encode!(%{
         checkout_id: payment_id,
+        amount: value,
         refund_reason: opts[:refund_reason]
       })
 
@@ -310,10 +277,6 @@ defmodule Gringotts.Gateways.WePay do
 
   @doc """
   Stores the payment-source data for later use.
-
-  ## Note
-
-  > Currently "Recurring Payments" are not implemented.
 
   ## Example
   ```
@@ -325,7 +288,7 @@ defmodule Gringotts.Gateways.WePay do
   def store(%CreditCard{} = card, opts) do
     body =
       Poison.encode!(%{
-        client_id: opts[:client_id],
+        client_id: opts[:config][:client_id],
         cc_number: card.number,
         user_name: CreditCard.full_name(card),
         email: opts[:email],
@@ -362,8 +325,8 @@ defmodule Gringotts.Gateways.WePay do
   def unstore(registration_id, opts) do
     body =
       Poison.encode!(%{
-        client_id: opts[:client_id],
-        client_secret: opts[:client_secret],
+        client_id: opts[:config][:client_id],
+        client_secret: opts[:config][:client_secret],
         credit_card_id: registration_id
       })
 
@@ -395,6 +358,22 @@ defmodule Gringotts.Gateways.WePay do
     {:ok, token}
   end
 
+  defp build(value, currency, opts) do
+    %{
+      account_id: opts[:config][:account_id],
+      short_description: opts[:short_description],
+      type: opts[:type],
+      amount: value,
+      currency: currency,
+      long_description: opts[:long_description],
+      callback_uri: opts[:callback_uri],
+      auto_release: true,
+      unique_id: opts[:unique_id],
+      reference_id: opts[:reference_id],
+      delivery_type: opts[:delivery_type]
+    }
+  end
+
   # Parses wepay's response and returns a `Gringotts.Response` struct
   # in a `:ok`, `:error` tuple.
   @spec respond(term) :: {:ok | :error, Response}
@@ -406,7 +385,7 @@ defmodule Gringotts.Gateways.WePay do
 
     {
       :ok,
-      Response.success(id: id, message: message, token: token, raw: parsed, status_code: code)
+      %Response{id: id, message: message, token: token, raw: parsed, status_code: code}
     }
   end
 
@@ -416,11 +395,11 @@ defmodule Gringotts.Gateways.WePay do
 
     {
       :error,
-      Response.error(status_code: status_code, message: detail, raw: body)
+      %Response{status_code: status_code, message: detail, raw: body}
     }
   end
 
   defp respond({:error, %HTTPoison.Error{} = error}) do
-    {:error, Response.error(code: error.id, message: "HTTPoison says '#{error.reason}")}
+    {:error, %Response{status_code: 400, message: "HTTPoison says '#{error.reason}"}}
   end
 end
