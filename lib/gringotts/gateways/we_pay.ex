@@ -254,7 +254,7 @@ defmodule Gringotts.Gateways.WePay do
   ## Note
 
   * It is recommended to refund the transraction after 5 to 10 min.
-  * WePay does not support partial refunds.
+  * WePay does support partial refunds.
 
   ## Example
   ```
