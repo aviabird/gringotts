@@ -13,7 +13,7 @@ defmodule Gringotts.Integration.Gateways.WePayTest do
 
   alias Gringotts.Gateways.WePay, as: Gateway
 
-  # @moduletag :integration
+  @moduletag :integration
 
   @amount FakeMoney.new(5, :USD)
 
