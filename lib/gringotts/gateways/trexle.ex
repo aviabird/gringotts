@@ -280,7 +280,6 @@ defmodule Gringotts.Gateways.Trexle do
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     {currency, int_value, _} = Money.to_integer(amount)
-
     [
       capture: capture,
       amount: int_value,
@@ -321,7 +320,7 @@ defmodule Gringotts.Gateways.Trexle do
     ]
 
     options = [basic_auth: {opts[:config][:api_key], "password"}]
-    url = "#{@base_url}#{path}"
+    url = "#{base_url(opts)}#{path}"
     response = HTTPoison.request(method, url, {:form, params}, headers, options)
     response |> respond
   end
@@ -362,4 +361,6 @@ defmodule Gringotts.Gateways.Trexle do
       }
     }
   end
+
+  defp base_url(opts), do: opts[:test_url] || @base_url
 end

@@ -1,9 +1,12 @@
+require IEx
+
 defmodule Gringotts.Gateways.TrexleTest do
   use ExUnit.Case, async: false
 
   alias Gringotts.{Address, CreditCard, FakeMoney}
   alias Gringotts.Gateways.TrexleMock, as: MockResponse
   alias Gringotts.Gateways.Trexle
+  alias Plug.{Conn, Parsers}
 
   import Mock
 
@@ -54,15 +57,33 @@ defmodule Gringotts.Gateways.TrexleTest do
     description: "For our valued customer, Mr. Potter"
   ]
 
+  @invalid_amount_response ~s/{"error":"Payment failed","detail":"Amount must be at least 50 cents"}/
+
   describe "core" do
     setup do
       bypass = Bypass.open()
-      {:ok, bypass: bypass, opts: @opts}
+      opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
+      {:ok, bypass: bypass, opts: opts}
     end
 
-    test "with unauthorized access.", %{opts: opts} do
-      {:error, response} = Trexle.authorize(@amount, @valid_card, opts)
-      assert response.reason == "Unauthorized access."
+    test "with invalid amount.", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "false"
+        {currency, money, _} = Gringotts.Money.to_integer(@bad_amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@valid_card.first_name} #{@valid_card.last_name}"
+        assert params["card"]["number"] == @valid_card.number
+
+        Conn.resp(conn, 400, @invalid_amount_response)
+      end)
+
+      Trexle.authorize(@bad_amount, @valid_card, opts)
     end
   end
 
@@ -99,6 +120,11 @@ defmodule Gringotts.Gateways.TrexleTest do
   end
 
   describe "authorize" do
+    test "with unauthorized access." do
+      {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
+      assert response.reason == "Unauthorized access."
+    end
+
     test "with valid card" do
       with_mock HTTPoison,
         request: fn _method, _url, _body, _headers, _options ->
@@ -170,5 +196,10 @@ defmodule Gringotts.Gateways.TrexleTest do
                  "HTTPoison says 'some_hackney_error' [ID: some_hackney_error_id]"
       end
     end
+  end
+
+  def parse(conn, opts \\ []) do
+    opts = Keyword.put_new(opts, :parsers, [Parsers.URLENCODED])
+    Parsers.call(conn, Parsers.init(opts))
   end
 end
