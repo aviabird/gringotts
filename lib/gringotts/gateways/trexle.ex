@@ -340,6 +340,13 @@ defmodule Gringotts.Gateways.Trexle do
     }
   end
 
+  defp respond({:ok, %{status_code: code, body: _body}}) when code in [401] do
+    {
+      :error,
+      %Response{reason: "Unauthorized access.", message: "Unauthorized access"}
+    }
+  end
+
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:ok, results} = decode(body)
     detail = results["detail"]

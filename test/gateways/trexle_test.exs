@@ -54,6 +54,18 @@ defmodule Gringotts.Gateways.TrexleTest do
     description: "For our valued customer, Mr. Potter"
   ]
 
+  describe "core" do
+    setup do
+      bypass = Bypass.open()
+      {:ok, bypass: bypass, opts: @opts}
+    end
+
+    test "with unauthorized access.", %{opts: opts} do
+      {:error, response} = Trexle.authorize(@amount, @valid_card, opts)
+      assert response.reason == "Unauthorized access."
+    end
+  end
+
   describe "purchase" do
     test "with valid card" do
       with_mock HTTPoison,
