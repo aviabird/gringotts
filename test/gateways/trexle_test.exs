@@ -56,6 +56,8 @@ defmodule Gringotts.Gateways.TrexleTest do
   ]
 
   @invalid_amount_response ~s/{"error":"Payment failed","detail":"Amount must be at least 50 cents"}/
+  @invalid_card_response ~s/{"error":"Payment failed","detail":"Your card's expiration year is invalid."}/
+  @valid_request_response ~s/{"response":{"token":"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72","success":true,"captured":false}}/
 
   describe "core" do
     setup do
@@ -84,6 +86,57 @@ defmodule Gringotts.Gateways.TrexleTest do
       {:error, response} = Trexle.authorize(@bad_amount, @valid_card, opts)
       assert response.status_code == 400
       assert response.reason == "Amount must be at least 50 cents"
+    end
+
+    test "with invalid card.", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "false"
+        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@invalid_card.first_name} #{@invalid_card.last_name}"
+        assert params["card"]["number"] == @invalid_card.number
+
+        Conn.resp(conn, 400, @invalid_card_response)
+      end)
+
+      {:error, response} = Trexle.authorize(@amount, @invalid_card, opts)
+      assert response.status_code == 400
+      assert response.reason == "Your card's expiration year is invalid."
+    end
+
+    test "when trexle is down or unreachable", %{bypass: bypass, opts: opts} do
+      Bypass.down(bypass)
+      {:error, response} = Trexle.authorize(@amount, @valid_card, opts)
+      assert response.reason == "network related failure"
+      Bypass.up(bypass)
+    end
+
+    test "when the request is valid", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "false"
+        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@valid_card.first_name} #{@valid_card.last_name}"
+        assert params["card"]["number"] == @valid_card.number
+
+        Conn.resp(conn, 200, @valid_request_response)
+      end)
+
+      {:ok, results} = Trexle.authorize(@amount, @valid_card, opts)
+      assert results.id == "charge_3e89c6f073606ac1efe62e76e22dd7885441dc72"
+      assert results.status_code == 200
     end
   end
 
