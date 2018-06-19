@@ -1,5 +1,3 @@
-require IEx
-
 defmodule Gringotts.Gateways.TrexleTest do
   use ExUnit.Case, async: false
 
@@ -83,7 +81,9 @@ defmodule Gringotts.Gateways.TrexleTest do
         Conn.resp(conn, 400, @invalid_amount_response)
       end)
 
-      Trexle.authorize(@bad_amount, @valid_card, opts)
+      {:error, response} = Trexle.authorize(@bad_amount, @valid_card, opts)
+      assert response.status_code == 400
+      assert response.reason == "Amount must be at least 50 cents"
     end
   end
 
