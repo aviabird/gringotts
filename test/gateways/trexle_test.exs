@@ -59,7 +59,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   @invalid_card_response ~s/{"error":"Payment failed","detail":"Your card's expiration year is invalid."}/
   @valid_request_response ~s/{"response":{"token":"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72","success":true,"captured":false}}/
 
-  describe "core" do
+  describe "Authorize integration point testing" do
     setup do
       bypass = Bypass.open()
       opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
