@@ -28,7 +28,7 @@ def deps do
     {:gringotts, "~> 1.1"},
     # ex_money provides an excellent Money library, and integrates
     # out-of-the-box with Gringotts
-    {:ex_money, "> 2.5.0"}
+    {:ex_money, ">= 2.6.0"}
   ]
 end
 ```
