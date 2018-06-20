@@ -58,6 +58,45 @@ defmodule Gringotts.Gateways.TrexleTest do
   @invalid_amount_response ~s/{"error":"Payment failed","detail":"Amount must be at least 50 cents"}/
   @invalid_card_response ~s/{"error":"Payment failed","detail":"Your card's expiration year is invalid."}/
   @valid_request_response ~s/{"response":{"token":"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72","success":true,"captured":false}}/
+  @invalid_token_response ~s/{"error":"Capture failed","detail":"invalid token"}/
+  @valid_token_response ~s/{"response":{"token":"#{@valid_token}","success":true,"captured":true,"amount":299,"status_message":"Transaction approved"}}/
+
+  describe "Capture integration point testing" do
+    setup do
+      bypass = Bypass.open()
+      opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
+      {:ok, bypass: bypass, opts: opts}
+    end
+
+    test "capture with invalid charge token", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "PUT", "/api/v1/charges/#{@invalid_token}/capture", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        {_, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        Conn.resp(conn, 400, @invalid_token_response)
+      end)
+
+      {:error, response} = Trexle.capture(@invalid_token, @amount, opts)
+      assert response.status_code == 400
+      assert response.reason == "invalid token"
+    end
+
+    test "capture with valid charge token", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "PUT", "/api/v1/charges/#{@valid_token}/capture", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        {_, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        Conn.resp(conn, 200, @valid_token_response)
+      end)
+
+      {:ok, response} = Trexle.capture(@valid_token, @amount, opts)
+      assert response.status_code == 200
+      assert response.id == @valid_token
+      assert response.message == "Transaction approved"
+    end
+  end
 
   describe "Authorize integration point testing" do
     setup do
