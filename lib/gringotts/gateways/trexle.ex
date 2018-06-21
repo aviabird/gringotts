@@ -180,7 +180,7 @@ defmodule Gringotts.Gateways.Trexle do
   one-shot, without (pre) authorization.
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -280,6 +280,7 @@ defmodule Gringotts.Gateways.Trexle do
 
   defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
     {currency, int_value, _} = Money.to_integer(amount)
+
     [
       capture: capture,
       amount: int_value,

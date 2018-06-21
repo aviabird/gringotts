@@ -179,6 +179,87 @@ defmodule Gringotts.Gateways.TrexleTest do
     end
   end
 
+  describe "Purchase integration point testing" do
+    setup do
+      bypass = Bypass.open()
+      opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
+      {:ok, bypass: bypass, opts: opts}
+    end
+
+    test "with invalid amount.", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "true"
+        {currency, money, _} = Gringotts.Money.to_integer(@bad_amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@valid_card.first_name} #{@valid_card.last_name}"
+        assert params["card"]["number"] == @valid_card.number
+
+        Conn.resp(conn, 400, @invalid_amount_response)
+      end)
+
+      {:error, response} = Trexle.purchase(@bad_amount, @valid_card, opts)
+      assert response.status_code == 400
+      assert response.reason == "Amount must be at least 50 cents"
+    end
+
+    test "with invalid card.", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "true"
+        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@invalid_card.first_name} #{@invalid_card.last_name}"
+        assert params["card"]["number"] == @invalid_card.number
+
+        Conn.resp(conn, 400, @invalid_card_response)
+      end)
+
+      {:error, response} = Trexle.purchase(@amount, @invalid_card, opts)
+      assert response.status_code == 400
+      assert response.reason == "Your card's expiration year is invalid."
+    end
+
+    test "when trexle is down or unreachable", %{bypass: bypass, opts: opts} do
+      Bypass.down(bypass)
+      {:error, response} = Trexle.purchase(@amount, @valid_card, opts)
+      assert response.reason == "network related failure"
+      Bypass.up(bypass)
+    end
+
+    test "when the request is valid", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["capture"] == "true"
+        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        assert params["currency"] == Atom.to_string(currency)
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == @opts[:ip_address]
+        assert params["description"] == @opts[:description]
+        assert params["card"]["name"] == "#{@valid_card.first_name} #{@valid_card.last_name}"
+        assert params["card"]["number"] == @valid_card.number
+
+        Conn.resp(conn, 200, @valid_request_response)
+      end)
+
+      {:ok, results} = Trexle.purchase(@amount, @valid_card, opts)
+      assert results.id == "charge_3e89c6f073606ac1efe62e76e22dd7885441dc72"
+      assert results.status_code == 200
+    end
+  end
+
   describe "purchase" do
     test "with valid card" do
       with_mock HTTPoison,
@@ -213,8 +294,13 @@ defmodule Gringotts.Gateways.TrexleTest do
 
   describe "authorize" do
     test "with unauthorized access." do
-      {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
-      assert response.reason == "Unauthorized access."
+      with_mock HTTPoison,
+        request: fn _method, _url, _body, _headers, _options ->
+          MockResponse.test_for_authorize_with_unauthorised_access()
+        end do
+        {:error, response} = Trexle.authorize(@amount, @valid_card, @opts)
+        assert response.reason == "Unauthorized access."
+      end
     end
 
     test "with valid card" do
