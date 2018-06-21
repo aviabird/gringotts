@@ -62,8 +62,7 @@ defmodule Gringotts.Gateways.TrexleMock do
     {
       :ok,
       %HTTPoison.Response{
-        body:
-          ~s/""/,
+        body: ~s/""/,
         headers: [
           {"Date", "Sat, 23 Dec 2017 18:33:31 GMT"},
           {"Content-Type", "application/json; charset=UTF-8"},
