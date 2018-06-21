@@ -4,6 +4,7 @@ defmodule Gringotts.Gateways.TrexleTest do
   alias Gringotts.{Address, CreditCard, FakeMoney}
   alias Gringotts.Gateways.TrexleMock, as: MockResponse
   alias Gringotts.Gateways.Trexle
+  alias Gringotts.Money
   alias Plug.{Conn, Parsers}
 
   import Mock
@@ -60,6 +61,44 @@ defmodule Gringotts.Gateways.TrexleTest do
   @valid_request_response ~s/{"response":{"token":"charge_3e89c6f073606ac1efe62e76e22dd7885441dc72","success":true,"captured":false}}/
   @invalid_token_response ~s/{"error":"Capture failed","detail":"invalid token"}/
   @valid_token_response ~s/{"response":{"token":"#{@valid_token}","success":true,"captured":true,"amount":299,"status_message":"Transaction approved"}}/
+  @invalid_token_response_for_refund ~s/{"error":"Refund failed","detail":"invalid token"}/
+
+  describe "Refund integration point testing" do
+    setup do
+      bypass = Bypass.open()
+      opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
+      {:ok, bypass: bypass, opts: opts}
+    end
+
+    test "refund with invalid token.", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges/#{@invalid_token}/refunds", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        {_, money, _} = Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        Conn.resp(conn, 400, @invalid_token_response_for_refund)
+      end)
+
+      {:error, response} = Trexle.refund(@amount, @invalid_token, opts)
+      assert response.status_code == 400
+      assert response.reason == "invalid token"
+    end
+
+    test "refund with valid charge token", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/charges/#{@valid_token}/refunds", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        {_, money, _} = Money.to_integer(@amount)
+        assert params["amount"] == "#{money}"
+        Conn.resp(conn, 200, @valid_token_response)
+      end)
+
+      {:ok, response} = Trexle.refund(@amount, @valid_token, opts)
+      assert response.status_code == 200
+      assert response.id == @valid_token
+      assert response.message == "Transaction approved"
+    end
+  end
 
   describe "Capture integration point testing" do
     setup do
@@ -72,7 +111,7 @@ defmodule Gringotts.Gateways.TrexleTest do
       Bypass.expect_once(bypass, "PUT", "/api/v1/charges/#{@invalid_token}/capture", fn conn ->
         p_conn = parse(conn)
         params = p_conn.body_params
-        {_, money, _} = Gringotts.Money.to_integer(@amount)
+        {_, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         Conn.resp(conn, 400, @invalid_token_response)
       end)
@@ -86,7 +125,7 @@ defmodule Gringotts.Gateways.TrexleTest do
       Bypass.expect_once(bypass, "PUT", "/api/v1/charges/#{@valid_token}/capture", fn conn ->
         p_conn = parse(conn)
         params = p_conn.body_params
-        {_, money, _} = Gringotts.Money.to_integer(@amount)
+        {_, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         Conn.resp(conn, 200, @valid_token_response)
       end)
@@ -110,7 +149,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "false"
-        {currency, money, _} = Gringotts.Money.to_integer(@bad_amount)
+        {currency, money, _} = Money.to_integer(@bad_amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]
@@ -132,7 +171,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "false"
-        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        {currency, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]
@@ -161,7 +200,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "false"
-        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        {currency, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]
@@ -191,7 +230,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "true"
-        {currency, money, _} = Gringotts.Money.to_integer(@bad_amount)
+        {currency, money, _} = Money.to_integer(@bad_amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]
@@ -213,7 +252,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "true"
-        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        {currency, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]
@@ -242,7 +281,7 @@ defmodule Gringotts.Gateways.TrexleTest do
         p_conn = parse(conn)
         params = p_conn.body_params
         assert params["capture"] == "true"
-        {currency, money, _} = Gringotts.Money.to_integer(@amount)
+        {currency, money, _} = Money.to_integer(@amount)
         assert params["amount"] == "#{money}"
         assert params["currency"] == Atom.to_string(currency)
         assert params["email"] == @opts[:email]

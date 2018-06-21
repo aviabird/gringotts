@@ -228,7 +228,7 @@ defmodule Gringotts.Gateways.Trexle do
   `purchase/3` (and similarily for `capture/3`s).
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
