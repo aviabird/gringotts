@@ -63,6 +63,32 @@ defmodule Gringotts.Gateways.TrexleTest do
   @valid_token_response ~s/{"response":{"token":"#{@valid_token}","success":true,"captured":true,"amount":299,"status_message":"Transaction approved"}}/
   @invalid_token_response_for_refund ~s/{"error":"Refund failed","detail":"invalid token"}/
 
+  describe "Store integration point testing" do
+    setup do
+      bypass = Bypass.open()
+      opts = @opts ++ [test_url: "http://localhost:#{bypass.port}/api/v1/"]
+      {:ok, bypass: bypass, opts: opts}
+    end
+
+    test "Store with valid card", %{bypass: bypass, opts: opts} do
+      Bypass.expect_once(bypass, "POST", "/api/v1/customers", fn conn ->
+        p_conn = parse(conn)
+        params = p_conn.body_params
+        assert params["email"] == @opts[:email]
+        assert params["ip_address"] == nil
+        assert params["description"] == nil
+        assert params["card"]["name"] == "#{@valid_card.first_name} #{@valid_card.last_name}"
+        assert params["card"]["number"] == @valid_card.number
+        assert params["card"]["address_line1"] == @address.street1
+        assert params["card"]["address_city"] == @address.city
+        Conn.resp(conn, 201, @invalid_token_response_for_refund)
+      end)
+
+      {:ok, response} = Trexle.store(@valid_card, opts)
+      assert response.status_code == 201
+    end
+  end
+
   describe "Refund integration point testing" do
     setup do
       bypass = Bypass.open()
