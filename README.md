@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Gringotts is a payment processing library in Elixir integrating various payment gateways, drawing motivation for Shopify's <a href="https://github.com/activemerchant/active_merchant"><code>activemerchant</code></a> gem. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">demo here</a>.
+  Gringotts is a payment processing library in Elixir integrating various payment gateways, drawing motivation from Shopify's <a href="https://github.com/activemerchant/active_merchant"><code>activemerchant</code></a> gem and <a href="https://github.com/joshnuss/commerce_billing"><code>commerce_billing</code></a>. Checkout the <a href="https://gringottspay.herokuapp.com/" target="_">demo here</a>.
 </p>
 <p align="center">
  <a href="https://travis-ci.org/aviabird/gringotts"><img src="https://travis-ci.org/aviabird/gringotts.svg?branch=master"  alt='Build Status' /></a>  <a href='https://coveralls.io/github/aviabird/gringotts?branch=master'><img src='https://coveralls.io/repos/github/aviabird/gringotts/badge.svg?branch=master' alt='Coverage Status' /></a> <a href=""><img src="https://img.shields.io/hexpm/v/gringotts.svg"/></a> <a href="https://inch-ci.org/github/aviabird/gringotts"><img src="http://inch-ci.org/github/aviabird/gringotts.svg?branch=master" alt="Docs coverage"></img></a> <a href="https://gitter.im/aviabird/gringotts"><img src="https://badges.gitter.im/aviabird/gringotts.svg"/></a>
@@ -14,6 +14,14 @@
 
 Gringotts offers a **simple and unified API** to access dozens of different payment
 gateways with very different APIs, response schemas, documentation and jargon.
+
+The project started out **as a fork of [`commerce_billing`][commerce-billing]** and
+the notable differences are:
+1. No `GenServer` process to act as a "payment worker".
+2. Consistent docs and good amount of tests.
+3. Support many more payment gateways.
+
+[commerce-billing]: https://github.com/joshnuss/commerce_billing
 
 ## Installation
 
