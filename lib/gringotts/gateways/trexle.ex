@@ -106,7 +106,7 @@ defmodule Gringotts.Gateways.Trexle do
   a sample `card`.
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
