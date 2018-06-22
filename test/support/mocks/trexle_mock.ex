@@ -58,6 +58,26 @@ defmodule Gringotts.Gateways.TrexleMock do
      }}
   end
 
+  def test_for_authorize_with_unauthorised_access do
+    {
+      :ok,
+      %HTTPoison.Response{
+        body: ~s/""/,
+        headers: [
+          {"Date", "Sat, 23 Dec 2017 18:33:31 GMT"},
+          {"Content-Type", "application/json; charset=UTF-8"},
+          {"Cache-Control", "max-age=0, private, must-revalidate"},
+          {"X-Request-Id", "51d28d13-81e5-41fd-b711-1b6531fdd3dd"},
+          {"X-Runtime", "0.738395"},
+          {"Content-Length", "104"},
+          {"X-Powered-By", "PleskLin"}
+        ],
+        request_url: "https://core.trexle.com/api/v1/charges",
+        status_code: 401
+      }
+    }
+  end
+
   def test_for_authorize_with_valid_card do
     {:ok,
      %HTTPoison.Response{
