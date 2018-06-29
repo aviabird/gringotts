@@ -106,7 +106,7 @@ defmodule Gringotts.Gateways.Trexle do
   a sample `card`.
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -180,7 +180,7 @@ defmodule Gringotts.Gateways.Trexle do
   one-shot, without (pre) authorization.
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> card = %CreditCard{
                first_name: "Harry",
                last_name: "Potter",
@@ -228,7 +228,7 @@ defmodule Gringotts.Gateways.Trexle do
   `purchase/3` (and similarily for `capture/3`s).
 
   ```
-  iex> amount = Money.new(10, :USD)
+  iex> amount = Money.new(100, :USD)
   iex> token = "some-real-token"
   iex> Gringotts.refund(Gringotts.Gateways.Trexle, amount, token)
   ```
@@ -321,7 +321,7 @@ defmodule Gringotts.Gateways.Trexle do
     ]
 
     options = [basic_auth: {opts[:config][:api_key], "password"}]
-    url = "#{@base_url}#{path}"
+    url = "#{base_url(opts)}#{path}"
     response = HTTPoison.request(method, url, {:form, params}, headers, options)
     response |> respond
   end
@@ -340,6 +340,13 @@ defmodule Gringotts.Gateways.Trexle do
     }
   end
 
+  defp respond({:ok, %{status_code: code, body: body}}) when code in [401] do
+    {
+      :error,
+      %Response{reason: "Unauthorized access.", message: "Unauthorized access", raw: body}
+    }
+  end
+
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:ok, results} = decode(body)
     detail = results["detail"]
@@ -355,4 +362,6 @@ defmodule Gringotts.Gateways.Trexle do
       }
     }
   end
+
+  defp base_url(opts), do: opts[:test_url] || @base_url
 end
