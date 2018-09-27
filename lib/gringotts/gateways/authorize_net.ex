@@ -229,7 +229,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> opts = [
         ref_id: "123456",
         order: %{invoice_number: "INV-12345", description: "Product Description"},
-        lineitems: %{itemId: "1", name: "vase", description: "Cannes logo", quantity: 1, unit_price: amount},
+        lineitems: %{item_id: "1", name: "vase", description: "Cannes logo", quantity: 1, unit_price: amount},
         tax: %{name: "VAT", amount: Money.new("0.1", :EUR), description: "Value Added Tax"},
         shipping: %{name: "SAME-DAY-DELIVERY", amount: Money.new("0.56", :EUR), description: "Zen Logistics"},
         duty: %{name: "import_duty", amount: Money.new("0.25", :EUR), description: "Upon import of goods"}
