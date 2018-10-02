@@ -94,13 +94,10 @@ Comma separated list of required configuration keys:
     file_base_name = String.slice(file_name, 0..-4)
 
     required_keys =
-      case Mix.Shell.IO.prompt(@long_msg) |> String.trim() do
-        "" ->
-          []
-
-        keys ->
-          keys_to_atom(keys, ",")
-      end
+      @long_msg
+      |> Mix.Shell.IO.prompt()
+      |> String.trim()
+      |> keys_to_atom(",")
 
     bindings = [
       gateway: name,
@@ -138,6 +135,10 @@ Comma separated list of required configuration keys:
     decorated_message = "#{message} [#{suggestion}]"
     response = Mix.Shell.IO.prompt(decorated_message) |> String.trim()
     if response == "", do: suggestion, else: response
+  end
+
+  defp keys_to_atom("", _splitter) do
+    []
   end
 
   defp keys_to_atom(key_list, splitter) when is_binary(key_list) do
