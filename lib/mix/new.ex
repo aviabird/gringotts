@@ -99,7 +99,7 @@ Comma separated list of required configuration keys:
           []
 
         keys ->
-          String.split(keys, ",") |> Enum.map(&String.trim(&1)) |> Enum.map(&String.to_atom(&1))
+          keys_to_atom(keys, ",")
       end
 
     bindings = [
@@ -138,5 +138,12 @@ Comma separated list of required configuration keys:
     decorated_message = "#{message} [#{suggestion}]"
     response = Mix.Shell.IO.prompt(decorated_message) |> String.trim()
     if response == "", do: suggestion, else: response
+  end
+
+  defp keys_to_atom(key_list, splitter) when is_binary(key_list) do
+    key_list
+    |> String.split(splitter)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.to_atom/1)
   end
 end
