@@ -132,8 +132,11 @@ Comma separated list of required configuration keys:
   end
 
   defp prompt_with_suggestion(message, suggestion) do
-    decorated_message = "#{message} [#{suggestion}]"
-    response = Mix.Shell.IO.prompt(decorated_message) |> String.trim()
+    response =
+      "#{message} [#{suggestion}]"
+      |> Mix.Shell.IO.prompt()
+      |> String.trim()
+
     if response == "", do: suggestion, else: response
   end
 
