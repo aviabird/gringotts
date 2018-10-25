@@ -94,13 +94,10 @@ Comma separated list of required configuration keys:
     file_base_name = String.slice(file_name, 0..-4)
 
     required_keys =
-      case Mix.Shell.IO.prompt(@long_msg) |> String.trim() do
-        "" ->
-          []
-
-        keys ->
-          String.split(keys, ",") |> Enum.map(&String.trim(&1)) |> Enum.map(&String.to_atom(&1))
-      end
+      @long_msg
+      |> Mix.Shell.IO.prompt()
+      |> String.trim()
+      |> keys_to_atom(",")
 
     bindings = [
       gateway: name,
@@ -135,8 +132,22 @@ Comma separated list of required configuration keys:
   end
 
   defp prompt_with_suggestion(message, suggestion) do
-    decorated_message = "#{message} [#{suggestion}]"
-    response = Mix.Shell.IO.prompt(decorated_message) |> String.trim()
+    response =
+      "#{message} [#{suggestion}]"
+      |> Mix.Shell.IO.prompt()
+      |> String.trim()
+
     if response == "", do: suggestion, else: response
+  end
+
+  defp keys_to_atom("", _splitter) do
+    []
+  end
+
+  defp keys_to_atom(key_list, splitter) when is_binary(key_list) do
+    key_list
+    |> String.split(splitter)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.to_atom/1)
   end
 end
