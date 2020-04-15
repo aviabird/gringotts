@@ -21,6 +21,7 @@ matrix:
     script:
       - mix coveralls.json
   - elixir: "1.6.5"
+  - elixir: "1.7.4"
 
 notifications:
   email:
