@@ -65,7 +65,7 @@ defmodule Gringotts.Mixfile do
       {:decimal, "~> 1.5"},
 
       # docs and tests
-      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.21.3", only: :dev, runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:bypass, "~> 0.8", only: :test},
       {:excoveralls, "~> 0.8", only: :test},
