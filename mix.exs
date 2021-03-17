@@ -14,12 +14,6 @@ defmodule Gringotts.Mixfile do
       ],
       elixir: ">= 1.5.3",
       elixirc_paths: elixirc_paths(Mix.env()),
-      preferred_cli_env: [
-        vcr: :test,
-        "vcr.delete": :test,
-        "vcr.check": :test,
-        "vcr.show": :test
-      ],
       deps: deps(),
       docs: docs()
     ]
@@ -30,7 +24,8 @@ defmodule Gringotts.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      applications: [:httpoison, :hackney, :elixir_xml_to_map]
+      applications: [:httpoison, :hackney, :elixir_xml_to_map],
+      extra_applications: [:decimal, :xml_builder, :hackney]
     ]
   end
 
@@ -50,15 +45,11 @@ defmodule Gringotts.Mixfile do
   defp deps do
     [
       {:httpoison, "~> 1.1"},
+      {:hackney, "~> 1.9"},
       {:xml_builder, "~> 2.1"},
       {:elixir_xml_to_map, "~> 0.1"},
-
-      # money related
       {:decimal, "~> 1.5"},
-
-      # docs and tests
       {:mock, "~> 0.3.0", only: :test},
-      {:exvcr, "~> 0.10", only: :test},
     ]
   end
 
