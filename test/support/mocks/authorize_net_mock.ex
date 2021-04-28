@@ -25,6 +25,30 @@ defmodule Gringotts.Gateways.AuthorizeNetMock do
      }}
   end
 
+  def successful_customer_profile_purchase_response do
+    {:ok,
+     %HTTPoison.Response{
+       body:
+       ~s{<?xml version="1.0" encoding="utf-8"?><createTransactionResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><refId>123456</refId><messages><resultCode>Ok</resultCode><message><code>I00001</code><text>Successful.</text></message></messages><transactionResponse><responseCode>1</responseCode><authCode>ATQXE0</authCode><avsResultCode>Y</avsResultCode><cvvResultCode>P</cvvResultCode><cavvResultCode>2</cavvResultCode><transId>2157786071</transId><refTransID /><transHash /><testRequest>0</testRequest><accountNumber>XXXX2222</accountNumber><accountType>Visa</accountType><messages> <message><code>1</code><description>This transaction has been approved.</description></message></messages><transHashSha2 /> <profile><customerProfileId>40338125</customerProfileId><customerPaymentProfileId>1000177237</customerPaymentProfileId></profile> <networkTransId>HF6UGT7CMPW005C32RJ435R</networkTransId></transactionResponse></createTransactionResponse>},
+       headers: [
+         {"Cache-Control", "private"},
+         {"Content-Type", "application/xml; charset=utf-8"},
+         {"X-OPNET-Transaction-Trace", "a2_b6b84b43-d399-4dde-bc12-fb1f8ccf4b27-51156-13182173"},
+         {"Access-Control-Allow-Origin", "*"},
+         {"Access-Control-Allow-Methods", "PUT,OPTIONS,POST,GET"},
+         {"Access-Control-Allow-Headers",
+          "x-requested-with,cache-control,content-type,origin,method,SOAPAction"},
+         {"Access-Control-Allow-Credentials", "true"},
+         {"X-Cnection", "close"},
+         {"Content-Length", "908"},
+         {"Date", "Thu, 21 Dec 2017 09:29:12 GMT"},
+         {"Connection", "keep-alive"}
+       ],
+       request_url: "https://apitest.authorize.net/xml/v1/request.api",
+       status_code: 200
+     }}
+  end
+
   def bad_card_purchase_response do
     {:ok,
      %HTTPoison.Response{

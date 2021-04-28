@@ -105,6 +105,10 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     config: @auth,
     customer_profile_id: "1814012002"
   ]
+  @opts_both_customer_profiles [
+    customer_profile_id: "1814012002",
+    customer_payment_profile_id: "1000177237"
+  ]
 
   @refund_id "60036752756"
   @void_id "60036855217"
@@ -119,6 +123,24 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
 
   describe "purchase" do
     test "successful response with right params" do
+      with_mock HTTPoison,
+        post: fn _url, _body, _headers ->
+          MockResponse.successful_customer_profile_purchase_response()
+        end do
+        assert {:ok, _response} = ANet.purchase(@amount, @opts_both_customer_profiles, @opts)
+      end
+    end
+
+    test "with bad profile info" do
+      with_mock HTTPoison,
+        post: fn _url, _body, _headers ->
+          MockResponse.bad_card_purchase_response()
+        end do
+        assert {:error, _response} = ANet.purchase(@amount, @opts_both_customer_profiles, @opts)
+      end
+    end
+
+    test "successful response with payment profile" do
       with_mock HTTPoison,
         post: fn _url, _body, _headers ->
           MockResponse.successful_purchase_response()
