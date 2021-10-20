@@ -62,7 +62,7 @@ defmodule Gringotts.Mixfile do
       {:elixir_xml_to_map, "~> 0.1"},
 
       # money related
-      {:decimal, "~> 1.5"},
+      {:decimal, "~> 2.0"},
 
       # docs and tests
       {:ex_doc, "~> 0.18", only: :dev, runtime: false},
