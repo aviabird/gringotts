@@ -655,7 +655,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
           element(:quantity, opts[:lineitems][:quantity]),
           element(
             :unitPrice,
-            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_float()
+            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_string(:normal)
           )
         ])
       ])
