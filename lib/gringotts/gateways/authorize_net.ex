@@ -181,6 +181,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
   @spec purchase(Money.t(), CreditCard.t() | Keyword.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
+    IO.inspect(request_data, label: "Gringitts")
     commit(request_data, opts)
   end
 
@@ -655,7 +656,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
           element(:quantity, opts[:lineitems][:quantity]),
           element(
             :unitPrice,
-            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_float()
+            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_string(:normal)
           )
         ])
       ])
