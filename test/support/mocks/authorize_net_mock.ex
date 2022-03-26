@@ -441,7 +441,7 @@ defmodule Gringotts.Gateways.AuthorizeNetMock do
      }}
   end
 
-  def netwok_error_non_existent_domain do
+  def network_error_non_existent_domain do
     {:error, %HTTPoison.Error{id: nil, reason: :nxdomain}}
   end
 end

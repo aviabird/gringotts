@@ -294,7 +294,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   test "network error type non existent domain" do
     with_mock HTTPoison,
       post: fn _url, _body, _headers ->
-        MockResponse.netwok_error_non_existent_domain()
+        MockResponse.network_error_non_existent_domain()
       end do
       assert {:error, response} = ANet.purchase(@amount, @card, @opts)
       assert response.message == "HTTPoison says 'nxdomain' [ID: nil]"
