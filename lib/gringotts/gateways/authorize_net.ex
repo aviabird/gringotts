@@ -178,7 +178,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       iex> card = %CreditCard{number: "5424000000000015", year: 2099, month: 12, verification_code: "999"}
       iex> result = Gringotts.purchase(Gringotts.Gateways.AuthorizeNet, amount, card, opts)
   """
-  @spec purchase(Money.t(), CreditCard.t(), Keyword.t()) :: {:ok | :error, Response.t()}
+  @spec purchase(Money.t(), CreditCard.t() | Keyword.t(), Keyword.t()) :: {:ok | :error, Response.t()}
   def purchase(amount, payment, opts) do
     request_data = add_auth_purchase(amount, payment, opts, @transaction_type[:purchase])
     commit(request_data, opts)
@@ -551,7 +551,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     element(:refId, opts[:ref_id])
   end
 
-  defp add_purchase_transaction_request(amount, transaction_type, payment, opts) do
+  defp add_purchase_transaction_request(amount, transaction_type, payment = %CreditCard{}, opts) do
     element(:transactionRequest, [
       add_transaction_type(transaction_type),
       add_amount(amount),
@@ -562,6 +562,15 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       add_shipping_fields(opts),
       add_po_number(opts),
       add_customer_info(opts)
+    ])
+  end
+
+  defp add_purchase_transaction_request(amount, transaction_type, payment, opts) do
+    element(:transactionRequest, [
+      add_transaction_type(transaction_type),
+      add_amount(amount),
+      add_payment_source(payment),
+      add_invoice(opts)
     ])
   end
 
@@ -605,10 +614,12 @@ defmodule Gringotts.Gateways.AuthorizeNet do
     end
   end
 
-  defp add_payment_source(source) do
-    # have to implement for other sources like apple pay
-    # token payment method and check currently only for credit card
+  defp add_payment_source(source = %CreditCard{}) do
     add_credit_card(source)
+  end
+
+  defp add_payment_source(source) do
+    add_customer_payment_profile_info(source)
   end
 
   defp add_credit_card(source) do
@@ -617,6 +628,15 @@ defmodule Gringotts.Gateways.AuthorizeNet do
         element(:cardNumber, source.number),
         element(:expirationDate, join_string([source.year, source.month], "-")),
         element(:cardCode, source.verification_code)
+      ])
+    ])
+  end
+
+  defp add_customer_payment_profile_info(source) do
+    element(:profile, [
+      element(:customerProfileId, source[:customer_profile_id]),
+      element(:paymentProfile, [
+        element(:paymentProfileId, source[:customer_payment_profile_id])
       ])
     ])
   end
@@ -635,7 +655,7 @@ defmodule Gringotts.Gateways.AuthorizeNet do
           element(:quantity, opts[:lineitems][:quantity]),
           element(
             :unitPrice,
-            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_float()
+            opts[:lineitems][:unit_price] |> Money.value() |> Decimal.to_string(:normal)
           )
         ])
       ])
@@ -836,6 +856,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       @supported_response_types
       |> Stream.map(&Map.get(response_map, &1, nil))
       |> Enum.find(:undefined_response, & &1)
+    end
+
+    defp build_response(%{"messages" => %{"resultCode" => "Ok"}, "transactionResponse" => %{"errors" => _}} = result, base_response) do
+      {:error, ResponseHandler.parse_gateway_error(result, base_response)}
     end
 
     defp build_response(%{"messages" => %{"resultCode" => "Ok"}} = result, base_response) do
