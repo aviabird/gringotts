@@ -858,6 +858,10 @@ defmodule Gringotts.Gateways.AuthorizeNet do
       |> Enum.find(:undefined_response, & &1)
     end
 
+    defp build_response(%{"messages" => %{"resultCode" => "Ok"}, "transactionResponse" => %{"errors" => _}} = result, base_response) do
+      {:error, ResponseHandler.parse_gateway_error(result, base_response)}
+    end
+
     defp build_response(%{"messages" => %{"resultCode" => "Ok"}} = result, base_response) do
       {:ok, ResponseHandler.parse_gateway_success(result, base_response)}
     end
