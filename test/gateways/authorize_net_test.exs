@@ -21,6 +21,13 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     verification_code: 123
   }
 
+  @expired_card %CreditCard{
+    number: "5424000000000015",
+    month: 12,
+    year: 2000,
+    verification_code: 999
+  }
+
   @amount FakeMoney.new("2.99", :USD)
 
   @opts [
@@ -155,6 +162,15 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
           MockResponse.bad_card_purchase_response()
         end do
         assert {:error, _response} = ANet.purchase(@amount, @bad_card, @opts)
+      end
+    end
+
+    test "with expired card" do
+      with_mock HTTPoison,
+        post: fn _url, _body, _headers ->
+          MockResponse.falsely_successful_expired_card_response()
+        end do
+        assert {:error, _response} = ANet.purchase(@amount, @expired_card, @opts)
       end
     end
   end
@@ -294,7 +310,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
   test "network error type non existent domain" do
     with_mock HTTPoison,
       post: fn _url, _body, _headers ->
-        MockResponse.netwok_error_non_existent_domain()
+        MockResponse.network_error_non_existent_domain()
       end do
       assert {:error, response} = ANet.purchase(@amount, @card, @opts)
       assert response.message == "HTTPoison says 'nxdomain' [ID: nil]"

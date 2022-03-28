@@ -73,6 +73,30 @@ defmodule Gringotts.Gateways.AuthorizeNetMock do
      }}
   end
 
+  def falsely_successful_expired_card_response do
+    {:ok,
+      %HTTPoison.Response{
+        body:
+          ~s(<?xml version="1.0" encoding="utf-8"?><createTransactionResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><refId /><messages><resultCode>Ok</resultCode><message><code>I00001</code><text>Successful.</text></message></messages><transactionResponse><responseCode>2</responseCode><authCode>000000</authCode><avsResultCode>P</avsResultCode><cvvResultCode>P</cvvResultCode><cavvResultCode /><transId>43289066237</transId><refTransID /><transHash /><testRequest>0</testRequest><accountNumber>XXXX6008</accountNumber><accountType>Visa</accountType><errors><error><errorCode>2</errorCode><errorText>This transaction has been declined.</errorText></error></errors><transHashSha2 /><profile><customerProfileId>553747225</customerProfileId><customerPaymentProfileId>552573068</customerPaymentProfileId></profile><networkTransId>382083585479253    N 01</networkTransId></transactionResponse></createTransactionResponse>),
+        headers: [
+          {"Cache-Control", "private"},
+          {"Content-Type", "application/xml; charset=utf-8"},
+          {"X-OPNET-Transaction-Trace", "a2_b6b84b43-d399-4dde-bc12-fb1f8ccf4b27-51156-17537805"},
+          {"Access-Control-Allow-Origin", "*"},
+          {"Access-Control-Allow-Methods", "PUT,OPTIONS,POST,GET"},
+          {"Access-Control-Allow-Headers",
+            "x-requested-with,cache-control,content-type,origin,method,SOAPAction"},
+          {"Access-Control-Allow-Credentials", "true"},
+          {"X-Cnection", "close"},
+          {"Content-Length", "828"},
+          {"Date", "Thu, 28 Dec 2017 13:54:20 GMT"},
+          {"Connection", "keep-alive"}
+        ],
+        request_url: "https://apitest.authorize.net/xml/v1/request.api",
+        status_code: 200
+      }}
+  end
+
   def bad_amount_purchase_response do
     {:ok,
      %HTTPoison.Response{
@@ -441,7 +465,7 @@ defmodule Gringotts.Gateways.AuthorizeNetMock do
      }}
   end
 
-  def netwok_error_non_existent_domain do
+  def network_error_non_existent_domain do
     {:error, %HTTPoison.Error{id: nil, reason: :nxdomain}}
   end
 end
