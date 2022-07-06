@@ -87,7 +87,6 @@ defmodule Gringotts.Gateways.Trexle do
 
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:api_key]
-  import Poison, only: [decode: 1]
   alias Gringotts.{Address, CreditCard, Money, Response}
 
   @doc """
@@ -330,7 +329,7 @@ defmodule Gringotts.Gateways.Trexle do
   defp respond(response)
 
   defp respond({:ok, %{status_code: code, body: body}}) when code in [200, 201] do
-    {:ok, results} = decode(body)
+    {:ok, results} = Jason.decode(body)
     token = results["response"]["token"]
     message = results["response"]["status_message"]
 
@@ -348,7 +347,7 @@ defmodule Gringotts.Gateways.Trexle do
   end
 
   defp respond({:ok, %{status_code: status_code, body: body}}) do
-    {:ok, results} = decode(body)
+    {:ok, results} = Jason.decode(body)
     detail = results["detail"]
     {:error, %Response{status_code: status_code, message: detail, reason: detail, raw: body}}
   end

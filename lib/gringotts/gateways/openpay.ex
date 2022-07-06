@@ -113,7 +113,7 @@ defmodule Gringotts.Gateways.Openpay do
       body =
         card
         |> auth_params(token_id, opts, value, false)
-        |> Poison.encode!()
+        |> Jason.encode!()
 
       commit(:post, "/v1/#{opts[:config][:merchant_id]}/charges", body, opts)
     end
@@ -144,7 +144,7 @@ defmodule Gringotts.Gateways.Openpay do
   @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response}
   def capture(payment_id, amount, opts) do
     {_, value, _} = Money.to_integer(amount)
-    body = %{amount: value} |> Poison.encode!()
+    body = %{amount: value} |> Jason.encode!()
     commit(:post, "/v1/#{opts[:config][:merchant_id]}/charges/#{payment_id}/capture", body, opts)
   end
 
@@ -171,7 +171,7 @@ defmodule Gringotts.Gateways.Openpay do
       body =
         card
         |> auth_params(token_id, opts, value, true)
-        |> Poison.encode!()
+        |> Jason.encode!()
 
       commit(:post, "/v1/#{opts[:config][:merchant_id]}/charges", body, opts)
     end
@@ -198,7 +198,7 @@ defmodule Gringotts.Gateways.Openpay do
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
   def void(payment_id, opts) do
-    body = %{} |> Poison.encode!()
+    body = %{} |> Jason.encode!()
     commit(:post, "/v1/#{opts[:config][:merchant_id]}/charges/#{payment_id}/refund", body, opts)
   end
 
@@ -219,7 +219,7 @@ defmodule Gringotts.Gateways.Openpay do
   @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, payment_id, opts) do
     {_, value, _} = Money.to_integer(amount)
-    body = %{amount: value} |> Poison.encode!()
+    body = %{amount: value} |> Jason.encode!()
     commit(:post, "/v1/#{opts[:config][:merchant_id]}/charges/#{payment_id}/refund", body, opts)
   end
 
@@ -251,7 +251,7 @@ defmodule Gringotts.Gateways.Openpay do
     body =
       card
       |> token_params(opts)
-      |> Poison.encode!()
+      |> Jason.encode!()
 
     {state, res} = commit(:post, "/v1/#{opts[:config][:merchant_id]}/tokens", body, opts)
 
@@ -314,7 +314,7 @@ defmodule Gringotts.Gateways.Openpay do
   end
 
   defp respond({:ok, %HTTPoison.Response{body: body, status_code: status_code}}, opts) do
-    body = body |> Poison.decode!()
+    body = body |> Jason.decode!()
 
     case body["description"] do
       nil -> {:ok, success_body(body, status_code, opts)}
