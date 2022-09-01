@@ -28,7 +28,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
     verification_code: 999
   }
 
-  @amount FakeMoney.new("2.99", :USD)
+  @amount FakeMoney.new("12.99", :USD)
 
   @opts [
     config: @auth,
@@ -42,6 +42,7 @@ defmodule Gringotts.Gateways.AuthorizeNetTest do
       unit_price: FakeMoney.new("53.82", :USD)
     },
     tax: %{name: "VAT", amount: FakeMoney.new("0.1", :EUR), description: "Value Added Tax"},
+    tip: FakeMoney.new("10.00", :USD),
     shipping: %{
       name: "SAME-DAY-DELIVERY",
       amount: FakeMoney.new("0.56", :EUR),
