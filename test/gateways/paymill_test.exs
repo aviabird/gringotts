@@ -33,7 +33,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         params = p_conn.body_params
         assert params["amount"] == "4200"
         assert params["currency"] == "EUR"
-        assert params["token"] == "tok_d26e611c47d64693a281e8411934"
+        assert params["token"] == @valid_token
         Conn.resp(conn, 200, Mock.auth_success())
       end)
 
@@ -54,7 +54,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         params = p_conn.body_params
         assert params["amount"] == "4200"
         assert params["currency"] == "EUR"
-        assert params["token"] == "tok_d26e611c47d64693a281e841193"
+        assert params["token"] == @invalid_token
         Conn.resp(conn, 400, Mock.auth_purchase_invalid_token())
       end)
 
@@ -116,11 +116,11 @@ defmodule Gringotts.Gateways.PaymillTest do
         params = p_conn.body_params
         assert params["amount"] == "4200"
         assert params["currency"] == "EUR"
-        assert params["token"] == "tok_d26e611c47d64693a281e841193"
+        assert params["token"] == @valid_token
         Conn.resp(conn, 200, Mock.purchase_valid_token())
       end)
 
-      {:ok, response} = Gateway.purchase(@amount_42, @invalid_token, config: opts)
+      {:ok, response} = Gateway.purchase(@amount_42, @valid_token, config: opts)
       assert response.gateway_code == 20_000
       assert response.fraud_review == true
       assert response.status_code == 200
@@ -132,7 +132,7 @@ defmodule Gringotts.Gateways.PaymillTest do
         params = p_conn.body_params
         assert params["amount"] == "4200"
         assert params["currency"] == "EUR"
-        assert params["token"] == "tok_d26e611c47d64693a281e841193"
+        assert params["token"] == @invalid_token
         Conn.resp(conn, 200, Mock.auth_purchase_invalid_token())
       end)
 
@@ -140,7 +140,7 @@ defmodule Gringotts.Gateways.PaymillTest do
       assert response.reason["field"] == "token"
 
       assert response.reason["messages"]["regexNotMatch"] ==
-               "'tok_d26e611c47d64693a281e841193' does not match against pattern '\/^[a-zA-Z0-9_]{32}$\/'"
+               "'#{@invalid_token}' does not match against pattern '\/^[a-zA-Z0-9_]{32}$\/'"
 
       assert response.status_code == 200
     end
