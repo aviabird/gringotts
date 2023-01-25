@@ -415,7 +415,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
     merchant_id = opts[:config][:merchant_id]
 
     data = "POST\napplication/json\n#{date_string}\n/v1/#{merchant_id}/#{path}\n"
-    :crypto.hmac(:sha256, secret_api_key, data)
+    :crypto.mac(:hmac, :sha256, secret_api_key, data)
   end
 
   # Parses GlobalCollect's response and returns a `Gringotts.Response` struct

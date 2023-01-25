@@ -54,24 +54,24 @@ defmodule Gringotts.Gateways.OpenpayTest do
     payment: %{card: %{number: "5424000000000015", year: 2099, month: 12}}
   ]
 
-  @opts_store [
-    config: @auth,
-    profile: %{
-      merchant_customer_id: "123456",
-      description: "Profile description here",
-      email: "customer-profile-email@here.com"
-    },
-    customer_type: "individual",
-    validation_mode: "testMode"
-  ]
-  @opts_store_without_validation [
-    config: @auth,
-    profile: %{
-      merchant_customer_id: "123456",
-      description: "Profile description here",
-      email: "customer-profile-email@here.com"
-    }
-  ]
+  # @opts_store [
+    # config: @auth,
+    # profile: %{
+      # merchant_customer_id: "123456",
+      # description: "Profile description here",
+      # email: "customer-profile-email@here.com"
+    # },
+    # customer_type: "individual",
+    # validation_mode: "testMode"
+  # ]
+  # @opts_store_without_validation [
+    # config: @auth,
+    # profile: %{
+      # merchant_customer_id: "123456",
+      # description: "Profile description here",
+      # email: "customer-profile-email@here.com"
+    # }
+  # ]
 
   @opts_store_no_profile [
     config: @auth
@@ -94,15 +94,15 @@ defmodule Gringotts.Gateways.OpenpayTest do
       email: "customer-profile-email@here.com"
     }
   ]
-  @opts_store_no_profile [
-    config: @auth
-  ]
-  @opts_customer_profile [
-    config: @auth,
-    customer_profile_id: "1814012002",
-    validation_mode: "testMode",
-    customer_type: "individual"
-  ]
+  # @opts_store_no_profile [
+    # config: @auth
+  # ]
+  # @opts_customer_profile [
+    # config: @auth,
+    # customer_profile_id: "1814012002",
+    # validation_mode: "testMode",
+    # customer_type: "individual"
+  # ]
   @opts_customer_profile_args [
     config: @auth,
     customer_profile_id: "1814012002"

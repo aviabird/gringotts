@@ -12,7 +12,7 @@ defmodule Gringotts.Mixfile do
         licenses: ["MIT"],
         links: %{github: "https://github.com/aviabird/gringotts"}
       ],
-      elixir: ">= 1.13.1",
+      elixir: ">= 1.14.2",
       test_coverage: [
         tool: ExCoveralls
       ],
@@ -57,7 +57,7 @@ defmodule Gringotts.Mixfile do
   defp deps do
     [
       {:httpoison, "~> 1.8"},
-      {:jason, "~> 1.3"},
+      {:jason, "~> 1.4"},
       {:xml_builder, "~> 2.2"},
       {:elixir_xml_to_map, "~> 3.0"},
 
