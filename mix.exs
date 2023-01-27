@@ -37,7 +37,7 @@ defmodule Gringotts.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      extra_applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex]
+      extra_applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex, :xml_builder]
     ]
   end
 
