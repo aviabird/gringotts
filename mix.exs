@@ -12,7 +12,7 @@ defmodule Gringotts.Mixfile do
         licenses: ["MIT"],
         links: %{github: "https://github.com/aviabird/gringotts"}
       ],
-      elixir: ">= 1.14.2",
+      elixir: "~> 1.14",
       test_coverage: [
         tool: ExCoveralls
       ],
@@ -37,7 +37,7 @@ defmodule Gringotts.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex]
+      extra_applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex, :xml_builder, :eex]
     ]
   end
 
