@@ -370,7 +370,8 @@ defmodule Gringotts.Gateways.Paymill do
          }}
 
       {:error, _} ->
-        IO.inspect body
+        IO.inspect(body)
+
         {:error,
          %Response{status_code: 200, raw: body, reason: "could not parse paymill response"}}
     end

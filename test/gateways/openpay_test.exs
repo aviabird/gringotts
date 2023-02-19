@@ -55,22 +55,22 @@ defmodule Gringotts.Gateways.OpenpayTest do
   ]
 
   # @opts_store [
-    # config: @auth,
-    # profile: %{
-      # merchant_customer_id: "123456",
-      # description: "Profile description here",
-      # email: "customer-profile-email@here.com"
-    # },
-    # customer_type: "individual",
-    # validation_mode: "testMode"
+  # config: @auth,
+  # profile: %{
+  # merchant_customer_id: "123456",
+  # description: "Profile description here",
+  # email: "customer-profile-email@here.com"
+  # },
+  # customer_type: "individual",
+  # validation_mode: "testMode"
   # ]
   # @opts_store_without_validation [
-    # config: @auth,
-    # profile: %{
-      # merchant_customer_id: "123456",
-      # description: "Profile description here",
-      # email: "customer-profile-email@here.com"
-    # }
+  # config: @auth,
+  # profile: %{
+  # merchant_customer_id: "123456",
+  # description: "Profile description here",
+  # email: "customer-profile-email@here.com"
+  # }
   # ]
 
   @opts_store_no_profile [
@@ -95,13 +95,13 @@ defmodule Gringotts.Gateways.OpenpayTest do
     }
   ]
   # @opts_store_no_profile [
-    # config: @auth
+  # config: @auth
   # ]
   # @opts_customer_profile [
-    # config: @auth,
-    # customer_profile_id: "1814012002",
-    # validation_mode: "testMode",
-    # customer_type: "individual"
+  # config: @auth,
+  # customer_profile_id: "1814012002",
+  # validation_mode: "testMode",
+  # customer_type: "individual"
   # ]
   @opts_customer_profile_args [
     config: @auth,
