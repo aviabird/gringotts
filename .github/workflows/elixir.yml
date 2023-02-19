@@ -1,0 +1,26 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1.15.2
+        with:
+          otp-version: '25.2'
+          elixir-version: '1.14.2'
+      - name: Install Dependencies
+        run: mix deps.get
+      - name: Run Tests
+        run: mix test
+      - name: Check Formatting
+        run: mix format --check-formatted

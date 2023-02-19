@@ -102,8 +102,6 @@ defmodule Gringotts.Gateways.<%= gateway_module %> do
   # `required_config` list
   use Gringotts.Adapter, required_config: <%= inspect(required_config_keys) %>
   
-  import Poison, only: [decode: 1]
-
   alias Gringotts.{Money,
                    CreditCard,
                    Response}

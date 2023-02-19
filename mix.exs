@@ -4,7 +4,7 @@ defmodule Gringotts.Mixfile do
   def project do
     [
       app: :gringotts,
-      version: "1.1.1-rc",
+      version: "1.1.1",
       description: description(),
       package: [
         contributors: ["Aviabird Technologies"],
@@ -12,7 +12,7 @@ defmodule Gringotts.Mixfile do
         licenses: ["MIT"],
         links: %{github: "https://github.com/aviabird/gringotts"}
       ],
-      elixir: ">= 1.5.3",
+      elixir: "~> 1.14",
       test_coverage: [
         tool: ExCoveralls
       ],
@@ -37,7 +37,7 @@ defmodule Gringotts.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex]
+      extra_applications: [:httpoison, :hackney, :elixir_xml_to_map, :timex, :xml_builder, :eex]
     ]
   end
 
@@ -56,26 +56,26 @@ defmodule Gringotts.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      {:poison, "~> 3.1.0"},
-      {:httpoison, "~> 1.1"},
-      {:xml_builder, "~> 2.1"},
-      {:elixir_xml_to_map, "~> 0.1"},
+      {:httpoison, "~> 1.8"},
+      {:jason, "~> 1.4"},
+      {:xml_builder, "~> 2.2"},
+      {:elixir_xml_to_map, "~> 3.0"},
 
       # money related
-      {:decimal, "~> 1.5"},
+      {:decimal, "~> 2.0"},
 
       # docs and tests
-      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
-      {:mock, "~> 0.3.0", only: :test},
-      {:bypass, "~> 0.8", only: :test},
-      {:excoveralls, "~> 0.8", only: :test},
-      {:exvcr, "~> 0.10", only: :test},
+      {:ex_doc, "~> 0.28.4", only: :dev, runtime: false},
+      {:mock, "~> 0.3.7", only: :test},
+      {:bypass, "~> 2.1", only: :test},
+      {:excoveralls, "~> 0.14.5", only: :test},
+      {:exvcr, "~> 0.13.3", only: :test},
 
       # various analyses tools
-      {:credo, "~> 0.9", only: [:dev, :test]},
-      {:inch_ex, "~> 0.5", only: :docs},
-      {:dialyxir, "~> 0.3", only: :dev},
-      {:timex, "~> 3.2"}
+      {:credo, "~> 1.6", only: [:dev, :test]},
+      {:inch_ex, "~> 2.0", only: :docs},
+      {:dialyxir, "~> 1.1", only: :dev},
+      {:timex, "~> 3.7"}
     ]
   end
 
