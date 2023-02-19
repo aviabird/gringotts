@@ -18,5 +18,9 @@ jobs:
         with:
           otp-version: '25.2'
           elixir-version: '1.14.2'
-      - run: mix deps.get
-      - run: mix test
+      - name: Install Dependencies
+        run: mix deps.get
+      - name: Run Tests
+        run: mix test
+      - name: Check Formatting
+        run: mix format --check-formatted
