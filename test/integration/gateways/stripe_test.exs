@@ -72,4 +72,18 @@ defmodule Gringotts.Gateways.StripeTest do
       assert String.contains?(response.raw, "\"receipt_email\": \"something@example.com\"")
     end
   end
+
+  describe "refund/3" do
+    test "with correct params" do
+      opts = @required_opts ++ @optional_opts
+      {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_token, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "ch_")
+      {:ok, %Response{} = refund_response} = Stripe.refund(@amount, response.id, @required_opts)
+      assert not is_nil(refund_response.id)
+      assert String.starts_with?(refund_response.id, "re_")
+      assert String.contains?(refund_response.raw, "\"amount\": 500")
+      assert String.contains?(refund_response.raw, "\"charge\": \"#{response.id}\"")
+    end
+  end
 end

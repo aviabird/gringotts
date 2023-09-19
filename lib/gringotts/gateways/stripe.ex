@@ -125,10 +125,11 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.authorize(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: map
+  @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, payment, opts) do
     params = create_params_for_auth_or_purchase(amount, payment, opts, false)
-    commit(:post, "charges", params, opts)
+    response = commit(:post, "charges", params, opts)
+    respond(response, :purchase)
   end
 
   @doc """
@@ -163,10 +164,11 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.purchase(Gringotts.Gateways.Stripe, amount, card, opts)
   """
-  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: map
+  @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, payment, opts) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
-    commit(:post, "charges", params, opts)
+    response = commit(:post, "charges", params, opts)
+    respond(response, :purchase)
   end
 
   @doc """
@@ -190,10 +192,11 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.capture(Gringotts.Gateways.Stripe, id, amount, opts)
   """
-  @spec capture(String.t(), Money.t(), keyword) :: map
+  @spec capture(String.t(), Money.t(), keyword) :: {:ok | :error, Response.t()}
   def capture(id, amount, opts) do
     params = optional_params(opts) ++ amount_params(amount)
-    commit(:post, "charges/#{id}/capture", params, opts)
+    response = commit(:post, "charges/#{id}/capture", params, opts)
+    respond(response, :purchase)
   end
 
   @doc """
@@ -223,10 +226,9 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec void(keyword) :: map
-  def void(opts) do
-    params = optional_params(opts)
-    commit(:post, "refunds", params, opts)
+  @spec void(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
+  def void(amount, charge_id, opts \\ []) do
+    refund(amount, charge_id, opts)
   end
 
   @doc """
@@ -245,10 +247,14 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
-  @spec refund(Money.t(), keyword) :: map
-  def refund(amount, opts) do
-    params = optional_params(opts) ++ amount_params(amount)
-    commit(:post, "refunds", params, opts)
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response.t()}
+  def refund(amount, charge_id, opts \\ []) do
+    params =
+      [charge: charge_id] ++
+        Keyword.take(amount_params(amount), [:amount])
+
+    response = commit(:post, "refunds", params, opts)
+    respond(response, :refund)
   end
 
   @doc """
@@ -283,7 +289,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.store(Gringotts.Gateways.Stripe, card, opts)
   """
-  @spec store(CreditCard.t() | String.t(), keyword) :: map
+  @spec store(CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
   def store(payment, opts) do
     params = optional_params(opts) ++ source_params(payment, opts)
     commit(:post, "customers", params, opts)
@@ -303,7 +309,7 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.unstore(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec unstore(String.t(), keyword) :: map
+  @spec unstore(String.t(), keyword) :: {:ok | :error, Response.t()}
   def unstore(id, opts), do: commit(:delete, "customers/#{id}", [], opts)
 
   # Private methods
@@ -334,14 +340,10 @@ defmodule Gringotts.Gateways.Stripe do
   defp source_params(%CreditCard{} = card, opts) do
     params = card_params(card) ++ address_params(opts[:address])
 
-    response = create_card_token(params, opts)
-
-    if Map.has_key?(response, "error") do
-      []
+    with {:ok, response} <- create_card_token(params, opts) do
+      source_params(response.id, opts)
     else
-      response
-      |> Map.get("id")
-      |> source_params(opts)
+      _ -> []
     end
   end
 
@@ -381,7 +383,6 @@ defmodule Gringotts.Gateways.Stripe do
     ]
 
     response = HTTPoison.request(method, "#{@base_url}/#{path}", {:form, params}, headers)
-    respond(response)
   end
 
   defp optional_params(opts) do
@@ -392,14 +393,14 @@ defmodule Gringotts.Gateways.Stripe do
 
   # Parses STRIPE's response and returns a `Gringotts.Response` struct in a
   # `:ok`, `:error` tuple.
-  @spec respond(term) :: {:ok | :error, Response.t()}
-  defp respond(stripe_response)
+  @spec respond(term, Atom.t()) :: {:ok | :error, Response.t()}
+  defp respond(stripe_response, gringotts_action)
 
-  defp respond({:ok, %{status_code: 200, body: body}}) do
+  defp respond({:ok, %{status_code: 200, body: body}}, gringotts_action) do
     common = [raw: body, status_code: 200, gateway_code: 200]
 
     with {:ok, decoded_json} <- Jason.decode(body),
-         {:ok, results} <- parse_response(decoded_json) do
+         {:ok, results} <- parse_response(decoded_json, gringotts_action) do
       {:ok, Response.success(common ++ results)}
     else
       {:not_ok, errors} ->
@@ -410,11 +411,11 @@ defmodule Gringotts.Gateways.Stripe do
     end
   end
 
-  defp respond({:ok, %{status_code: status_code, body: body}}) do
+  defp respond({:ok, %{status_code: status_code, body: body}}, _) do
     {:error, Response.error(status_code: status_code, raw: body)}
   end
 
-  defp respond({:error, %HTTPoison.Error{} = error}) do
+  defp respond({:error, %HTTPoison.Error{} = error}, _) do
     {
       :error,
       Response.error(
@@ -424,7 +425,7 @@ defmodule Gringotts.Gateways.Stripe do
     }
   end
 
-  defp parse_response(data) do
+  defp parse_response(data, gringotts_action) when gringotts_action == :purchase do
     address = struct(%Address{}, data["billing_details"]["address"])
 
     results = [
@@ -434,6 +435,16 @@ defmodule Gringotts.Gateways.Stripe do
       fraud_review: data["outcome"]["risk_level"],
       cvc_result: data["payment_method_details"]["card"]["checks"]["cvc_check"],
       avs_result: %{address: address}
+    ]
+
+    {:ok, results}
+  end
+
+  defp parse_response(data, gringotts_action) when gringotts_action == :refund do
+    results = [
+      id: data["id"],
+      token: data["balance_transaction"],
+      message: data["reason"]
     ]
 
     {:ok, results}
