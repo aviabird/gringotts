@@ -80,7 +80,7 @@ defmodule Gringotts.Gateways.Stripe do
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:secret_key]
 
-  alias Gringotts.{Address, CreditCard, Money}
+  alias Gringotts.{Address, CreditCard, Money, Response}
 
   @doc """
   Performs a (pre) Authorize operation.
@@ -223,10 +223,10 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.void(Gringotts.Gateways.Stripe, id, opts)
   """
-  @spec void(String.t(), keyword) :: map
-  def void(id, opts) do
+  @spec void(keyword) :: map
+  def void(opts) do
     params = optional_params(opts)
-    commit(:post, "charges/#{id}/refund", params, opts)
+    commit(:post, "refunds", params, opts)
   end
 
   @doc """
@@ -245,10 +245,10 @@ defmodule Gringotts.Gateways.Stripe do
 
       iex> Gringotts.refund(Gringotts.Gateways.Stripe, amount, id, opts)
   """
-  @spec refund(Money.t(), String.t(), keyword) :: map
-  def refund(amount, id, opts) do
+  @spec refund(Money.t(), keyword) :: map
+  def refund(amount, opts) do
     params = optional_params(opts) ++ amount_params(amount)
-    commit(:post, "charges/#{id}/refund", params, opts)
+    commit(:post, "refunds", params, opts)
   end
 
   @doc """
@@ -381,7 +381,7 @@ defmodule Gringotts.Gateways.Stripe do
     ]
 
     response = HTTPoison.request(method, "#{@base_url}/#{path}", {:form, params}, headers)
-    format_response(response)
+    respond(response)
   end
 
   defp optional_params(opts) do
@@ -390,10 +390,52 @@ defmodule Gringotts.Gateways.Stripe do
     |> Keyword.delete(:address)
   end
 
-  defp format_response(response) do
-    case response do
-      {:ok, %HTTPoison.Response{body: body}} -> body |> Jason.decode!()
-      _ -> %{"error" => "something went wrong, please try again later"}
+  # Parses STRIPE's response and returns a `Gringotts.Response` struct in a
+  # `:ok`, `:error` tuple.
+  @spec respond(term) :: {:ok | :error, Response.t()}
+  defp respond(stripe_response)
+
+  defp respond({:ok, %{status_code: 200, body: body}}) do
+    common = [raw: body, status_code: 200, gateway_code: 200]
+
+    with {:ok, decoded_json} <- Jason.decode(body),
+         {:ok, results} <- parse_response(decoded_json) do
+      {:ok, Response.success(common ++ results)}
+    else
+      {:not_ok, errors} ->
+        {:ok, Response.error(common ++ errors)}
+
+      {:error, _} ->
+        {:error, Response.error([reason: "undefined response from stripe"] ++ common)}
     end
+  end
+
+  defp respond({:ok, %{status_code: status_code, body: body}}) do
+    {:error, Response.error(status_code: status_code, raw: body)}
+  end
+
+  defp respond({:error, %HTTPoison.Error{} = error}) do
+    {
+      :error,
+      Response.error(
+        reason: "network related failure",
+        message: "HTTPoison says '#{error.reason}' [ID: #{error.id || "nil"}]"
+      )
+    }
+  end
+
+  defp parse_response(data) do
+    address = struct(%Address{}, data["billing_details"]["address"])
+
+    results = [
+      id: data["id"],
+      token: data["balance_transaction"],
+      message: data["description"],
+      fraud_review: data["outcome"]["risk_level"],
+      cvc_result: data["payment_method_details"]["card"]["checks"]["cvc_check"],
+      avs_result: %{address: address}
+    ]
+
+    {:ok, results}
   end
 end

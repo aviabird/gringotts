@@ -1,10 +1,10 @@
 defmodule Gringotts.Gateways.StripeTest do
   use ExUnit.Case
 
-  alias Gringotts.{Address, CreditCard}
+  alias Gringotts.{Address, CreditCard, Response}
   alias Gringotts.Gateways.Stripe
 
-  @moduletag integration: true
+  # @moduletag integration: true
 
   @amount Gringotts.FakeMoney.new(5, :USD)
   @card %CreditCard{
@@ -16,6 +16,7 @@ defmodule Gringotts.Gateways.StripeTest do
     month: "12",
     verification_code: "123"
   }
+  @card_token "tok_visa"
 
   @address %Address{
     street1: "123 Main",
@@ -28,14 +29,47 @@ defmodule Gringotts.Gateways.StripeTest do
 
   @required_opts [config: [secret_key: "sk_test_vIX41hayC0BKrPWQerLuOMld"]]
   @optional_opts [address: @address]
+  @present_opts [description: "best purchase ever", receipt_email: "something@example.com"]
 
   describe "authorize/3" do
     test "with correct params" do
-      response = Stripe.authorize(@amount, @card, @required_opts ++ @optional_opts)
-      assert Map.has_key?(response, "id")
-      assert response["amount"] == 500
-      assert response["captured"] == false
-      assert response["currency"] == "usd"
+      opts = @required_opts ++ @optional_opts
+      {:ok, %Response{} = response} = Stripe.authorize(@amount, @card_token, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "ch_")
+      assert String.contains?(response.raw, "\"amount\": 500")
+      assert String.contains?(response.raw, "\"amount_captured\": 0")
+      assert String.contains?(response.raw, "\"captured\": false")
+      assert String.contains?(response.raw, "\"currency\": \"usd\"")
+    end
+  end
+
+  describe "purchase/3" do
+    test "with correct params" do
+      opts = @required_opts ++ @optional_opts
+      {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_token, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "ch_")
+      assert response.message == nil
+      assert response.fraud_review == "normal"
+      assert String.contains?(response.raw, "\"amount\": 500")
+      assert String.contains?(response.raw, "\"amount_captured\": 500")
+      assert String.contains?(response.raw, "\"captured\": true")
+      assert String.contains?(response.raw, "\"currency\": \"usd\"")
+    end
+
+    test "with additional options" do
+      opts = @required_opts ++ @optional_opts ++ @present_opts
+      {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_token, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "ch_")
+      assert response.message == "best purchase ever"
+      assert response.fraud_review == "normal"
+      assert String.contains?(response.raw, "\"amount\": 500")
+      assert String.contains?(response.raw, "\"amount_captured\": 500")
+      assert String.contains?(response.raw, "\"captured\": true")
+      assert String.contains?(response.raw, "\"currency\": \"usd\"")
+      assert String.contains?(response.raw, "\"receipt_email\": \"something@example.com\"")
     end
   end
 end
