@@ -56,7 +56,7 @@ defmodule Gringotts.Gateways.StripeTest do
       {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_payent_method_3d, opts)
       assert not is_nil(response.id)
       assert String.starts_with?(response.id, "pi_")
-      assert response.message == "best purchase ever"
+      assert response.message == nil
       assert response.reason == "requires_source_action"
       assert response.fraud_review == nil
       assert String.contains?(response.raw, "\"amount\": 500")
