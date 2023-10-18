@@ -127,7 +127,7 @@ defmodule Gringotts.Gateways.Stripe do
   """
   @spec authorize(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
   def authorize(amount, payment, opts) do
-    params = create_params_for_auth_or_purchase(amount, payment, opts, false)
+    params = create_params_for(amount, payment, opts, :authorize)
     response = commit(:post, "charges", params, opts)
     respond(response, :purchase)
   end
@@ -166,9 +166,25 @@ defmodule Gringotts.Gateways.Stripe do
   """
   @spec purchase(Money.t(), CreditCard.t() | String.t(), keyword) :: {:ok | :error, Response.t()}
   def purchase(amount, payment, opts) do
-    params = create_params_for_auth_or_purchase(amount, payment, opts)
-    response = commit(:post, "charges", params, opts)
-    respond(response, :purchase)
+    params = create_params_for(amount, payment, opts, :purchase)
+
+    cond do
+      is_struct(payment) && payment.__struct__ == CreditCard ->
+        response = commit(:post, "payment_methods", params, opts)
+        respond(response, :payment_method)
+
+      String.starts_with?(payment, "pm") ->
+        response = commit(:post, "payment_intents", params, opts)
+        respond(response, :payment_intent)
+
+      String.starts_with?(payment, "pi") ->
+        response = commit(:post, "payment_intents/#{payment}/confirm", [], opts)
+        maybe_get_latest_charge(response, opts)
+
+      String.starts_with?(payment, "tok") ->
+        response = commit(:post, "charges", params, opts)
+        respond(response, :purchase)
+    end
   end
 
   @doc """
@@ -314,13 +330,33 @@ defmodule Gringotts.Gateways.Stripe do
 
   # Private methods
 
-  defp create_params_for_auth_or_purchase(amount, payment, opts, capture \\ true) do
-    [capture: capture] ++
+  defp create_params_for(
+         amount,
+         payment,
+         opts,
+         action
+       ) do
+    variable_params =
+      cond do
+        action == :authorize ->
+          [capture: false]
+
+        action == :purchase && String.starts_with?(payment, "tok") ->
+          [capture: true]
+
+        String.starts_with?(payment, "pm") ->
+          [confirm: true, confirmation_method: "manual"]
+
+        true ->
+          []
+      end
+
+    variable_params ++
       optional_params(opts) ++ amount_params(amount) ++ source_params(payment, opts)
   end
 
   defp create_card_token(params, opts) do
-    commit(:post, "tokens", params, opts)
+    commit(:post, "payment_methods", params, opts)
   end
 
   defp amount_params(amount) do
@@ -329,9 +365,11 @@ defmodule Gringotts.Gateways.Stripe do
   end
 
   defp source_params(token_or_customer, _) when is_binary(token_or_customer) do
-    [head, _] = String.split(token_or_customer, "_")
+    [head | _] = String.split(token_or_customer, "_")
 
     case head do
+      "pi" -> []
+      "pm" -> [payment_method: token_or_customer]
       "tok" -> [source: token_or_customer]
       "cus" -> [customer: token_or_customer]
     end
@@ -351,7 +389,7 @@ defmodule Gringotts.Gateways.Stripe do
 
   defp card_params(%CreditCard{} = card) do
     [
-      "card[name]": CreditCard.full_name(card),
+      type: "card",
       "card[number]": card.number,
       "card[exp_year]": card.year,
       "card[exp_month]": card.month,
@@ -359,17 +397,16 @@ defmodule Gringotts.Gateways.Stripe do
     ]
   end
 
-  defp card_params(_), do: []
-
   defp address_params(%Address{} = address) do
-    [
-      "card[address_line1]": address.street1,
-      "card[address_line2]": address.street2,
-      "card[address_city]": address.city,
-      "card[address_state]": address.region,
-      "card[address_zip]": address.postal_code,
-      "card[address_country]": address.country
-    ]
+    []
+    #    [
+    #      "card[address_line1]": address.street1,
+    #      "card[address_line2]": address.street2,
+    #      "card[address_city]": address.city,
+    #      "card[address_state]": address.region,
+    #      "card[address_zip]": address.postal_code,
+    #      "card[address_country]": address.country
+    #    ]
   end
 
   defp address_params(_), do: []
@@ -382,7 +419,7 @@ defmodule Gringotts.Gateways.Stripe do
       {"Authorization", auth_token}
     ]
 
-    response = HTTPoison.request(method, "#{@base_url}/#{path}", {:form, params}, headers)
+    HTTPoison.request(method, "#{@base_url}/#{path}", {:form, params}, headers)
   end
 
   defp optional_params(opts) do
@@ -440,6 +477,20 @@ defmodule Gringotts.Gateways.Stripe do
     {:ok, results}
   end
 
+  defp parse_response(data, gringotts_action) when gringotts_action == :payment_intent do
+    results = [
+      id: data["id"],
+      token: data["client_secret"],
+      message: data["latest_charge"],
+      reason: data["status"],
+      fraud_review: nil,
+      cvc_result: nil,
+      avs_result: nil
+    ]
+
+    {:ok, results}
+  end
+
   defp parse_response(data, gringotts_action) when gringotts_action == :refund do
     results = [
       id: data["id"],
@@ -448,5 +499,21 @@ defmodule Gringotts.Gateways.Stripe do
     ]
 
     {:ok, results}
+  end
+
+  defp maybe_get_latest_charge(response, opts) do
+    with {:ok, _} <- response,
+         {:ok, parsed_response} <- respond(response, :payment_intent) do
+      charge = parsed_response.message
+
+      if is_nil(charge) do
+        {:ok, parsed_response}
+      else
+        response = commit(:get, "charges/#{charge}", [], opts)
+        respond(response, :purchase)
+      end
+    else
+      _ -> respond(response, :payment_intent)
+    end
   end
 end

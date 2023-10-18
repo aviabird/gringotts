@@ -16,7 +16,9 @@ defmodule Gringotts.Gateways.StripeTest do
     month: "12",
     verification_code: "123"
   }
+
   @card_token "tok_visa"
+  @card_payent_method_3d "pm_card_authenticationRequiredOnSetup"
 
   @address %Address{
     street1: "123 Main",
@@ -29,7 +31,11 @@ defmodule Gringotts.Gateways.StripeTest do
 
   @required_opts [config: [secret_key: "sk_test_vIX41hayC0BKrPWQerLuOMld"]]
   @optional_opts [address: @address]
-  @present_opts [description: "best purchase ever", receipt_email: "something@example.com"]
+  @present_opts [
+    description: "best purchase ever",
+    receipt_email: "something@example.com",
+    # return_url: "http://localhost:5000/api/3ds2"
+  ]
 
   describe "authorize/3" do
     test "with correct params" do
@@ -41,6 +47,32 @@ defmodule Gringotts.Gateways.StripeTest do
       assert String.contains?(response.raw, "\"amount_captured\": 0")
       assert String.contains?(response.raw, "\"captured\": false")
       assert String.contains?(response.raw, "\"currency\": \"usd\"")
+    end
+  end
+
+  describe "3D Secure purchase/3" do
+    test "it creates a payment intent and waits for card auth" do
+      opts = @required_opts ++ @optional_opts ++ @present_opts
+      {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_payent_method_3d, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "pi_")
+      assert response.message == nil
+      assert response.reason == "requires_source_action"
+      assert response.fraud_review == nil
+      assert String.contains?(response.raw, "\"amount\": 500")
+      assert String.contains?(response.raw, "\"amount_capturable\": 0")
+      assert String.contains?(response.raw, "\"confirmation_method\": \"manual\"")
+      assert String.contains?(response.raw, "\"currency\": \"usd\"")
+    end
+
+    test "without card auth does not confirm the payment intent" do
+      opts = @required_opts ++ @optional_opts ++ @present_opts
+      {:ok, %Response{} = response} = Stripe.purchase(@amount, @card_payent_method_3d, opts)
+      assert not is_nil(response.id)
+      assert String.starts_with?(response.id, "pi_")
+      {:ok, %Response{} = confirm_response} = Stripe.purchase(@amount, response.id, opts)
+      assert confirm_response.reason == "requires_source_action"
+      assert confirm_response.message == nil
     end
   end
 
