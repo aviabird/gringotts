@@ -31,6 +31,9 @@ defmodule Gringotts.Gateways.Stripe do
   | `statement_descriptor` | **Implemented**  |
   | `charge`               | **Implemented**  |
   | `reason`               | **Implemented**  |
+  | `confirm`              | **Implemented**  |
+  | `confirmation_method`  | **Implemented**  |
+  | `return_url`           | **Implemented**  |
   | `account_balance`      | Not implemented  |
   | `business_vat_id`      | Not implemented  |
   | `coupon`               | Not implemented  |
@@ -345,7 +348,11 @@ defmodule Gringotts.Gateways.Stripe do
           [capture: true]
 
         String.starts_with?(payment, "pm") ->
-          [confirm: true, confirmation_method: "manual"]
+          [
+            confirm: true,
+            confirmation_method: "manual",
+            return_url: opts[:return_url]
+          ]
 
         true ->
           []
@@ -483,6 +490,7 @@ defmodule Gringotts.Gateways.Stripe do
       token: data["client_secret"],
       message: data["latest_charge"],
       reason: data["status"],
+      next_action: data["next_action"],
       fraud_review: nil,
       cvc_result: nil,
       avs_result: nil

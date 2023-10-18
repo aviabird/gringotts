@@ -34,7 +34,7 @@ defmodule Gringotts.Gateways.StripeTest do
   @present_opts [
     description: "best purchase ever",
     receipt_email: "something@example.com",
-    # return_url: "http://localhost:5000/api/3ds2"
+    return_url: "http://localhost:5000/api/3ds2"
   ]
 
   describe "authorize/3" do
@@ -59,6 +59,8 @@ defmodule Gringotts.Gateways.StripeTest do
       assert response.message == nil
       assert response.reason == "requires_source_action"
       assert response.fraud_review == nil
+      assert Map.has_key?(response.next_action, "redirect_to_url")
+      assert response.next_action["redirect_to_url"]["return_url"] == "http://localhost:5000/api/3ds2"
       assert String.contains?(response.raw, "\"amount\": 500")
       assert String.contains?(response.raw, "\"amount_capturable\": 0")
       assert String.contains?(response.raw, "\"confirmation_method\": \"manual\"")
