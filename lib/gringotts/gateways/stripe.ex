@@ -350,9 +350,9 @@ defmodule Gringotts.Gateways.Stripe do
         String.starts_with?(payment, "pm") ->
           [
             confirm: true,
-            confirmation_method: "manual",
-            return_url: opts[:return_url]
+            confirmation_method: "manual"
           ]
+          |> append_if(opts[:return_url], return_url: opts[:return_url])
 
         true ->
           []
@@ -523,5 +523,9 @@ defmodule Gringotts.Gateways.Stripe do
     else
       _ -> respond(response, :payment_intent)
     end
+  end
+
+  defp append_if(list, condition, item) do
+    if condition, do: list ++ item, else: list
   end
 end
