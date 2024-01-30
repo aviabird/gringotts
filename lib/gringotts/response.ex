@@ -18,7 +18,9 @@ defmodule Gringotts.Response do
     :avs_result,
     :cvc_result,
     :raw,
-    :fraud_review
+    :fraud_review,
+    :status,
+    :next_action
   ]
 
   @typedoc """
@@ -43,7 +45,11 @@ defmodule Gringotts.Response do
                                          case of error. `nil` otherwise.       |
   | `raw`          | `String.t`        | Raw response from the gateway.        |
   | `fraud_review` | `term`            | Gateway's risk assessment of the\
-                                         transaction.                          |
+                                          transaction.                          |
+  | `status`       | `String.t`        | Status of the performed action.       |
+  | `next_action`  | `map`             | Necesssary data to perform other\
+                                         actions in order to complete\
+                                         payment`                  |
 
   ## Notes
 
@@ -74,7 +80,9 @@ defmodule Gringotts.Response do
           avs_result: %{street: String.t(), zip_code: String.t()},
           cvc_result: String.t(),
           raw: String.t(),
-          fraud_review: term
+          fraud_review: term,
+          status: String.t(),
+          next_action: Map.t()
         }
 
   def success(opts \\ []) do
