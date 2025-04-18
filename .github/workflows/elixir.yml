@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: erlef/setup-beam@v1.15.2
+      - uses: erlef/setup-beam@v1.18.2
         with:
-          otp-version: '25.2'
-          elixir-version: '1.14.2'
+          otp-version: '27.2'
+          elixir-version: '1.18.2'
       - name: Install Dependencies
         run: mix deps.get
       - name: Run Tests
