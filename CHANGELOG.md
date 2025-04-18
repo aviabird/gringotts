@@ -1,6 +1,9 @@
 # Changelog
 
-## [`v1.1.1-rc`][tag-1_1_1-rc] (2018-06-04)
+## [`v1.1.1`](https://github.com/aviabird/gringotts/compare/v1.1.0...v1.1.1) (2023-02-19)
+
+### Deps
+Updates elixir dep to 1.14 with erlang otp 25. Compiled time warnings have been removed.
 
 ### Core
 Remove the protocol implementation for `ex_money` since they implement it for us

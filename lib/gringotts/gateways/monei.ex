@@ -146,7 +146,6 @@ defmodule Gringotts.Gateways.Monei do
 
   use Gringotts.Gateways.Base
   use Gringotts.Adapter, required_config: [:userId, :entityId, :password]
-  import Poison, only: [decode: 1]
   alias Gringotts.{CreditCard, Money, Response}
 
   @base_url "https://test.monei-api.net"
@@ -468,7 +467,7 @@ defmodule Gringotts.Gateways.Monei do
   defp respond({:ok, %{status_code: 200, body: body}}) do
     common = [raw: body, status_code: 200]
 
-    with {:ok, decoded_json} <- decode(body),
+    with {:ok, decoded_json} <- Jason.decode(body),
          {:ok, results} <- parse_response(decoded_json) do
       {:ok, Response.success(common ++ results)}
     else

@@ -20,7 +20,7 @@ defmodule Gringotts.Gateways.Stripe do
 
   | Key                    | Status           |
   | ----                   | ----             |
-  | `currency`             | **Implemented**  |  
+  | `currency`             | **Implemented**  |
   | `capture`              | **Implemented**  |
   | `description`          | **Implemented**  |
   | `metadata`             | **Implemented**  |
@@ -183,7 +183,7 @@ defmodule Gringotts.Gateways.Stripe do
   ## Example
   The following session shows how one would (partially) capture a previously
   authorized a payment worth $10 by referencing the obtained `charge_id`.
-      
+
       iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       iex> amount = 5
       iex> opts = []
@@ -217,7 +217,7 @@ defmodule Gringotts.Gateways.Stripe do
   The following session shows how one would void a previous (pre)
   authorization. Remember that our `capture/3` example only did a partial
   capture.
-      
+
       iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       iex> opts = []
 
@@ -238,7 +238,7 @@ defmodule Gringotts.Gateways.Stripe do
   ## Example
   The following session shows how one would refund a previous purchase (and
   similarily for captures).
-      
+
       iex> amount = 5
       iex> id = "ch_1BYvGkBImdnrXiZwet3aKkQE"
       iex> opts = []
@@ -261,7 +261,7 @@ defmodule Gringotts.Gateways.Stripe do
   ## Example
   The following session shows how one would store a card (a payment-source) for
   future use.
-      
+
       iex> card = %CreditCard{
             first_name: "John",
             last_name: "Smith",
@@ -392,7 +392,7 @@ defmodule Gringotts.Gateways.Stripe do
 
   defp format_response(response) do
     case response do
-      {:ok, %HTTPoison.Response{body: body}} -> body |> Poison.decode!()
+      {:ok, %HTTPoison.Response{body: body}} -> body |> Jason.decode!()
       _ -> %{"error" => "something went wrong, please try again later"}
     end
   end

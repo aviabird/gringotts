@@ -15,8 +15,8 @@ defmodule Gringotts.Gateways.PaymillMock do
     "app_id":null, "updated_at":1522922164, "created_at":1522922164, "payment":[
     "pay_abdd833557398641e9dfcc47" ], "subscription":null }, "transaction":{
     "id":"tran_7341c475993e3ddbbff801c47597", "amount":4200,
-    "origin_amount":4200, "status":"preauth", "description":"description
-    example", "livemode":false, "refunds":null,
+    "origin_amount":4200, "status":"preauth", "description":"description example",
+    "livemode":false, "refunds":null,
     "client":"client_d8b9c9a37b0ecb1bbd83", "currency":"EUR",
     "created_at":1523890381, "updated_at":1523890383, "response_code":20000,
     "short_id":null, "is_fraud":false, "invoices":[ ], "app_id":null,
