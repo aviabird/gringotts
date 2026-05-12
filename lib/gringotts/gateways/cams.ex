@@ -93,11 +93,10 @@ defmodule Gringotts.Gateways.Cams do
 
   ## Integrating with phoenix
 
-  Refer the [GringottsPay][gpay-heroku-cams] website for an example of how to
-  integrate CAMS with phoenix. The source is available [here][gpay-repo].
+  Refer the [GringottsPay][gpay-repo] source for an example of how to
+  integrate CAMS with phoenix.
 
   [gpay-repo]: https://github.com/aviabird/gringotts_payment
-  [gpay-heroku-cams]: http://gringottspay.herokuapp.com/cams
 
   ## TODO
 
